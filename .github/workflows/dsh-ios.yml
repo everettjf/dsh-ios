@@ -3,7 +3,7 @@
 name: dsh-ios
 on:
   push:
-    paths: ['dsh-ios/**', 'ish-arm64/**', '.github/workflows/dsh-ios.yml']
+    paths: ["dsh-ios/**", "ish-arm64/**", ".github/workflows/dsh-ios.yml"]
   pull_request:
     paths: ['dsh-ios/**', 'ish-arm64/**']
   workflow_dispatch:
