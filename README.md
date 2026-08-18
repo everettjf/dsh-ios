@@ -20,7 +20,7 @@ UI. Bottom: the same app on the iPad simulator.</sub>
 
 <p align="center"><img src="docs/screenshots/simulator-ipad-air-m4.png" width="420" alt="DSH on the iPad Air simulator"></p>
 
-License **GPL-3.0** (see [License](#license)) · iOS/iPadOS 16+, Apple Silicon
+Project page: **https://xnu.app/dsh-ios/** · License **GPL-3.0** (see [License](#license)) · iOS/iPadOS 16+, Apple Silicon
 simulators · Status: works end-to-end on device, all test suites green.
 
 ---
