@@ -1,0 +1,49 @@
+{
+  "name": "nassh",
+  "version": "0.36.0",
+  "description": "Terminal emulator and SSH and SFTP client",
+  "main": "js/nassh.js",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/apps/libapps.git"
+  },
+  "author": "Chromium OS Authors",
+  "license": "BSD-3-Clause",
+  "files": [
+    "_locales",
+    "css",
+    "doc",
+    "html",
+    "js",
+    "README.md",
+    "third_party"
+  ],
+  "bugs": {
+    "url": "https://goo.gl/vb94JY",
+    "email": "chromium-hterm@chromium.org"
+  },
+  "homepage": "https://chromium.googlesource.com/apps/libapps/+/HEAD/nassh",
+  "scripts": {
+    "prepare": "./bin/mkdeps",
+    "start": "http-server -a localhost -c-1 --cors ..",
+    "test": "./bin/load_tests"
+  },
+  "devDependencies": {
+    "chai": "~4",
+    "eslint": "~7",
+    "http-server": "~0",
+    "license-checker": "~25",
+    "mocha": "~8",
+    "mocha-headless-chrome": "~3",
+    "rollup": ">=1.16",
+    "rollup-plugin-node-resolve": ">=5",
+    "rollup-plugin-terser": ">=5",
+    "terser": "~4"
+  },
+  "dependencies": {
+    "asn1js": "~2",
+    "lit-element": "^2.3.1",
+    "pkijs": "~2.1",
+    "punycode": "~2"
+  }
+}

@@ -1,0 +1,22 @@
+#!/bin/sh
+# Launch the DeepSeek Harness web UI inside the DSH iOS app's Linux guest.
+#
+# The iOS app runs this as the supervised foreground process and points its
+# WKWebView at http://127.0.0.1:$DSH_PORT once the server answers.
+#
+#   DSH_PORT       listen port (default 3080)
+#   DSH_WORKSPACE  initial working directory offered as the workspace
+#   DSH_HOME       harness home (default /root/.dsh)
+export HOME=/root
+export DSH_HOME="${DSH_HOME:-/root/.dsh}"
+export DSH_WORKSPACE="${DSH_WORKSPACE:-/root/workspace}"
+PORT="${DSH_PORT:-3080}"
+
+mkdir -p "$DSH_WORKSPACE"
+cd "$DSH_WORKSPACE"
+
+# --expose-internals: cordis-plugin-hmr needs Node internals; the prebuilt
+# node-addon-require-builtin shim has no musl build, so use the flag instead.
+exec node --expose-internals \
+    /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js \
+    web --host 127.0.0.1 --port "$PORT" "$@"

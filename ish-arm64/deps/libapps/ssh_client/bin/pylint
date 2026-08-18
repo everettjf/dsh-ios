@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Wrapper to run pylint with the right sys.path."""
+
+import sys
+
+import ssh_client
+import libdot
+
+
+if __name__ == '__main__':
+    sys.exit(libdot.pylint.main(
+        sys.argv[1:], pythonpaths=(ssh_client.BIN_DIR,)))

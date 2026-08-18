@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22155" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="LS-vc">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22131"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <scene sceneID="LS-scene">
+            <objects>
+                <viewController id="LS-vc" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="LS-view">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="DSH" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="LS-label">
+                                <rect key="frame" x="0.0" y="400" width="393" height="52"/>
+                                <fontDescription key="fontDescription" name="Menlo-Bold" family="Menlo" pointSize="40"/>
+                                <color key="textColor" systemColor="labelColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="LS-safe"/>
+                        <color key="backgroundColor" name="DSHBackground"/>
+                        <constraints>
+                            <constraint firstItem="LS-label" firstAttribute="centerX" secondItem="LS-view" secondAttribute="centerX" id="LS-c1"/>
+                            <constraint firstItem="LS-label" firstAttribute="centerY" secondItem="LS-view" secondAttribute="centerY" id="LS-c2"/>
+                            <constraint firstItem="LS-label" firstAttribute="leading" secondItem="LS-safe" secondAttribute="leading" id="LS-c3"/>
+                            <constraint firstItem="LS-safe" firstAttribute="trailing" secondItem="LS-label" secondAttribute="trailing" id="LS-c4"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="LS-fr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="0" y="0"/>
+        </scene>
+    </scenes>
+    <resources>
+        <namedColor name="DSHBackground">
+            <color red="0.067" green="0.071" blue="0.086" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <systemColor name="labelColor">
+            <color red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+    </resources>
+</document>

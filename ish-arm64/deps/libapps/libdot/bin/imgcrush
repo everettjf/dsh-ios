@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Crush image files.
+
+We try to shrink the image files by reencoding/stripping data losslessly.
+
+We currently support png and jpg files.
+"""
+
+import logging
+import multiprocessing
+import os
+from pathlib import Path
+import sys
+
+import libdot
+
+
+# We pick a recent Chromium commit.  It doesn't change much so shouldn't matter.
+# Updating to the latest version shouldn't cause problems.
+CHROMIUM_REF = '85.0.4148.0'
+
+# Full path to Chromium's png crush script.
+PNG_CRUSHER_URL = ('https://chromium.googlesource.com/chromium/src/+/%s/tools/'
+                   'resources/optimize-png-files.sh' % (CHROMIUM_REF,))
+
+# Our local cache of the script.
+PNG_CRUSHER = libdot.BIN_DIR / f'.png.crusher.{CHROMIUM_REF}'
+
+# The tool used to crush jpeg images.
+JPG_CRUSHER = 'jpegoptim'
+
+
+def update_png_crusher():
+    """Update our local cache of Chromium's png optimizer script."""
+    if PNG_CRUSHER.exists():
+        return
+
+    for path in libdot.BIN_DIR.glob('.png.crusher.*'):
+        path.unlink()
+
+    libdot.fetch(f'{PNG_CRUSHER_URL}?format=TEXT', PNG_CRUSHER, b64=True)
+    PNG_CRUSHER.chmod(0o755)
+
+
+def run(path, cmd):
+    """Run the |cmd| for the |path| file."""
+    logging.info('Processing %s', path)
+    libdot.run([str(x) for x in cmd], check=False)
+
+
+def process_file(pool, path):
+    """Crush |path| as makes sense.
+
+    Jobs are thrown into the |pool|, but we don't currently bother checking
+    their return values.  General life cycle management is handled by the pool.
+    """
+    if path.suffix in ('.png',):
+        update_png_crusher()
+        pool.apply_async(run, (path, [PNG_CRUSHER, path]))
+    elif path.suffix in ('.jpg', '.jpeg'):
+        pool.apply_async(run, (path, [JPG_CRUSHER, path]))
+    else:
+        logging.debug('Skipping unknown file type %s', path.suffix)
+
+
+def process_dir(pool, topdir):
+    """Process all the paths under |topdir|."""
+    for root, dirs, files in os.walk(topdir):
+        root = Path(root)
+
+        # Not really needed, but makes things consistent.
+        dirs.sort()
+        files.sort()
+
+        for path in files:
+            process_file(pool, root / path)
+
+
+def get_parser():
+    """Get a command line parser."""
+    parser = libdot.ArgumentParser(description=__doc__)
+    parser.add_argument('paths', nargs='+', type=Path,
+                        help='Image files or directories to crush.')
+    return parser
+
+
+def main(argv):
+    """The main func!"""
+    parser = get_parser()
+    opts = parser.parse_args(argv)
+
+    pool = multiprocessing.Pool()
+
+    # We walk the top set of args by hand to deref links.
+    for path in opts.paths:
+        if path.is_dir():
+            process_dir(pool, path)
+        elif path.is_file():
+            process_file(pool, path)
+
+    pool.close()
+    pool.join()
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

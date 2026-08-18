@@ -1,0 +1,30 @@
+#!/bin/sh
+# Guest-side self test used by dsh-ios/tests and the DSHTests XCTest bundle.
+# Prints one "ok: ..." line per step and "SELFTEST OK" on success.
+export HOME=/root
+step() { echo "ok: $1"; }
+die() { echo "FAIL: $1"; exit 1; }
+
+node -v 2>/dev/null | grep -q '^v2[2-9]\|^v[3-9]' || die "node too old or missing: $(node -v 2>&1)"
+step "node $(node -v 2>/dev/null)"
+[ -x /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js ] || die "dsh missing"
+step "dsh $(dsh --version 2>/dev/null)"
+cd /usr/local/lib/node_modules || die "node_modules missing"
+node -e "require('node-pty'); require('koffi'); require('@vscode/ripgrep'); require('sharp')" 2>/dev/null || die "native modules do not load"
+step "native modules load"
+node -e "
+const p=require('node-pty');
+const t=p.spawn('/bin/sh',['-c','echo pty-ok; sleep 0.3'],{name:'xterm',cols:80,rows:24});
+let out='';t.onData(d=>out+=d);
+t.onExit(e=>setTimeout(()=>{ process.exit(out.includes('pty-ok')&&e.exitCode===0?0:1); },300));
+setTimeout(()=>process.exit(1),20000);
+" 2>/dev/null || die "node-pty cannot spawn a shell"
+step "node-pty spawns"
+node -e "
+const s=require('sharp');
+s({create:{width:8,height:8,channels:3,background:'#f00'}}).resize(4,4).png().toBuffer().then(b=>process.exit(b.length>20?0:1)).catch(()=>process.exit(1));
+" 2>/dev/null || die "sharp cannot encode a PNG"
+step "sharp encodes"
+[ -f /root/.dsh/profiles/web/cordis.patch.yml ] || die "profile patch missing"
+step "profile patch present"
+echo "SELFTEST OK"

@@ -1,0 +1,92 @@
+# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+[MASTER]
+
+# Use multiple processes to speed up Pylint.
+jobs = 0
+
+# List of plugins (as comma separated values of python modules names) to load,
+# usually to register additional checkers.
+load-plugins=
+    pylint.extensions.docstyle,
+
+# Configure quote preferences.
+string-quote = single-avoid-escape
+triple-quote = double
+docstring-quote = double
+
+
+[MESSAGES CONTROL]
+
+# not-callable throws a lot of false positives with pylint-1.6.
+disable=
+    fixme,
+    invalid-name,
+    locally-enabled,
+    locally-disabled,
+    no-else-break,
+    no-else-continue,
+    no-else-return,
+    not-callable,
+    relative-import,
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-branches,
+    too-many-instance-attributes,
+    too-many-lines,
+    too-many-locals,
+    too-many-public-methods,
+    too-many-return-statements,
+    too-many-statements,
+
+
+[REPORTS]
+
+# Disable verbose reports.
+reports = no
+
+# Activate the evaluation score.
+score = no
+
+
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length = 80
+
+
+[BASIC]
+
+# List of builtins function names that should not be used, separated by a comma.
+# exit & quit are for the interactive interpreter shell only.
+# https://docs.python.org/3/library/constants.html#constants-added-by-the-site-module
+bad-functions=
+    apply,
+    exit,
+    filter,
+    input,
+    map,
+    quit,
+    raw_input,
+    reduce,
+
+
+[SIMILARITIES]
+
+# Minimum lines number of a similarity.
+min-similarity-lines = 8
+
+
+[IMPORTS]
+
+# Deprecated modules which should not be used, separated by a comma.
+deprecated-modules = regsub,TERMIOS,Bastion,rexec,optparse
+
+
+[LOGGING]
+
+# Apply logging string format checks to calls on these modules.
+logging-modules=
+    logging,

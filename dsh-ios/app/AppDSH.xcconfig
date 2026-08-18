@@ -1,0 +1,48 @@
+// DSH — DeepSeek Harness for iPad/iPhone.
+// Builds the iSH-ARM64 emulator (../ish-arm64) with a WKWebView front end and
+// a bundled Alpine + Node + dsh root filesystem (build/root.tar.gz).
+// SRCROOT is dsh-ios/; ISH_SRC points at the emulator sources.
+#include "../../ish-arm64/app/AppARM64.xcconfig"
+
+ISH_SRC = $(SRCROOT)/../ish-arm64
+
+PRODUCT_NAME = DSH
+DSH_BUNDLE_ID_PREFIX = com.xnuapp
+PRODUCT_BUNDLE_IDENTIFIER = $(DSH_BUNDLE_ID_PREFIX).dsh
+PRODUCT_APP_GROUP_IDENTIFIER = group.$(DSH_BUNDLE_ID_PREFIX).dsh
+
+MARKETING_VERSION = 1.0.0
+CURRENT_PROJECT_VERSION = 1
+
+INFOPLIST_FILE = $(SRCROOT)/app/Info.plist
+INFOPLIST_PREPROCESS = NO
+INFOPLIST_PREFIX_HEADER =
+CODE_SIGN_ENTITLEMENTS = $(SRCROOT)/app/DSH.entitlements
+ASSETCATALOG_COMPILER_APPICON_NAME = DSHAppIcon
+ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = DSHAccent
+
+IPHONEOS_DEPLOYMENT_TARGET = 16.0
+TARGETED_DEVICE_FAMILY = 1,2
+SUPPORTED_PLATFORMS = iphoneos iphonesimulator
+SUPPORTS_MACCATALYST = NO
+
+// Signing: automatic; pass DSH_DEVELOPMENT_TEAM=XXXXXXXXXX to xcodebuild or
+// set it here for local builds. The wildcard team profile is enough — the app
+// declares no special entitlements.
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = $(DSH_DEVELOPMENT_TEAM)
+
+// Guest image produced by scripts/build-rootfs.sh, bundled as root.tar.gz.
+DSH_ROOTFS_TARBALL = $(SRCROOT)/build/root.tar.gz
+
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DSH_APP=1
+HEADER_SEARCH_PATHS = $(ISH_SRC) $(ISH_SRC)/app $(ISH_SRC)/deps/libarchive/libarchive $(SRCROOT)/app
+OTHER_LDFLAGS = $(inherited) -framework WebKit
+
+// The AArch64 gadgets are host arm64 assembly: only Apple Silicon simulators
+// can run the emulator, so never build x86_64 slices.
+ARCHS[sdk=iphonesimulator*] = arm64
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64 i386
+
+// Keep ObjC classes visible so DSHTests can link against the app (bundle loader).
+GCC_SYMBOLS_PRIVATE_EXTERN = NO

@@ -1,0 +1,48 @@
+{
+  "name": "libapps",
+  "version": "1.0.0",
+  "description": "Grab bag of js, including hterm and its support library.",
+  "main": "libdot/js/lib.js",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/apps/libapps.git"
+  },
+  "author": "Chromium OS Authors",
+  "license": "BSD-3-Clause",
+  "files": [
+    "README.md"
+  ],
+  "scripts": {
+    "start": "http-server -a localhost -c-1 --cors ."
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "asn1js": "~2",
+    "chai": "~4",
+    "csso": ">=3",
+    "csso-cli": ">=2",
+    "eslint": "~7",
+    "eslint-plugin-html": "~6",
+    "eslint-plugin-jsdoc": "~27",
+    "firebase-tools": ">=7",
+    "http-server": "~0",
+    "jsdoc-to-markdown": "~6",
+    "license-checker": "~25",
+    "lit-element": "^2.3.1",
+    "markdownlint-cli": "~0",
+    "mocha": "~8",
+    "mocha-headless-chrome": "~3",
+    "pkijs": "~2.1",
+    "@polymer/polymer": "^3.3",
+    "punycode": "~2",
+    "rollup": ">=1.16",
+    "rollup-plugin-node-resolve": ">=5",
+    "rollup-plugin-terser": ">=5",
+    "terser": "~4"
+  },
+  "bugs": {
+    "url": "https://goo.gl/vb94JY",
+    "email": "chromium-hterm@chromium.org"
+  },
+  "homepage": "https://chromium.googlesource.com/apps/libapps"
+}

@@ -1,0 +1,22 @@
+# Various temp files and editor configs.
+*~
+\#*
+.#*
+__pycache__/
+*.py[co]
+*.swp
+.eslintcache
+.vscode
+
+# Stuff we build for distribution
+/artifacts/
+dist
+/ssh_client-image.tar*
+
+# npm related dirs.
+node_modules
+package-lock.json
+
+# Terminal settings page can be run from a local server if you make some of the
+# nassh dirs available at the right path.
+/_locales

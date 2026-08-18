@@ -1,0 +1,218 @@
+/* AUTO-GENERATED prebuilt-gadget spec_fn for guest `_PyToken_OneChar` — DO NOT EDIT.
+ * Source: /tmp/pyroot/fs/usr/lib/debug/usr/lib/libpython3.12.so.1.0.debug  addr 0xef9ab4e0
+ * Produced by tools/prebuilt_gadget_gen/gen.sh (guest asm -> equivalent C).
+ * Compiled only with -Doffload_test_prebuilt=true. */
+#include <stdint.h>
+#include "emu/arch/arm64/cpu.h"
+#include "emu/tlb.h"
+#include "kernel/native_offload.h"  /* prebuilt_call for bl/blr sites */
+
+static uint64_t ror64(uint64_t v, unsigned r) { return (v >> r) | (v << (64 - r)); }
+static uint64_t g_fa, g_fb;
+static double fr[32];   /* float/double register file (s/d regs) */
+/* FCMP: encode float ordering into g_fa/g_fb so the integer FLAG_* macros
+ * that follow a fcmp read the right branch. sign(lhs-rhs) → (1,0)/(0,1)/(0,0);
+ * NaN (unordered) → (0,1): gt/ge false, matching AArch64 fcmp semantics. */
+#define FCMP(x,y) do { double _dx=(x), _dy=(y); \
+    if (_dx < _dy) { g_fa=0; g_fb=1; } \
+    else if (_dx > _dy) { g_fa=1; g_fb=0; } \
+    else if (_dx == _dy) { g_fa=0; g_fb=0; } \
+    else { g_fa=0; g_fb=1; } } while(0)   /* NaN */
+#define FLAG_CMP(x,y) do { g_fa=(x); g_fb=(y); } while(0)
+#define FLAG_EQ (g_fa == g_fb)
+#define FLAG_NE (g_fa != g_fb)
+#define FLAG_GT ((int64_t)g_fa >  (int64_t)g_fb)   /* signed */
+#define FLAG_LT ((int64_t)g_fa <  (int64_t)g_fb)
+#define FLAG_GE ((int64_t)g_fa >= (int64_t)g_fb)
+#define FLAG_LE ((int64_t)g_fa <= (int64_t)g_fb)
+#define FLAG_HI (g_fa >  g_fb)                     /* unsigned */
+#define FLAG_LO (g_fa <  g_fb)
+#define FLAG_HS (g_fa >= g_fb)
+#define FLAG_LS (g_fa <= g_fb)
+#define SP (cpu->sp)                               /* stack pointer */
+/* PB_BASE: library load base = runtime addr (0xef9ab4e0) - file offset (0x00000000000874e0).
+ * adrp/adr targets (file-absolute in the disassembly) resolve to
+ * PB_BASE + target at runtime. No-ASLR makes this constant. */
+extern uint64_t g_ft_base;
+#define PB_BASE g_ft_base
+/* Memory ops go through the guest TLB (fork/CoW safe). 64/32-bit + byte. */
+#define PB_LDR(dst, addr)  do { uint64_t _v=0; tlb_read (tlb,(addr),&_v,8); (dst)=_v; } while(0)
+#define PB_STR(addr, val)  do { uint64_t _v=(val); tlb_write(tlb,(addr),&_v,8); } while(0)
+#define PB_LDRW(dst, addr) do { uint32_t _v=0; tlb_read (tlb,(addr),&_v,4); (dst)=_v; } while(0)
+#define PB_STRW(addr, val) do { uint32_t _v=(uint32_t)(val); tlb_write(tlb,(addr),&_v,4); } while(0)
+#define PB_LDRB(dst, addr) do { uint8_t  _b=0; tlb_read (tlb,(addr),&_b,1); (dst)=_b; } while(0)
+#define PB_STRB(addr, val) do { uint8_t  _b=(uint8_t)(val); tlb_write(tlb,(addr),&_b,1); } while(0)
+#define PB_LDRH(dst, addr) do { uint16_t _h=0; tlb_read (tlb,(addr),&_h,2); (dst)=_h; } while(0)
+#define PB_STRH(addr, val) do { uint16_t _h=(uint16_t)(val); tlb_write(tlb,(addr),&_h,2); } while(0)
+/* Inline-cache call: if the callee (guest addr `tgt`) has a translated
+ * spec_fn, call it directly (stays in host code, no interpreter round-
+ * trip); otherwise fall back to prebuilt_call (nested dispatch). Each
+ * call site has its own static IC slot keyed by the last target. */
+#define PB_CALL(id, cpu, tlb, tgt) do {                       \
+    static addr_t _ic_tgt##id = 0; static prebuilt_fn _ic_fn##id = 0; \
+    addr_t _t = (tgt);                                        \
+    if (_t == _ic_tgt##id && _ic_fn##id) { _ic_fn##id(cpu, tlb); } \
+    else { prebuilt_fn _f = native_offload_prebuilt_lookup(_t);\
+           if (_f) { _ic_tgt##id = _t; _ic_fn##id = _f; _f(cpu, tlb); } \
+           else { prebuilt_call(cpu, tlb, _t); } }            \
+  } while(0)
+
+void ft_PyType_AddWatcher(struct cpu_state *cpu, struct tlb *tlb) {
+(void)tlb;(void)cpu;
+    cpu->regs[3] = cpu->tls_ptr;
+    SP += -16; PB_STR(SP, cpu->regs[29]); PB_STR(SP + 8, cpu->regs[30]);
+    cpu->regs[2] = cpu->regs[0];
+    cpu->regs[29] = SP;
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[1], (cpu->regs[0] + 2160));
+    cpu->regs[0] = cpu->regs[0] + 2160ULL;
+    cpu->regs[30] = PB_BASE + 0x93f4cULL; PB_CALL(1, cpu, tlb, cpu->regs[1]);
+    PB_LDR(cpu->regs[0], (cpu->regs[3] + cpu->regs[0]));
+    cpu->regs[1] = 0ULL;
+    PB_LDR(cpu->regs[3], (cpu->regs[0] + 16));
+    cpu->regs[0] = cpu->regs[3] + (65ULL << 12);
+    cpu->regs[0] = cpu->regs[0] + 976ULL;
+L_93f60:
+    PB_LDR(cpu->regs[4], (cpu->regs[0] + (cpu->regs[1] << 3)));
+    if ((cpu->regs[4])!=0) goto L_93f7c;
+    cpu->regs[4] = 33402ULL;
+    cpu->regs[0] = cpu->regs[1];
+    cpu->regs[1] = cpu->regs[4] + ((uint64_t)(int64_t)(int32_t)(cpu->regs[1]));
+    PB_STR((cpu->regs[3] + (cpu->regs[1] << 3)), cpu->regs[2]);
+    goto L_93fa4;
+L_93f7c:
+    cpu->regs[1] = cpu->regs[1] + 1ULL;
+    FLAG_CMP(cpu->regs[1], 8ULL);
+    if (FLAG_NE) goto L_93f60;
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 3296));
+    cpu->regs[1] = PB_BASE + 0x2a1000ULL;
+    cpu->regs[1] = cpu->regs[1] + 3752ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 0));
+    cpu->regs[30] = PB_BASE + 0x93fa0ULL; PB_CALL(2, cpu, tlb, PB_BASE + 0x1d5940ULL);
+    cpu->regs[0] = 4294967295ULL;
+L_93fa4:
+    PB_LDR(cpu->regs[29], SP); PB_LDR(cpu->regs[30], SP + 8); SP += 16;
+    return;
+    PB_LDR(cpu->regs[0], (cpu->regs[1] + 16));
+    if ((cpu->regs[0])!=0) goto L_93fc0;
+    if ((cpu->regs[2])==0) goto L_93fec;
+    PB_LDR(cpu->regs[0], (cpu->regs[2] + 16));
+    if ((cpu->regs[0])==0) goto L_93fec;
+L_93fc0:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2736));
+    SP += -16; PB_STR(SP, cpu->regs[29]); PB_STR(SP + 8, cpu->regs[30]);
+    cpu->regs[1] = PB_BASE + 0x2a1000ULL;
+    cpu->regs[29] = SP;
+    cpu->regs[1] = cpu->regs[1] + 3792ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 0));
+    cpu->regs[30] = PB_BASE + 0x93fe0ULL; PB_CALL(3, cpu, tlb, PB_BASE + 0x1d5940ULL);
+    cpu->regs[0] = 0ULL;
+    PB_LDR(cpu->regs[29], SP); PB_LDR(cpu->regs[30], SP + 8); SP += 16;
+    return;
+L_93fec:
+    cpu->regs[1] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[1], (cpu->regs[1] + 2504));
+    PB_LDRW(cpu->regs[0], (cpu->regs[1] + 0));
+    cpu->regs[0] = ((uint32_t)(cpu->regs[0] + 1ULL)); FLAG_CMP(cpu->regs[0], 0);
+    if (FLAG_EQ) goto L_94004;
+    PB_STRW((cpu->regs[1] + 0), cpu->regs[0]);
+L_94004:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2504));
+    return;
+    PB_LDR(cpu->regs[0], (cpu->regs[1] + 16));
+    if ((cpu->regs[0])!=0) goto L_94024;
+    if ((cpu->regs[2])==0) goto L_94050;
+    PB_LDR(cpu->regs[0], (cpu->regs[2] + 16));
+    if ((cpu->regs[0])==0) goto L_94050;
+L_94024:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2736));
+    SP += -16; PB_STR(SP, cpu->regs[29]); PB_STR(SP + 8, cpu->regs[30]);
+    cpu->regs[1] = PB_BASE + 0x2a1000ULL;
+    cpu->regs[29] = SP;
+    cpu->regs[1] = cpu->regs[1] + 3824ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 0));
+    cpu->regs[30] = PB_BASE + 0x94044ULL; PB_CALL(4, cpu, tlb, PB_BASE + 0x1d5940ULL);
+    cpu->regs[0] = 0ULL;
+    PB_LDR(cpu->regs[29], SP); PB_LDR(cpu->regs[30], SP + 8); SP += 16;
+    return;
+L_94050:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2400));
+    return;
+    PB_LDR(cpu->regs[0], (cpu->regs[1] + 16));
+    if ((cpu->regs[0])!=0) goto L_94070;
+    if ((cpu->regs[2])==0) goto L_9409c;
+    PB_LDR(cpu->regs[0], (cpu->regs[2] + 16));
+    if ((cpu->regs[0])==0) goto L_9409c;
+L_94070:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2736));
+    SP += -16; PB_STR(SP, cpu->regs[29]); PB_STR(SP + 8, cpu->regs[30]);
+    cpu->regs[1] = PB_BASE + 0x2a1000ULL;
+    cpu->regs[29] = SP;
+    cpu->regs[1] = cpu->regs[1] + 3864ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 0));
+    cpu->regs[30] = PB_BASE + 0x94090ULL; PB_CALL(5, cpu, tlb, PB_BASE + 0x1d5940ULL);
+    cpu->regs[0] = 0ULL;
+    PB_LDR(cpu->regs[29], SP); PB_LDR(cpu->regs[30], SP + 8); SP += 16;
+    return;
+L_9409c:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2760));
+    return;
+    PB_LDRW(cpu->regs[1], (cpu->regs[0] + 40));
+    if (((cpu->regs[1] >> 0) & 1)) goto L_940bc;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 24));
+    PB_LDRW(cpu->regs[0], (cpu->regs[0] + 16));
+    if (!((cpu->regs[0] >> 0) & 1)) goto L_940e8;
+L_940bc:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2976));
+    SP += -16; PB_STR(SP, cpu->regs[29]); PB_STR(SP + 8, cpu->regs[30]);
+    cpu->regs[1] = PB_BASE + 0x28f000ULL;
+    cpu->regs[29] = SP;
+    cpu->regs[1] = cpu->regs[1] + 96ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 0));
+    cpu->regs[30] = PB_BASE + 0x940dcULL; PB_CALL(6, cpu, tlb, PB_BASE + 0x1d5940ULL);
+    cpu->regs[0] = 0ULL;
+    PB_LDR(cpu->regs[29], SP); PB_LDR(cpu->regs[30], SP + 8); SP += 16;
+    return;
+L_940e8:
+    FLAG_CMP((((uint32_t)(cpu->regs[1]))) & (((uint32_t)(12ULL))), 0);
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 3184));
+    cpu->regs[1] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[1], (cpu->regs[1] + 3664));
+    cpu->regs[0] = (FLAG_EQ) ? cpu->regs[0] : cpu->regs[1];
+    return;
+    PB_LDRW(cpu->regs[2], (cpu->regs[0] + 40));
+    if (((cpu->regs[2] >> 0) & 1)) goto L_94118;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 24));
+    PB_LDRW(cpu->regs[0], (cpu->regs[0] + 16));
+    if (!((cpu->regs[0] >> 0) & 1)) goto L_94144;
+L_94118:
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 2976));
+    SP += -16; PB_STR(SP, cpu->regs[29]); PB_STR(SP + 8, cpu->regs[30]);
+    cpu->regs[1] = PB_BASE + 0x28f000ULL;
+    cpu->regs[29] = SP;
+    cpu->regs[1] = cpu->regs[1] + 96ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 0));
+    cpu->regs[30] = PB_BASE + 0x94138ULL; PB_CALL(7, cpu, tlb, PB_BASE + 0x1d5940ULL);
+    cpu->regs[0] = 0ULL;
+    PB_LDR(cpu->regs[29], SP); PB_LDR(cpu->regs[30], SP + 8); SP += 16;
+    return;
+L_94144:
+    cpu->regs[1] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[1], (cpu->regs[1] + 3664));
+    cpu->regs[3] = 10ULL;
+    cpu->regs[0] = PB_BASE + 0x44f000ULL;
+    PB_LDR(cpu->regs[0], (cpu->regs[0] + 3184));
+    FLAG_CMP((((uint32_t)(cpu->regs[2]))) & (((uint32_t)(cpu->regs[3]))), 0);
+    cpu->regs[0] = (FLAG_EQ) ? cpu->regs[0] : cpu->regs[1];
+    return;
+}

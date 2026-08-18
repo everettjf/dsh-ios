@@ -1,0 +1,8 @@
+{
+  "name": "dsh-ios-rootfs-staging",
+  "private": true,
+  "description": "Pins the @deepseek-ai/dsh tree that build-rootfs.sh installs into the guest (linux/arm64/musl).",
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.1.0-rc.7"
+  }
+}

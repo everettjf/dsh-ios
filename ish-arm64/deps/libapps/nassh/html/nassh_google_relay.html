@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <!--
+     When using a Google relay, the cookie server will redirect to this page
+     after signing in the user and choosing a relay server.
+
+     See js/nassh_relay_corp.js and js/nassh_google_relay_html.js for more
+     details.
+    -->
+  <head>
+    <meta charset='utf-8'/>
+
+    <script src='../js/nassh_deps.concat.js'></script>
+    <script src='../js/nassh.js'></script>
+
+    <style>
+      body {
+        color: white;
+        background-color: black;
+        font-family: monospace;
+      }
+
+      message-container {
+        display: none;
+      }
+
+      span.header {
+        border-bottom: 1px solid white;
+      }
+    </style>
+    <script src='../js/nassh_google_relay_html.js'></script>
+  </head>
+  <body>
+
+    <message-container id='nassh'>
+      <span class='header' id='nassh-header'>
+        Internal Secure Shell error.
+      </span>
+      <div id='nassh-message'></div>
+    </message-container>
+
+    <br>
+
+    <message-container id='relay'>
+      <span class='header' id='relay-header'>
+        Relay server error.
+        Please contact your relay server administrator for assistance.
+      </span>
+      <div id='relay-message'></div>
+    </message-container>
+
+  </body>
+</html>

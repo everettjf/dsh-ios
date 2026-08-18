@@ -1,0 +1,1172 @@
+{
+	"already_mounted_message": {
+		"message": "Filsystemet er allerede tilkoblet."
+	},
+	"backup_prefs": {
+		"message": "Lagre en sikkerhetskopi"
+	},
+	"bad_destination": {
+		"message": "Kan ikke analysere destinasjonen: $1"
+	},
+	"before_unload": {
+		"message": "Hvis du lukker denne fanen, avsluttes nåværende økt."
+	},
+	"cache_pin_prompt": {
+		"message": "Vil du bufre PIN-koden for denne SSH-økten? (y/N):"
+	},
+	"cancel_button_label": {
+		"message": "Avbryt"
+	},
+	"changelog": {
+		"message": "Endringslogg"
+	},
+	"clear_known_hosts_menu_label": {
+		"message": "Fjern kjente SSH-verter"
+	},
+	"clear_label": {
+		"message": "Tøm"
+	},
+	"command_complete": {
+		"message": "$1-kommandoen ble avsluttet med statuskoden $2."
+	},
+	"command_not_supported": {
+		"message": "$1 støttes ikke i denne Chrome-versjonen"
+	},
+	"command_startup_failed": {
+		"message": "Kunne ikke starte $1: $2"
+	},
+	"connect_button_label": {
+		"message": "Koble til"
+	},
+	"connect_or_exit_message": {
+		"message": "Vil du velge en annen tilkobling (C) eller avslutte (X)?"
+	},
+	"connecting": {
+		"message": "Kobler til $1 …"
+	},
+	"connection_dialog_name": {
+		"message": "Tilkoblingsdialogboks"
+	},
+	"console_crosh_options_notice": {
+		"message": "Visste du at det finnes en egen side for alternativer?\nDet betyr at du ikke trenger å endre «term_» direkte lenger.\nTrykk på $1 for å åpne den, eller klikk på\n$2"
+	},
+	"console_nassh_options_notice": {
+		"message": "Visste du at det finnes en egen alternativside?\nDet betyr at du ikke trenger å endre «term_» direkte lenger.\n$1"
+	},
+	"del_keycap": {
+		"message": "[DEL]"
+	},
+	"delete_button_label": {
+		"message": "Slett"
+	},
+	"disconnect_message": {
+		"message": "NaCl-programtillegget ble avsluttet med statuskoden $1."
+	},
+	"enter_keycap": {
+		"message": "[ENTER]"
+	},
+	"faq_menu_label": {
+		"message": "Vanlige spørsmål"
+	},
+	"field_argstr_placeholder": {
+		"message": "ekstra argumenter for kommandolinjen"
+	},
+	"field_description_aria_label": {
+		"message": "beskrivelse"
+	},
+	"field_description_placeholder": {
+		"message": "brukernavn@vertsnavn eller tekst i et fritt format"
+	},
+	"field_hostname_aria_label": {
+		"message": "vertsnavn"
+	},
+	"field_hostname_placeholder": {
+		"message": "vertsnavn"
+	},
+	"field_mount_path_placeholder": {
+		"message": "standardbanen er brukerens startkatalog"
+	},
+	"field_nassh_options_aria_label": {
+		"message": "Alternativer for SSH-relétjener"
+	},
+	"field_nassh_options_placeholder": {
+		"message": "Alternativer for SSH-relétjener"
+	},
+	"field_port_aria_label": {
+		"message": "port"
+	},
+	"field_port_placeholder": {
+		"message": "port"
+	},
+	"field_terminal_profile_placeholder": {
+		"message": "standard"
+	},
+	"field_username_aria_label": {
+		"message": "brukernavn"
+	},
+	"field_username_placeholder": {
+		"message": "brukernavn"
+	},
+	"found_relay": {
+		"message": "Fant denne relétjeneren: $1"
+	},
+	"get_profile_error": {
+		"message": "FEIL: Kunne ikke laste inn profilen $1:\n$2"
+	},
+	"hterm_announce_current_screen_header": {
+		"message": "$1 % rullet ned,"
+	},
+	"hterm_button_allow_always": {
+		"message": "Tillat alltid"
+	},
+	"hterm_button_allow_session": {
+		"message": "Tillat denne økten"
+	},
+	"hterm_button_block": {
+		"message": "Blokkér"
+	},
+	"hterm_button_page_down": {
+		"message": "Ned en side"
+	},
+	"hterm_button_page_up": {
+		"message": "Opp en side"
+	},
+	"hterm_loading_resource_failed": {
+		"message": "Kunne ikke laste inn $1"
+	},
+	"hterm_loading_resource_start": {
+		"message": "Laster inn $1 …"
+	},
+	"hterm_name_pref_allow_images_inline": {
+		"message": "Tillat linjebundet bildevisning"
+	},
+	"hterm_name_pref_alt_backspace_is_meta_backspace": {
+		"message": "Alt+tilbaketasten er Meta+tilbaketasten"
+	},
+	"hterm_name_pref_alt_gr_mode": {
+		"message": "AltGr-tastemodus"
+	},
+	"hterm_name_pref_alt_is_meta": {
+		"message": "Behandle Alt-tasten som Meta-tasten"
+	},
+	"hterm_name_pref_alt_sends_what": {
+		"message": "Håndtering av Alt-tastemodifikatoren"
+	},
+	"hterm_name_pref_audible_bell_sound": {
+		"message": "Varselklokkelyd (URI)"
+	},
+	"hterm_name_pref_background_color": {
+		"message": "Bakgrunnsfarge"
+	},
+	"hterm_name_pref_background_image": {
+		"message": "Bakgrunnsbilde"
+	},
+	"hterm_name_pref_background_position": {
+		"message": "Plassering av bakgrunnsbilde"
+	},
+	"hterm_name_pref_background_size": {
+		"message": "Bakgrunnsbildestørrelse"
+	},
+	"hterm_name_pref_backspace_sends_backspace": {
+		"message": "Atferd for tilbaketasten"
+	},
+	"hterm_name_pref_character_map_overrides": {
+		"message": "Tegnkart-overstyringer"
+	},
+	"hterm_name_pref_clear_selection_after_copy": {
+		"message": "Fjern tekstmerkingen automatisk"
+	},
+	"hterm_name_pref_close_on_exit": {
+		"message": "Lukk vinduet ved avslutning"
+	},
+	"hterm_name_pref_color_palette_overrides": {
+		"message": "Opprinnelig fargepalett"
+	},
+	"hterm_name_pref_copy_on_select": {
+		"message": "Kopiér merket innhold automatisk"
+	},
+	"hterm_name_pref_ctrl_c_copy": {
+		"message": "Atferd for kopiering med Ctrl+C"
+	},
+	"hterm_name_pref_ctrl_plus_minus_zero_zoom": {
+		"message": "Atferd for zooming med Ctrl++/-/0"
+	},
+	"hterm_name_pref_ctrl_v_paste": {
+		"message": "Atferd for innliming med Ctrl+V"
+	},
+	"hterm_name_pref_cursor_blink": {
+		"message": "Markørblink"
+	},
+	"hterm_name_pref_cursor_blink_cycle": {
+		"message": "Blinkehyppighet for markøren"
+	},
+	"hterm_name_pref_cursor_color": {
+		"message": "Tekstmarkørfarge"
+	},
+	"hterm_name_pref_cursor_shape": {
+		"message": "Tekstmarkørform"
+	},
+	"hterm_name_pref_desktop_notification_bell": {
+		"message": "Opprett skrivebordsvarslinger for varselklokker"
+	},
+	"hterm_name_pref_east_asian_ambiguous_as_two_column": {
+		"message": "East Asian Ambiguous bruker to kolonner"
+	},
+	"hterm_name_pref_enable_8_bit_control": {
+		"message": "Støtt ikke-UTF-8 C1-kontrolltegn"
+	},
+	"hterm_name_pref_enable_blink": {
+		"message": "Slå på blinkende tekst"
+	},
+	"hterm_name_pref_enable_bold": {
+		"message": "Atferd for fet tekst"
+	},
+	"hterm_name_pref_enable_bold_as_bright": {
+		"message": "Bruk lyse farger med fet tekst"
+	},
+	"hterm_name_pref_enable_clipboard_notice": {
+		"message": "Vis varsel ved kopiering av innhold"
+	},
+	"hterm_name_pref_enable_clipboard_write": {
+		"message": "Tillat ekstern skriving på utklippstavlen"
+	},
+	"hterm_name_pref_enable_csi_j_3": {
+		"message": "Tillat tømming av bufferen for tilbakerulling (CSI-J-3)"
+	},
+	"hterm_name_pref_enable_dec12": {
+		"message": "Tillat endring av tekstmarkørblinking"
+	},
+	"hterm_name_pref_enable_resize_status": {
+		"message": "Vis målene på terminalen når størrelsen endres"
+	},
+	"hterm_name_pref_environment": {
+		"message": "Miljøvariabler"
+	},
+	"hterm_name_pref_font_family": {
+		"message": "Skriftfamilie"
+	},
+	"hterm_name_pref_font_size": {
+		"message": "Skriftstørrelse"
+	},
+	"hterm_name_pref_font_smoothing": {
+		"message": "Utjevning av skrifttypen"
+	},
+	"hterm_name_pref_foreground_color": {
+		"message": "Tekstfarge"
+	},
+	"hterm_name_pref_hide_mouse_while_typing": {
+		"message": "Skjul musepekeren mens du skriver"
+	},
+	"hterm_name_pref_home_keys_scroll": {
+		"message": "Atferd for rulling med Home-/End-tastene"
+	},
+	"hterm_name_pref_keybindings": {
+		"message": "Hurtigtaster"
+	},
+	"hterm_name_pref_keybindings_os_defaults": {
+		"message": "Bruk operativsystemets standardhurtigtaster"
+	},
+	"hterm_name_pref_media_keys_are_fkeys": {
+		"message": "Medietaster er F-taster"
+	},
+	"hterm_name_pref_meta_sends_escape": {
+		"message": "Håndtering av Meta-tastemodifikatoren"
+	},
+	"hterm_name_pref_mouse_paste_button": {
+		"message": "Innliming med museknapp"
+	},
+	"hterm_name_pref_mouse_right_click_paste": {
+		"message": "Høyreklikk med mus limer inn innhold"
+	},
+	"hterm_name_pref_page_keys_scroll": {
+		"message": "Atferd for rulling med PageUp/PageDown"
+	},
+	"hterm_name_pref_pass_alt_number": {
+		"message": "Atferd for bytting av fane med Alt+1..9"
+	},
+	"hterm_name_pref_pass_ctrl_n": {
+		"message": "Atferd for åpning av nytt vindu med Ctrl+N"
+	},
+	"hterm_name_pref_pass_ctrl_number": {
+		"message": "Atferd for bytting av fane med Ctrl+1..9"
+	},
+	"hterm_name_pref_pass_ctrl_t": {
+		"message": "Atferd for åpning av nye faner med Ctrl+T"
+	},
+	"hterm_name_pref_pass_ctrl_tab": {
+		"message": "Atferd for bytting av fane med Ctrl+Tab"
+	},
+	"hterm_name_pref_pass_ctrl_w": {
+		"message": "Atferd for lukking av fane med Ctrl+W"
+	},
+	"hterm_name_pref_pass_meta_number": {
+		"message": "Atferd for bytting av fane med Meta+1..9"
+	},
+	"hterm_name_pref_pass_meta_v": {
+		"message": "Atferd for innliming med Meta+V"
+	},
+	"hterm_name_pref_paste_on_drop": {
+		"message": "Tillat dra-og-slipp for å lime inn"
+	},
+	"hterm_name_pref_receive_encoding": {
+		"message": "Motta omgjøring til kode"
+	},
+	"hterm_name_pref_screen_padding_size": {
+		"message": "Størrelsen på skjermutfyllingen"
+	},
+	"hterm_name_pref_scroll_on_keystroke": {
+		"message": "Rull ned til bunnen ved tastetrykk"
+	},
+	"hterm_name_pref_scroll_on_output": {
+		"message": "Rull ned til bunnen ved nye utdata"
+	},
+	"hterm_name_pref_scroll_wheel_may_send_arrow_keys": {
+		"message": "Emuler piltastene med rullehjulet"
+	},
+	"hterm_name_pref_scroll_wheel_move_multiplier": {
+		"message": "Multiplikator for rullehjulet på musen"
+	},
+	"hterm_name_pref_scrollbar_visible": {
+		"message": "Synlighet for rullefelt"
+	},
+	"hterm_name_pref_shift_insert_paste": {
+		"message": "Innliming med Shift+Insert"
+	},
+	"hterm_name_pref_terminal_encoding": {
+		"message": "Omgjøring til kode i terminalen"
+	},
+	"hterm_name_pref_use_default_window_copy": {
+		"message": "La nettleseren håndtere tekstkopiering"
+	},
+	"hterm_name_pref_user_css": {
+		"message": "Egendefinert gjennomgripende stilark (CSS) (URI)"
+	},
+	"hterm_name_pref_user_css_text": {
+		"message": "Egendefinert gjennomgripende stilark (CSS) (innebygd tekst)"
+	},
+	"hterm_name_pref_word_break_match_left": {
+		"message": "Automatisk stans av merking (til venstre)"
+	},
+	"hterm_name_pref_word_break_match_middle": {
+		"message": "Ordbrytningstegn"
+	},
+	"hterm_name_pref_word_break_match_right": {
+		"message": "Automatisk stans av merking (til høyre)"
+	},
+	"hterm_options_button_label": {
+		"message": "Alternativer"
+	},
+	"hterm_popup_inline_image": {
+		"message": "Innebygde bilder"
+	},
+	"hterm_popup_inline_image_disabled": {
+		"message": "Innebygde bilder er slått av"
+	},
+	"hterm_pref_allow_images_inline": {
+		"message": "Om den eksterne verten skal kunne vise bilder i terminalen.\n\nSom standard viser vi en melding til noe er valgt."
+	},
+	"hterm_pref_alt_backspace_is_meta_backspace": {
+		"message": "Hvis dette er angitt, oppheves tilordningen av Alt+tilbaketasten -> Delete i Chrome OS, slik at Alt+tilbaketasten faktisk fungerer som Alt+tilbaketasten."
+	},
+	"hterm_pref_alt_gr_mode": {
+		"message": "Velg en heuristisk algoritme for gjenkjenning av AltGr.\n\n«null»: automatisk gjenkjenning basert på navigator.language:\n      'en-us' => 'none', ellers => 'right-alt'\n«none»: Slår av eventuell AltGr-emulering.\n«ctrl-alt»: Antar at Ctrl+Alt betyr AltGr.\n«left-alt»: Antar at venstre Alt betyr AltGr.\n«right-alt»: Antar at høyre Alt betyr AltGr."
+	},
+	"hterm_pref_alt_is_meta": {
+		"message": "Om Alt-tasten skal fungere som en Meta-tast eller en unik Alt-tast."
+	},
+	"hterm_pref_alt_sends_what": {
+		"message": "Kontrollerer hvordan Alt-tasten håndteres.\n\n  escape: Send et ESC-prefiks.\n  8-bit: Legg 128 til det angitte tegnet, som i xterm.\n browser-key: Vent på et tastetrykk, og se hva nettleseren\n sier. (Dette fungerer ikke godt på plattformer hvor nettleseren\n utfører en standardhandling for enkelte Alt-sekvenser.)"
+	},
+	"hterm_pref_audible_bell_sound": {
+		"message": "Nettadresse for terminalbjellelyd. La strengen være tom for å ikke høre noen bjelle."
+	},
+	"hterm_pref_background_color": {
+		"message": "Bakgrunnsfargen for tekst uten andre fargeattributter."
+	},
+	"hterm_pref_background_image": {
+		"message": "CSS-verdien for bakgrunnsbildet. La den stå tom hvis du ikke vil bruke noe bilde.\n\nEksempel:\n  url(https://goo.gl/anedTK)\n  linear-gradient(to bottom, blue, red)"
+	},
+	"hterm_pref_background_position": {
+		"message": "CSS-verdien for bakgrunnsbildets posisjon.\n\nEksempel:\n  10 % 10 %\n  center"
+	},
+	"hterm_pref_background_size": {
+		"message": "CSS-verdien for bakgrunnsbildets størrelse."
+	},
+	"hterm_pref_backspace_sends_backspace": {
+		"message": "Hvis dette er «true» (sant), sender tilbaketasten BS eller «backspace» («\\x08», dvs. ^H). Ellers sender tilbaketasten «\\x7f»."
+	},
+	"hterm_pref_character_map_overrides": {
+		"message": "Dette er spesifisert som et objekt. Det er en spredt matrise hvor hver egenskap er tegnsettkoden, og verdien er et objekt som selv er en spredt matrise. I den spredte matrisen er hver egenskap tegnet som er mottatt, og verdien er tegnet som vises.\n\nEksempel:\n{ \"0\": {\n  \"+\": \"\\u2192\",\n  \",\": \"\\u2190\",\n  \"-\": \"\\u2191\",\n  \".\": \"\\u2193\",\n  \"0\": \"\\u2588\"\n} }"
+	},
+	"hterm_pref_clear_selection_after_copy": {
+		"message": "Om hele utvalget skal fjernes etter kopiering."
+	},
+	"hterm_pref_close_on_exit": {
+		"message": "Om vinduet skal lukkes når kommandoen fullføres."
+	},
+	"hterm_pref_color_palette_overrides": {
+		"message": "Overstyr fargene i standardpaletten.\n\nDette kan spesifiseres som en matrise («array») eller et objekt. Hvis det er spesifisert som objekt, antas det å være en spredt matrise, der hvert område er en numerisk indeks i fargepaletten.\n\nVerdiene kan spesifiseres som nesten hvilken som helst CSS-fargeverdi. Dette inkluderer #RGB, #RRGGBB, rgb(…), rgba(…) og eventuelle andre fargenavn som også er en del av standardfilen X11 rgb.txt.\n\nDu kan bruke «null» for å spesifisere at standardverdien ikke skal endres. Dette er nyttig for å hoppe over et lite antall indekser når verdien er spesifisert som en matrise.\n\nBegge disse setter for eksempel fargeindeksen 1 til blå:\n  {1: \"#0000ff\"}\n  [null, \"#0000ff\"]"
+	},
+	"hterm_pref_copy_on_select": {
+		"message": "Kopier automatisk det som merkes med musen, til utklippstavlen."
+	},
+	"hterm_pref_ctrl_c_copy": {
+		"message": "Ctrl+C kopierer hvis verdien er «true» (sann) og sender ^C til verten hvis den er «false» (usann).\nCtrl+Shift+C sender ^C til verten hvis verdien er «true» (sann) og kopierer hvis den er «false» (usann)."
+	},
+	"hterm_pref_ctrl_plus_minus_zero_zoom": {
+		"message": "Hvis «true» (sant) er valgt, kontrollerer Ctrl+pluss/minus/null zoomnivået.\nHvis «false» (usant) er valgt, kontrollerer Ctrl+Shift+pluss/minus/null zoomnivået. Ctrl+minus sender i så fall ^_, og Ctrl+pluss/null gjør ingenting."
+	},
+	"hterm_pref_ctrl_v_paste": {
+		"message": "Ctrl+V limer inn hvis verdien er «true» (sann) og sender ^V til verten hvis den er «false» (usann).\nCtrl+Shift+V sender ^V til verten hvis verdien er «true» (sann) og limer inn hvis den er «false» (usann)."
+	},
+	"hterm_pref_cursor_blink": {
+		"message": "Angir om tekstmarkøren blinker som standard. Dette kan slås av og på under kjøring via escape-sekvenser i terminalen."
+	},
+	"hterm_pref_cursor_blink_cycle": {
+		"message": "Blinkehastigheten for markøren i millisekunder.\n\nDette er en matrise («array») med to elementer. Det første bestemmer hvor lenge markøren skal være på, og det andre bestemmer hvor lenge den skal være av."
+	},
+	"hterm_pref_cursor_color": {
+		"message": "Fargen på den synlige markøren."
+	},
+	"hterm_pref_cursor_shape": {
+		"message": "Formen på den synlige tekstmarkøren. Dette kan endres under kjøring ved bruk av escape-tegnsekvenser i terminalen."
+	},
+	"hterm_pref_desktop_notification_bell": {
+		"message": "Hvis verdien er «true» (sann), danner terminalbjeller i bakgrunnen et nettvarsel. https://www.w3.org/TR/notifications/\n\nBrukeren må gi tillatelse før varsler kan vises. Når dette alternativet er angitt som «true» (sant), prøver hterm ved behov å be brukeren om tillatelse. Vær oppmerksom på at det ikke er sikkert at nettlesere viser denne tillatelsesforespørselen hvis den ikke kommer som følge av en brukerhandling.\n\nChrome-utvidelser med tillatelsen «notifications» (varsler) har tillatelse til å vise varsler."
+	},
+	"hterm_pref_east_asian_ambiguous_as_two_column": {
+		"message": "Om East Asian Ambiguous-tegn har bredde på to kolonner."
+	},
+	"hterm_pref_enable_8_bit_control": {
+		"message": "Bruk «true» (sant) for å aktivere 8-biters kontrolltegn og «false» (usant) for å ignorere dem.\n\nVi respekterer 2-byte-versjonene av disse kontrolltegnene uavhengig av denne innstillingen."
+	},
+	"hterm_pref_enable_blink": {
+		"message": "Velg «true» (sant) hvis «blink»-attributtet skal respekteres. Velg «false» (usant) hvis det skal ignoreres."
+	},
+	"hterm_pref_enable_bold": {
+		"message": "Bruk «true» (sant) for bruk av fet skrift for tekst med «bold»- eller «bright»-attributtet. Velg «false» (usant) for å bruke «normal» skrift, og velg «null» for å bruke automatisk gjenkjenning."
+	},
+	"hterm_pref_enable_bold_as_bright": {
+		"message": "Bruk «true» (sant) for bruk av lyse farger (8–15 på en 16-fargers fargepalett) for tekst med «bold»-attributtet. Velg «false» (usant) ellers."
+	},
+	"hterm_pref_enable_clipboard_notice": {
+		"message": "Angir om en melding skal vises i terminalen når verten skriver til utklippstavlen."
+	},
+	"hterm_pref_enable_clipboard_write": {
+		"message": "Tillat at den eksterne verten skriver direkte til utklippstavlen på det lokale systemet.\nLesetilgang blir aldri gitt uavhengig av denne innstillingen.\n\nDette brukes til å kontrollere tilgangen til funksjoner som OSC-52."
+	},
+	"hterm_pref_enable_csi_j_3": {
+		"message": "Om Slett lagrede linjer-funksjonen (modus 3) til Tøm skjermen-kommandoen (CSI-J) kan tømme bufferen for tilbakerulling av terminalen.\n\nDet er trygt å slå dette på som standard."
+	},
+	"hterm_pref_enable_dec12": {
+		"message": "Respektér vertens forsøk på å endre statusen for tekstmarkørblinking ved hjelp av DEC-privatmodus 12."
+	},
+	"hterm_pref_enable_resize_status": {
+		"message": "Om målene på terminalen skal vises når terminalens størrelse endres."
+	},
+	"hterm_pref_environment": {
+		"message": "Den innledende konfigureringen av miljøvariabler, som et objekt."
+	},
+	"hterm_pref_font_family": {
+		"message": "Standard skriftfamilie for terminaltekst."
+	},
+	"hterm_pref_font_size": {
+		"message": "Standard skriftstørrelse i piksler."
+	},
+	"hterm_pref_font_smoothing": {
+		"message": "CSS font-smoothing-egenskap"
+	},
+	"hterm_pref_foreground_color": {
+		"message": "Forgrunnsfargen for tekst uten andre fargeattributter."
+	},
+	"hterm_pref_hide_mouse_while_typing": {
+		"message": "Om musepilen skal skjules automatisk når du skriver. Som standard gjenkjennes det automatisk om plattformen/OS-et kan håndtere dette.\n\nMerk: Operativsystemet ditt kan overstyre denne innstillingen, og i noen tilfeller kan den ikke slås av."
+	},
+	"hterm_pref_home_keys_scroll": {
+		"message": "Hvis «true» (sant) er valgt, kontrollerer Home/End terminalens rullefelt, og Shift+Home/Shift+End sendes til den eksterne verten. Hvis «false» (usant) er valgt, sendes Home/End til den eksterne verten, og Shift+Home/Shift+End ruller."
+	},
+	"hterm_pref_keybindings": {
+		"message": "En oversikt over tastesekvenser for tastehandlinger. Tastesekvensene har null eller flere modifikatortaster som etterfølges av en tastekode. Tastekoder kan være desimaltall, heksadesimaltall eller tasteidentifikatorer. Tastehandlinger kan angis som strenger som sendes til verten, eller som funksjonsidentifikatorer. Du finner en fullstendig forklaring av formatet på https://goo.gl/LWRndr.\n\nEksempler på tastekombinasjoner:\n{\n  \"Ctrl+Alt+K\": \"clearTerminal\",\n  \"Ctrl+Shift+L\": \"PASS\",\n  \"Ctrl+H\": \"'Hei, verden'\"\n}"
+	},
+	"hterm_pref_keybindings_os_defaults": {
+		"message": "Om vanlige hurtigtaster for operativsystemet skal respekteres i stedet for at de alltid fanges opp for intern bruk i hterm."
+	},
+	"hterm_pref_media_keys_are_fkeys": {
+		"message": "Hvis «true» (sann) er valgt, konverteres medietastene til de tilsvarende funksjonstastene. Hvis «false» (usann) er valgt, håndteres tastene av nettleseren."
+	},
+	"hterm_pref_meta_sends_escape": {
+		"message": "Sender et ESC-prefiks når du trykker på en tast samtidig som du holder inne Meta-tasten.\n\nEksempel: Når innstillingen er slått på og du trykker på Meta+K, sendes ^[k som om du hadde trykket på Escape og deretter på K-tasten. Når innstillingen er slått av, sendes bare K-tasten."
+	},
+	"hterm_pref_mouse_paste_button": {
+		"message": "Musens innlimingsknapp (null for automatisk gjenkjenning).\n\nVed automatisk gjenkjenning bruker vi den midtre museknappen på ikke-X11-plattformer (inkludert Chrome OS). På X11 bruker vi den høyre museknappen (siden den innebygde vindusbehandleren bør lime inn med den midtre museknappen).\n\n0 == venstre (primær) knapp.\n1 == midtre (ekstra) knapp.\n2 == høyre (sekundær) knapp.\n\nDette alternativet er uavhengig av «right-click-paste»-innstillingen.\n\nMerk: Dette håndterer både høyrehendte og venstrehendte mus riktig."
+	},
+	"hterm_pref_mouse_right_click_paste": {
+		"message": "Lim inn med høyreklikk.\n\nDette alternativet er uavhengig av «mouse-paste-button»-innstillingen.\n\nMerk: Dette håndterer både høyrehendte og venstrehendte mus riktig."
+	},
+	"hterm_pref_page_keys_scroll": {
+		"message": "Hvis «true» (sant) er valgt, kontrollerer PageUp/PageDown terminalens rullefelt, og Shift+PageUp/Shift+PageDown sendes til den eksterne verten. Hvis «false» (usant) er valgt, sendes PageUp/PageDown til den eksterne verten, og Shift+PageUp/Shift+PageDown ruller."
+	},
+	"hterm_pref_pass_alt_number": {
+		"message": "Om Alt+1..9 sendes til nettleseren.\n\nDette er nyttig ved kjøring av hterm i en nettleserfane, slik at du ikke mister «bytt til fane»-hurtigtastene i Chrome. Når det ikke kjøres i en fane, er det bedre å sende disse tastene til verten, slik at de kan brukes i vim eller emacs.\n\nHvis «true» (sant) er valgt, håndteres Alt+1..9 av nettleseren. Hvis «false» (usant) er valgt, sendes Alt+1..9 til verten. Hvis null er valgt, baseres automatisk gjenkjenning på nettleserplattformen og vindustypen."
+	},
+	"hterm_pref_pass_ctrl_n": {
+		"message": "Om Ctrl+N sendes til nettleseren.\n\nHvis «true» (sant) er valgt, håndterer nettleseren Ctrl+N som hurtigtasten for «nytt vindu». Hvis «false» (usant) er valgt, sendes Ctrl+N til verten."
+	},
+	"hterm_pref_pass_ctrl_number": {
+		"message": "Om Ctrl+1..9 sendes til nettleseren.\n\nDette er nyttig ved kjøring av hterm i en nettleserfane, slik at du ikke mister «bytt til fane»-hurtigtastene i Chrome. Når det ikke kjøres i en fane, er det bedre å sende disse tastene til verten, slik at de kan brukes i vim eller emacs.\n\nHvis «true» (sant) er valgt, håndteres Ctrl+1..9 av nettleseren. Hvis «false» (usant) er valgt, sendes Ctrl+1..9 til verten. Hvis null er valgt, baseres automatisk gjenkjenning på nettleserplattformen og vindustypen."
+	},
+	"hterm_pref_pass_ctrl_t": {
+		"message": "Om Ctrl+T sendes til nettleseren.\n\nHvis «true» (sant) er valgt, håndterer nettleseren Ctrl+T som hurtigtasten for «ny fane». Hvis «false» (usant) er valgt, sendes Ctrl+T til verten."
+	},
+	"hterm_pref_pass_ctrl_tab": {
+		"message": "Om Ctrl+Tab og Ctrl+Shift+Tab sendes til nettleseren.\n\nHvis «true» (sant) er valgt, håndterer nettleseren Ctrl+Tab og Ctrl+Shift+Tab som hurtigtaster for «neste/forrige fane». Hvis «false» (usant) er valgt, sendes Tab til verten uten Ctrl eller Shift."
+	},
+	"hterm_pref_pass_ctrl_w": {
+		"message": "Om Ctrl+W sendes til nettleseren.\n\nHvis «true» (sant) er valgt, håndterer nettleseren Ctrl+W som hurtigtasten for «lukk fane». Hvis «false» (usant) er valgt, sendes Ctrl+W til verten."
+	},
+	"hterm_pref_pass_meta_number": {
+		"message": "Om Meta+1..9 sendes til nettleseren.\n\nDette er nyttig ved kjøring av hterm i en nettleserfane, slik at du ikke mister «bytt til fane»-hurtigtastene i Chrome. Når det ikke kjøres i en fane, er det bedre å sende disse tastene til verten, slik at de kan brukes i vim eller emacs.\n\nHvis «true» (sant) er valgt, håndteres Meta+1..9 av nettleseren. Hvis «false» (usant) er valgt, sendes Meta+1..9 til verten. Hvis null er valgt, baseres automatisk gjenkjenning på nettleserplattformen og vindustypen."
+	},
+	"hterm_pref_pass_meta_v": {
+		"message": "Om Meta+V skal sendes til nettleseren.\n\nI enkelte systemer brukes dette til å lime inn innhold."
+	},
+	"hterm_pref_paste_on_drop": {
+		"message": "Hvis «true» (sant) er valgt, kan tekst limes inn i terminalen ved bruk av dra-og-slipp.\nHvis «false» (usant) er valgt, ignoreres tekst som slippes."
+	},
+	"hterm_pref_receive_encoding": {
+		"message": "Angi forventet koding for data som mottas fra verten.\nHvis kodingene ikke samsvarer, er det sannsynlig at visuelle feil oppstår.\n\nGyldige verdier er «utf-8» og «raw»."
+	},
+	"hterm_pref_screen_padding_size": {
+		"message": "Størrelsen på utfyllingen i piksler rundt kantlinjen på terminalskjermen.\n\nDette kontrollerer størrelsen på kantlinjen rundt terminalskjermen, slik at brukerne kan legge til synlig utfylling i kantene på skjermen."
+	},
+	"hterm_pref_scroll_on_keystroke": {
+		"message": "Angir om det skal rulles til bunnen ved alle tastetrykk."
+	},
+	"hterm_pref_scroll_on_output": {
+		"message": "Angir om det skal rulles til bunnen ved terminalutdata."
+	},
+	"hterm_pref_scroll_wheel_may_send_arrow_keys": {
+		"message": "Når du bruker den alternative skjermbufferen og DECCKM (appmarkørtaster) er aktivert, emulerer rulling på musehjulet piltastene.\n\nDu kan deaktivere dette midlertidig ved å trykke på og holde inne Shift-tasten.\n\nDette kommer ofte opp når du bruker sidevekslingskontroller (less), leser man-sider eller tekstredigeringsprogrammer (vi/nano) eller bruker screen/tmux."
+	},
+	"hterm_pref_scroll_wheel_move_multiplier": {
+		"message": "Multiplikatoren for rullehjulhendelser, målt i piksler.\n\nEndrer hvor raskt du kan rulle på siden."
+	},
+	"hterm_pref_scrollbar_visible": {
+		"message": "Vertikalt rullefelt-modus."
+	},
+	"hterm_pref_shift_insert_paste": {
+		"message": "Om Shift+Insert brukes for innliming, eller om det sendes til den eksterne verten."
+	},
+	"hterm_pref_terminal_encoding": {
+		"message": "Standard terminalkoding (DOCS).\n\nISO-2022 aktiverer oversettinger av tegntilordninger (som grafikktilordninger).\nUTF-8 deaktiverer støtte for slike.\n\nDen låste varianten betyr at kodingen ikke kan endres under kjøring via escape-sekvenser i terminalen.\n\nDu bør holde deg til UTF-8 med mindre du merker at eldre apper ikke gjengis skikkelig."
+	},
+	"hterm_pref_use_default_window_copy": {
+		"message": "Om standardnettleserens/OS-ets funksjonalitet for kopiering skal brukes.\n\nTillat at nettleseren/OS-et kan behandle kopiering direkte, noe som kan forbedre kompatibilitet med enkelte systemer (hvor kopiering ikke er mulig), men gjør merking av tekst mindre robust.\n\nFor eksempel kan dette innebære at lange tekstlinjer der automatisk tekstbryting er slått på, kopieres med harde linjeskift (selv om de ikke er der)."
+	},
+	"hterm_pref_user_css": {
+		"message": "Nettadresse for brukerstilark som skal være med i terminaldokumentet."
+	},
+	"hterm_pref_user_css_text": {
+		"message": "Egendefinert CSS-tekst for terminalens stil."
+	},
+	"hterm_pref_word_break_match_left": {
+		"message": "Regulært uttrykk for å stoppe matching med den venstre siden (starten) av et utvalg.\n\nVanligvis er dette en tegnklasse for å avvise spesifikke tegn.\nVi tillater som standard «~» og «.», ettersom baner ofte starter med disse."
+	},
+	"hterm_pref_word_break_match_middle": {
+		"message": "Regulært uttrykk som matcher alle tegnene i midten.\n\nVanligvis er dette en tegnklasse for å avvise spesifikke tegn.\n\nBrukes til å utvide utvalget rundt startpunktet."
+	},
+	"hterm_pref_word_break_match_right": {
+		"message": "Regulært uttrykk for å stoppe matching med den høyre siden (enden) av et utvalg.\n\nVanligvis er dette en tegnklasse for å avvise spesifikke tegn."
+	},
+	"hterm_space_character": {
+		"message": "Mellomrom"
+	},
+	"hterm_title_pref_appearance": {
+		"message": "Utseende (skrifttyper, farger, bilder)"
+	},
+	"hterm_title_pref_copypaste": {
+		"message": "Kopiering og innliming"
+	},
+	"hterm_title_pref_encoding": {
+		"message": "Omgjøring til kode"
+	},
+	"hterm_title_pref_extensions": {
+		"message": "Utvidelser"
+	},
+	"hterm_title_pref_keyboard": {
+		"message": "Tastatur"
+	},
+	"hterm_title_pref_miscellaneous": {
+		"message": "Diverse"
+	},
+	"hterm_title_pref_scrolling": {
+		"message": "Rulling"
+	},
+	"hterm_title_pref_sounds": {
+		"message": "Lyder"
+	},
+	"identity_label": {
+		"message": "Identitet"
+	},
+	"import_link_aria_label": {
+		"message": "filimport"
+	},
+	"import_link_label": {
+		"message": "Importér"
+	},
+	"initializing_relay": {
+		"message": "Ser etter relétjeneren via $1"
+	},
+	"json_parse_error": {
+		"message": "Kunne ikke parse JSON i «$1»: $2"
+	},
+	"known_hosts_empty": {
+		"message": "Ingen kjente verter, ingenting å glemme."
+	},
+	"known_hosts_prompt": {
+		"message": "Velg en vert du kan glemme [1–$1]:"
+	},
+	"known_hosts_title": {
+		"message": "Kjente verter:"
+	},
+	"licenses": {
+		"message": "Lisenser"
+	},
+	"licenses_expand_link": {
+		"message": "vis lisensen"
+	},
+	"licenses_title": {
+		"message": "Lisenser for åpen kildekode"
+	},
+	"loading_label": {
+		"message": "Laster inn …"
+	},
+	"migrate_to_ext": {
+		"message": "Merknad: Overfør til den nye Secure Shell-utvidelsen ($1).\nChrome-apper er avviklet, så denne versjonen kommer ikke til å få flere oppdateringer.\nSe overføringsveiledningen ($2) for mer informasjon."
+	},
+	"missing_param": {
+		"message": "Manglende parameter: $1"
+	},
+	"mount_button_label": {
+		"message": "SFTP-tilkobling"
+	},
+	"mount_path_label": {
+		"message": "Innsettingsbane"
+	},
+	"mounted_message": {
+		"message": "Tilkoblet."
+	},
+	"nasftp_cmd_cat_help": {
+		"message": "Eksportér en fil til terminalen"
+	},
+	"nasftp_cmd_chdir_help": {
+		"message": "Bytt arbeidskatalog"
+	},
+	"nasftp_cmd_chgrp_help": {
+		"message": "Endre gruppe med baner"
+	},
+	"nasftp_cmd_chmod_help": {
+		"message": "Endre tillatelser på baner"
+	},
+	"nasftp_cmd_chown_help": {
+		"message": "Endre eier av baner"
+	},
+	"nasftp_cmd_clear_help": {
+		"message": "Tøm den aktive terminalskjermen."
+	},
+	"nasftp_cmd_clip_help": {
+		"message": "Kopiér en fil til utklippstavlen (standard: 10 MiB fra begynnelsen)"
+	},
+	"nasftp_cmd_clip_summary": {
+		"message": "Kopierte $1 byte til utklippstavlen"
+	},
+	"nasftp_cmd_color_help": {
+		"message": "Slå av/på fargebruk"
+	},
+	"nasftp_cmd_copy_help": {
+		"message": "Kopiér kilden til destinasjonen"
+	},
+	"nasftp_cmd_del_help": {
+		"message": "Slett filer"
+	},
+	"nasftp_cmd_df_help": {
+		"message": "Vis diskstatistikk"
+	},
+	"nasftp_cmd_df_summary": {
+		"message": "  Bane: $1\n  fsid: $2\n Totalt: $3\n  Brukt: $4 ($5 %)\n Tilgjengelig: $6 (for brukere uten privilegier)\n $7 (for brukere med rottilgang)"
+	},
+	"nasftp_cmd_exit_help": {
+		"message": "Koble fra"
+	},
+	"nasftp_cmd_get_download_file": {
+		"message": "Laster ned fil: $1 som $2"
+	},
+	"nasftp_cmd_get_help": {
+		"message": "Last ned filer"
+	},
+	"nasftp_cmd_help_help": {
+		"message": "Denne hjelpeskjermen"
+	},
+	"nasftp_cmd_list_help": {
+		"message": "Vis en liste med katalogdetaljer"
+	},
+	"nasftp_cmd_ln_help": {
+		"message": "Opprett en link på banen som peker på målet"
+	},
+	"nasftp_cmd_mkdir_help": {
+		"message": "Opprett kataloger"
+	},
+	"nasftp_cmd_move_help": {
+		"message": "Bytt navn på filer"
+	},
+	"nasftp_cmd_prompt_help": {
+		"message": "Angi ledetekststrengen"
+	},
+	"nasftp_cmd_put_help": {
+		"message": "Last opp filer"
+	},
+	"nasftp_cmd_put_upload_file": {
+		"message": "Laster opp fil: $1 som $2 ($3)"
+	},
+	"nasftp_cmd_pwd_help": {
+		"message": "Vis gjeldende arbeidskatalog"
+	},
+	"nasftp_cmd_pwd_output": {
+		"message": "Ekstern arbeidskatalog: $1"
+	},
+	"nasftp_cmd_readlink_help": {
+		"message": "Les symlinker"
+	},
+	"nasftp_cmd_realpath_help": {
+		"message": "Kanonikaliser baner"
+	},
+	"nasftp_cmd_reput_help": {
+		"message": "Gjenoppta filopplasting"
+	},
+	"nasftp_cmd_rm_help": {
+		"message": "Fjern filer"
+	},
+	"nasftp_cmd_rmdir_help": {
+		"message": "Slett tomme kataloger"
+	},
+	"nasftp_cmd_show_help": {
+		"message": "Vis filer innebygd"
+	},
+	"nasftp_cmd_stat_extensions_header": {
+		"message": "Utvidelser:"
+	},
+	"nasftp_cmd_stat_help": {
+		"message": "Vis filstatus"
+	},
+	"nasftp_cmd_stat_summary": {
+		"message": "  Fil: $1\n  Størrelse: $2 byte\n   UID: $3\n   GID: $4\nTilgang: $5\n t-tid: $6\n e-tid: $7"
+	},
+	"nasftp_cmd_symlink_help": {
+		"message": "Opprett en symlink på banen som peker på målet"
+	},
+	"nasftp_cmd_truncate_help": {
+		"message": "Avkort baner til 0 byte"
+	},
+	"nasftp_cmd_version_extensions_header": {
+		"message": "  tjenerutvidelser:"
+	},
+	"nasftp_cmd_version_help": {
+		"message": "Vis gjeldende protokollversjon"
+	},
+	"nasftp_cmd_version_summary": {
+		"message": "Versjonsinformasjon om SFTP-protokollen:\n  lokal: $1\n  tjener: $1"
+	},
+	"nasftp_error_end_of_file": {
+		"message": "$1: slutt på filen"
+	},
+	"nasftp_error_file_not_found": {
+		"message": "$1: Fant ikke filen"
+	},
+	"nasftp_error_file_reading": {
+		"message": "Lesing av $1 mislyktes: $2"
+	},
+	"nasftp_error_internal": {
+		"message": "Ubehandlet intern feil. Send inn en feilrapport: $1"
+	},
+	"nasftp_error_invalid_number": {
+		"message": "$1: $2: ugyldig tall: $3"
+	},
+	"nasftp_error_message": {
+		"message": "FEIL: $1"
+	},
+	"nasftp_error_missing_protocol_extension": {
+		"message": "$1: Utvidelsen «$2» er ikke tilgjengelig"
+	},
+	"nasftp_error_non_reg_file": {
+		"message": "$1: $2: ikke en ordinær fil"
+	},
+	"nasftp_error_not_enough_args": {
+		"message": "$1: ikke nok argumenter"
+	},
+	"nasftp_error_permission_denied": {
+		"message": "$1: ingen tillatelse"
+	},
+	"nasftp_error_too_many_args": {
+		"message": "$1: for mange argumenter"
+	},
+	"nasftp_error_unknown_cmd": {
+		"message": "$1: ukjent kommando"
+	},
+	"nasftp_error_unknown_option": {
+		"message": "$1: ukjent flagg $2"
+	},
+	"nasftp_force_quit": {
+		"message": "Tving avslutning"
+	},
+	"nasftp_progress_summary": {
+		"message": "$1 byte overført på $2 sekunder ($3/s)"
+	},
+	"nassh_options_error": {
+		"message": "Ukjent alternativ: $1"
+	},
+	"nassh_product_name": {
+		"message": "Secure Shell"
+	},
+	"new_window_menu_label": {
+		"message": "Nytt vindu"
+	},
+	"ok_button_label": {
+		"message": "OK"
+	},
+	"omnibox_default": {
+		"message": "<url><match>user@hostname[:port]</match></url> Koble til en lagret profil eller et nytt SSH-system"
+	},
+	"open_as_window_tip": {
+		"message": "[Profftips] Bruk «Åpne som vindu» eller «Fullskjerm» for å hindre at terminalen lukkes med Ctrl+W.\n[Profftips] Se $1 for mer informasjon."
+	},
+	"plugin_loading": {
+		"message": "Laster inn NaCl-programtillegget …"
+	},
+	"plugin_loading_complete": {
+		"message": " ferdig."
+	},
+	"plugin_loading_failed": {
+		"message": " mislyktes"
+	},
+	"popup_connect_tooltip": {
+		"message": "Hold inne Ctrl for å åpne i en ny fane."
+	},
+	"pref_backup_filename": {
+		"message": "Sikkerhetskopi av Secure Shell-innstillinger.json"
+	},
+	"preferences_header_ssh_files": {
+		"message": "SSH-filer"
+	},
+	"preferences_header_terminal": {
+		"message": "Terminalinnstillinger"
+	},
+	"preferences_header_uri": {
+		"message": "URI-behandlere"
+	},
+	"preferences_reset": {
+		"message": "Alle innstillingene er tilbakestilt."
+	},
+	"protocol_register_button": {
+		"message": "Registrer protokollbehandlere"
+	},
+	"protocol_register_explain": {
+		"message": "Knappen under prøver å registrere behandlere for alle protokollene vi støtter. Dette lar oss for eksempel støtte ssh://-linker direkte. Nettleseren spør deg for hver protokoll, så du må bekrefte/godta dem individuelt etter hvert som du blir spurt. Hvis du ikke får noen spørsmål fra nettleseren, finner du tips til feilsøking i neste del."
+	},
+	"protocol_register_explain_settings": {
+		"message": "Hvis vi allerede har registrert behandlere, eller hvis tidligere registreringsforsøk ble avvist, vises ingen flere beskjeder. Åpne dialogboksen under, og kontrollér innstillingene for registrerte behandlere i delene ssh/sftp/osv. Hvis dette programmet er blokkert, kan du slette de innstillingene. Da kan du prøve å registrere på nytt. Hvis programmet allerede er registrert, men ikke er satt som standardbehandler, kan du bytte standardbehandler også."
+	},
+	"protocol_register_options_link": {
+		"message": "Protokollregister"
+	},
+	"protocol_register_settings_button": {
+		"message": "Åpne innstillingene for registrerte behandlere"
+	},
+	"protocol_register_title": {
+		"message": "Registreringshjelper for Secure Shell-protokollbehandleren"
+	},
+	"read_size_label": {
+		"message": "Lesestørrelse (KiB)"
+	},
+	"reconnect_message": {
+		"message": "Vil du koble til på nytt (R), velge en annen tilkobling (C) eller avslutte (X)?"
+	},
+	"relay_retry": {
+		"message": "Prøver igjen …"
+	},
+	"request_pin_prompt": {
+		"message": "Skriv inn PIN-koden for å låse opp nøkkelen $1 på «$2 ($3)» ($4 forsøk igjen):"
+	},
+	"restore_prefs": {
+		"message": "Gjenopprett fra sikkerhetskopi"
+	},
+	"save_label": {
+		"message": "Lagre"
+	},
+	"send_feedback_label": {
+		"message": "Send tilbakemelding"
+	},
+	"shortcut_list_aria_label": {
+		"message": "lagrede tilkoblinger"
+	},
+	"smart_card_connector_not_installed": {
+		"message": "Installer Smart Card Connector-appen: $1"
+	},
+	"ssh_argstr_label": {
+		"message": "SSH-argumenter"
+	},
+	"stream_open_error": {
+		"message": "Åpning av strømmen $1 mislyktes: $2"
+	},
+	"terminal_clear_menu_label": {
+		"message": "Tøm terminalen"
+	},
+	"terminal_font_unavailable": {
+		"message": "«$1» er ikke tilgjengelig"
+	},
+	"terminal_name_pref_ansi_colors": {
+		"message": "ANSI-farger"
+	},
+	"terminal_name_pref_bell": {
+		"message": "Klokke"
+	},
+	"terminal_name_pref_blinking": {
+		"message": "Blinker"
+	},
+	"terminal_name_pref_color": {
+		"message": "Farge"
+	},
+	"terminal_name_pref_font": {
+		"message": "Skrifttype"
+	},
+	"terminal_name_pref_image": {
+		"message": "Bilde"
+	},
+	"terminal_name_pref_shape": {
+		"message": "Form"
+	},
+	"terminal_name_pref_visible": {
+		"message": "Synlig"
+	},
+	"terminal_pref_alt_gr_mode": {
+		"message": "Velg en heuristisk algoritme for gjenkjenning av AltGr.\n\n«Auto»: automatisk gjenkjenning basert på navigator.language:\n      «en-us» => «Slå av», ellers => «right-alt»\n«Slå av»: Slår av eventuell AltGr-emulering.\n«ctrl-alt»: Antar at Ctrl+Alt betyr AltGr.\n«left-alt»: Antar at venstre Alt betyr AltGr.\n«right-alt»: Antar at høyre Alt betyr AltGr."
+	},
+	"terminal_pref_ansi_colors": {
+		"message": "Angi farger for standardpaletten."
+	},
+	"terminal_pref_bell": {
+		"message": "Hørbar terminalklokke."
+	},
+	"terminal_preview_label": {
+		"message": "Forhåndsvisning"
+	},
+	"terminal_profile_label": {
+		"message": "Nåværende profil"
+	},
+	"terminal_reset_menu_label": {
+		"message": "Tilbakestill terminalen"
+	},
+	"terminal_settings_about_label": {
+		"message": "Info"
+	},
+	"terminal_settings_background_image_help": {
+		"message": "Nettadressen til bakgrunnsbildet. Må begynne med «http://» eller «https://». La den stå tom hvis du ikke vil bruke noe bilde.\n\nFor eksempel:\n  https://goo.gl/anedTK"
+	},
+	"terminal_settings_dropdown_alt_gr_mode_auto": {
+		"message": "Automatisk"
+	},
+	"terminal_settings_dropdown_alt_gr_mode_disable": {
+		"message": "Slå av"
+	},
+	"terminal_settings_dropdown_cursor_shape_beam": {
+		"message": "Strek"
+	},
+	"terminal_settings_dropdown_cursor_shape_block": {
+		"message": "Blokkér"
+	},
+	"terminal_settings_dropdown_cursor_shape_underline": {
+		"message": "Understreking"
+	},
+	"terminal_settings_reset_dialog_message": {
+		"message": "Er du sikker på at du vil tilbakestille temaet til standardverdiene?"
+	},
+	"terminal_settings_reset_dialog_title": {
+		"message": "Tilbakestill temaet"
+	},
+	"terminal_settings_reset_label": {
+		"message": "Tilbakestill"
+	},
+	"terminal_theme_classic_label": {
+		"message": "Klassisk"
+	},
+	"terminal_theme_dark_label": {
+		"message": "Mørkt"
+	},
+	"terminal_theme_haze_label": {
+		"message": "Tåke"
+	},
+	"terminal_theme_light_label": {
+		"message": "Lys"
+	},
+	"terminal_theme_solarized_dark_label": {
+		"message": "Solarized mørkt"
+	},
+	"terminal_theme_solarized_light_label": {
+		"message": "Solarized lyst"
+	},
+	"terminal_title_ansi_color_tooltip_0": {
+		"message": "Farge 0: svart"
+	},
+	"terminal_title_ansi_color_tooltip_1": {
+		"message": "Farge 1: rød"
+	},
+	"terminal_title_ansi_color_tooltip_10": {
+		"message": "Farge 10: lys grønn"
+	},
+	"terminal_title_ansi_color_tooltip_11": {
+		"message": "Farge 11: lys gul"
+	},
+	"terminal_title_ansi_color_tooltip_12": {
+		"message": "Farge 12: lys blå"
+	},
+	"terminal_title_ansi_color_tooltip_13": {
+		"message": "Farge 13: lys magenta"
+	},
+	"terminal_title_ansi_color_tooltip_14": {
+		"message": "Farge 14: lys turkis"
+	},
+	"terminal_title_ansi_color_tooltip_15": {
+		"message": "Farge 15: lys hvit"
+	},
+	"terminal_title_ansi_color_tooltip_2": {
+		"message": "Farge 2: grønn"
+	},
+	"terminal_title_ansi_color_tooltip_3": {
+		"message": "Farge 3: gul"
+	},
+	"terminal_title_ansi_color_tooltip_4": {
+		"message": "Farge 4: blå"
+	},
+	"terminal_title_ansi_color_tooltip_5": {
+		"message": "Farge 5: magenta"
+	},
+	"terminal_title_ansi_color_tooltip_6": {
+		"message": "Farge 6: turkis"
+	},
+	"terminal_title_ansi_color_tooltip_7": {
+		"message": "Farge 7: hvit"
+	},
+	"terminal_title_ansi_color_tooltip_8": {
+		"message": "Farge 8: lys svart"
+	},
+	"terminal_title_ansi_color_tooltip_9": {
+		"message": "Farge 9: lys rød"
+	},
+	"terminal_title_pref_appearance": {
+		"message": "Utseende"
+	},
+	"terminal_title_pref_background": {
+		"message": "Bakgrunn"
+	},
+	"terminal_title_pref_behavior": {
+		"message": "Atferd"
+	},
+	"terminal_title_pref_cursor": {
+		"message": "Markør"
+	},
+	"terminal_title_pref_keyboard": {
+		"message": "Tastatur"
+	},
+	"terminal_title_pref_keyboard_mouse": {
+		"message": "Tastatur og mus"
+	},
+	"terminal_title_pref_mouse": {
+		"message": "Mus"
+	},
+	"terminal_title_pref_scrollbar": {
+		"message": "Rullefelt"
+	},
+	"terminal_title_pref_text": {
+		"message": "Tekst"
+	},
+	"terminal_title_settings": {
+		"message": "Innstillinger"
+	},
+	"terminal_title_theme": {
+		"message": "Tema"
+	},
+	"terminal_try_again_with_internet": {
+		"message": "Koble til internett og prøv på nytt."
+	},
+	"tip_1": {
+		"message": "Du kan holde inne Ctrl (Cmd på macOS) mens du klikker på linkene for å åpne dem."
+	},
+	"tip_10": {
+		"message": "Når du kjører i et vindu, kan du trykke på Ctrl+Shift+N for å åpne en ny økt."
+	},
+	"tip_11": {
+		"message": "Du kan binde taster/hurtigtaster på nytt: https://goo.gl/LWRndr"
+	},
+	"tip_12": {
+		"message": "Bruk Yubikeys og andre smartkort for ssh-autentisering: https://goo.gl/Hu2o3v"
+	},
+	"tip_13": {
+		"message": "Vis bilder innebygd: https://goo.gl/MnSysj"
+	},
+	"tip_14": {
+		"message": "Hvis du holder inne Ctrl (Cmd på macOS) samtidig som du høyreklikker, får du opp en kontekstuell meny."
+	},
+	"tip_2": {
+		"message": "Vis varsler i nettleseren med hterm-notify: https://goo.gl/ZNxGdF"
+	},
+	"tip_3": {
+		"message": "Koble til fra multifunksjonsfeltet ved å skrive inn «ssh <profilnavn>»: https://goo.gl/V7o8ki"
+	},
+	"tip_4": {
+		"message": "Chrome OS kan sette inn filsystemer via SFTP og bla gjennom dem via Filer-appen. Bruk «SFTP Mount» i stedet for «Connect»."
+	},
+	"tip_5": {
+		"message": "Koble til med «ssh://»-linker på nettsider, eller lagre et bokmerke: https://goo.gl/zS8EZD"
+	},
+	"tip_6": {
+		"message": "Legg til farger for utdata/ledetekst med 16 farger, 256 farger eller 24-bits farger: http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x329.html"
+	},
+	"tip_7": {
+		"message": "Kopiér fra Emacs/Vim/osv. til utklippstavlen med OSC-52: https://goo.gl/XSnyLo"
+	},
+	"tip_8": {
+		"message": "Chat med andre hterm / Secure Shell-brukere via chromium-hterm@chromium.org: https://goo.gl/RYHiK"
+	},
+	"tip_9": {
+		"message": "Har du funnet en feil? Vil du be oss om å legge til en ny funksjon? Si fra til oss: https://goo.gl/vb94JY"
+	},
+	"unexpected_error": {
+		"message": "Det har oppstått en uventet feil. Du finner mer informasjon i JavaScript-konsollen."
+	},
+	"unknown_ssh_client_version": {
+		"message": "Ukjent SSH-versjon: $1"
+	},
+	"unmount_button_label": {
+		"message": "Koble fra SFTP"
+	},
+	"welcome_changelog": {
+		"message": "Endringslogg/versjonsnotater: $1"
+	},
+	"welcome_faq": {
+		"message": "Svar på vanlige spørsmål: $1 (Ctrl+klikk på linker for å åpne dem)"
+	},
+	"welcome_release_highlights": {
+		"message": "Betydelige endringer siden $1:"
+	},
+	"welcome_tip_of_day": {
+		"message": "Tilfeldig profftips $1: $2"
+	},
+	"welcome_version": {
+		"message": "Velkommen til versjon $2 av $1."
+	},
+	"write_size_label": {
+		"message": "Skrivestørrelse (KiB)"
+	},
+	"zoom_warning": {
+		"message": "Sett Zoom til 100 % i Chrome-menyen"
+	}
+}

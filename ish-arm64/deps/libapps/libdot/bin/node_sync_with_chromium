@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Update our pinned copy of node to match Chromium."""
+
+import logging
+import re
+import sys
+
+import libdot
+
+
+# Where in Chromium's tree they maintain their hashes.
+URI_BASE = ('https://chromium.googlesource.com/chromium/src/+/HEAD/'
+            'third_party/node')
+URI_LIN = '/'.join((URI_BASE, 'linux', 'node-linux-x64.tar.gz.sha1'))
+URI_MAC = '/'.join((URI_BASE, 'mac', 'node-darwin-x64.tar.gz.sha1'))
+URI_WIN = '/'.join((URI_BASE, 'win', 'node.exe.sha1'))
+
+# File which records the node hashes.
+HASH_FILE = libdot.BIN_DIR / 'node'
+
+
+def update(uri, var):
+    """Update |var| in our tree with the hash data from |uri|."""
+    new_hash = fetch_data(uri)
+    logging.info('Updating %s with hash %s', var, new_hash)
+
+    # Read the current file.
+    lines = HASH_FILE.read_text(encoding='utf-8').splitlines()
+
+    # Try to update the variable in the file.
+    matcher = re.compile(r"%s = '(.*)'" % (var,))
+    for i, line in enumerate(lines):
+        match = matcher.match(line)
+        if match:
+            old_hash = match.group(1)
+            if new_hash != old_hash:
+                logging.info('  Old hash was %s', old_hash)
+                lines[i] = f"{var} = '{new_hash}'"
+                break
+            else:
+                logging.info('  Hash up-to-date already')
+                return
+    else:
+        logging.error('Unable to locate %s setting in %s', var, HASH_FILE)
+        sys.exit(1)
+
+    # Write out the new file content.
+    HASH_FILE.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+
+def fetch_data(uri):
+    """Read the gitiles base64 encoded data from |uri|."""
+    data = libdot.fetch_data(f'{uri}?format=TEXT', b64=True)
+    return data.getvalue().decode('utf-8').strip()
+
+
+def get_parser():
+    """Get a command line parser."""
+    parser = libdot.ArgumentParser(description=__doc__)
+    return parser
+
+
+def main(argv):
+    """The main func!"""
+    parser = get_parser()
+    _opts = parser.parse_args(argv)
+
+    update(URI_LIN, 'NODE_LINUX_HASH')
+    update(URI_MAC, 'NODE_MAC_HASH')
+    update(URI_WIN, 'NODE_WIN_HASH')
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

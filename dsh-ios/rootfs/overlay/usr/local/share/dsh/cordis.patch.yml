@@ -1,0 +1,21 @@
+# DSH iOS profile layer, applied after dsh-base and dsh-web-app.
+#
+# The whole Linux guest already runs inside the iOS app's sandbox, and the
+# guest kernel has neither Landlock nor bubblewrap, so dsh's per-command
+# sandbox would fail closed (SANDBOX_UNAVAILABLE). Tools therefore run
+# unconfined *inside the guest*; the user-facing choice is only whether
+# risky tool calls ask for approval.
+- id: sandbox-policy
+  config:
+    mode: danger-full-access
+    workspaceRoot: !!js process.env.DSH_WORKSPACE ?? process.cwd()
+- id: permission
+  config:
+    defaultPreset: guest-ask
+    presets:
+      guest-ask:
+        sandbox: danger-full-access
+        approval: ask
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
