@@ -11,7 +11,7 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
-ISH_SRC="${ISH_SRC:-$ROOT/../ish-arm64}"
+ISH_SRC="${ISH_SRC:-$ROOT/ish-arm64}"
 ISH_BUILD="${ISH_BUILD:-$ISH_SRC/build-arm64-release}"
 WORK="${WORK:-$ROOT/build/emu-test}"
 ALPINE_TARBALL="$ROOT/build/rootfs-work/alpine-minirootfs-3.21.0-aarch64.tar.gz"

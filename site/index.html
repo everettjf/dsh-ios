@@ -60,7 +60,7 @@
     <p class="tag">Run <a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a> entirely on your device. A native iOS app embeds the iSH‑ARM64 Linux emulator, boots Alpine + Node 22 + <code>dsh</code>, and shows the harness's own web UI. No jailbreak, no server, no Mac in the loop.</p>
     <div class="cta">
       <a class="primary" href="https://github.com/everettjf/dsh-ios">View on GitHub</a>
-      <a class="ghost" href="https://github.com/everettjf/dsh-ios/tree/main/dsh-ios#quick-start">Build it yourself</a>
+      <a class="ghost" href="https://github.com/everettjf/dsh-ios#quick-start">Build it yourself</a>
     </div>
     <div class="badges"><span>iOS / iPadOS 16+</span><span>Apple Silicon simulator</span><span>GPL‑3.0</span><span>Objective‑C · C · asm</span><span>All test suites green</span></div>
     <div class="shots">
@@ -101,7 +101,7 @@
 <section id="build"><div class="wrap">
   <h2>Build &amp; run</h2>
 <pre><span class="c"># macOS on Apple Silicon, Xcode 26/27, brew install meson ninja, Node ≥ 20, gem install xcodeproj</span>
-git clone git@github.com:everettjf/dsh-ios.git &amp;&amp; cd dsh-ios/dsh-ios
+git clone git@github.com:everettjf/dsh-ios.git &amp;&amp; cd dsh-ios
 make emulator        <span class="c"># iSH-ARM64 CLI + fakefsify</span>
 make rootfs          <span class="c"># build/root.tar.gz — Alpine + Node 22 + dsh (~95 MB, ~6 min)</span>
 open DSH.xcodeproj   <span class="c"># DSH scheme → your iPad → Run   (or: make run TEAM=… DEVICE=…)</span>

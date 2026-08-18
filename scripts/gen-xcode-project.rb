@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
-# Generates dsh-ios/DSH.xcodeproj — a self-contained Xcode project for the DSH
-# app that references the iSH-ARM64 emulator sources in ../ish-arm64.
+# Generates DSH.xcodeproj — the Xcode project for the DSH app; it references
+# the iSH-ARM64 emulator sources in ./ish-arm64.
 #
 # Targets:
 #   DSH         the app (emulator sources + dsh-ios/app + bundled root.tar.gz)
@@ -14,10 +14,10 @@ require 'xcodeproj'
 require 'pathname'
 
 HERE = Pathname.new(__FILE__).expand_path.dirname
-ROOT = HERE.parent                                   # dsh-ios/
-ISH = (ROOT.parent + 'ish-arm64').expand_path         # ../ish-arm64
+ROOT = HERE.parent                                   # repo root
+ISH = (ROOT + 'ish-arm64').expand_path                # ./ish-arm64
 PROJECT_PATH = ROOT + 'DSH.xcodeproj'
-ISH_REL = '../ish-arm64'
+ISH_REL = 'ish-arm64'
 
 abort "iSH-ARM64 sources not found at #{ISH}" unless (ISH + 'iSH.xcodeproj').exist?
 
@@ -136,8 +136,8 @@ dsh.frameworks_build_phase.add_file_reference(libarchive_product, true)
 
 meson = dsh.new_shell_script_build_phase('Build Meson (iSH-ARM64)')
 meson.shell_script = <<~SH
-  # Builds libish.a / libish_emu.a / libfakefs.a with meson from ../ish-arm64.
-  export ISH_SRC="$SRCROOT/../ish-arm64"
+  # Builds libish.a / libish_emu.a / libfakefs.a with meson from ./ish-arm64.
+  export ISH_SRC="$SRCROOT/ish-arm64"
   export SRCROOT="$ISH_SRC"       # iSH's helper scripts locate their sources via SRCROOT
   "$ISH_SRC/app/xcode-meson.sh"
   cd "$MESON_BUILD_DIR"
@@ -160,14 +160,14 @@ copy_root.input_paths = ['$(DSH_ROOTFS_TARBALL)']
 copy_root.output_paths = ['$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/root.tar.gz', '$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/root.tar.gz.sha256']
 
 apk = dsh.new_shell_script_build_phase('Generate APK Repositories File')
-apk.shell_script = "SRCROOT=\"$SRCROOT/../ish-arm64\" python3 \"$SRCROOT/../ish-arm64/app/gen_apk_repositories.py\"\n"
-apk.input_paths = ['$(SRCROOT)/../ish-arm64/app/gen_apk_repositories.py']
+apk.shell_script = "SRCROOT=\"$SRCROOT/ish-arm64\" python3 \"$SRCROOT/ish-arm64/app/gen_apk_repositories.py\"\n"
+apk.input_paths = ['$(SRCROOT)/ish-arm64/app/gen_apk_repositories.py']
 apk.output_paths = ['$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/repositories.txt']
 
 js = dsh.new_shell_script_build_phase('Compile hterm JavaScript')
-js.shell_script = "cd \"$SRCROOT/../ish-arm64/deps/libapps\" && ./hterm/bin/mkdist\n"
-js.input_paths = ['$(SRCROOT)/../ish-arm64/deps/libapps/hterm/js']
-js.output_paths = ['$(SRCROOT)/../ish-arm64/deps/libapps/hterm/dist/js/hterm_all.js']
+js.shell_script = "cd \"$SRCROOT/ish-arm64/deps/libapps\" && ./hterm/bin/mkdist\n"
+js.input_paths = ['$(SRCROOT)/ish-arm64/deps/libapps/hterm/js']
+js.output_paths = ['$(SRCROOT)/ish-arm64/deps/libapps/hterm/dist/js/hterm_all.js']
 
 phases = dsh.build_phases
 ordered = [meson, dsh.source_build_phase, dsh.frameworks_build_phase, copy_root, apk, js, dsh.resources_build_phase]
@@ -190,7 +190,7 @@ common_test_settings = {
   'ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES' => 'NO',
   'ARCHS[sdk=iphonesimulator*]' => 'arm64',
   'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64 i386',
-  'HEADER_SEARCH_PATHS' => '$(inherited) $(SRCROOT)/../ish-arm64 $(SRCROOT)/../ish-arm64/app $(SRCROOT)/app',
+  'HEADER_SEARCH_PATHS' => '$(inherited) $(SRCROOT)/ish-arm64 $(SRCROOT)/ish-arm64/app $(SRCROOT)/app',
 }
 
 tests = project.new_target(:unit_test_bundle, 'DSHTests', :ios, '16.0')

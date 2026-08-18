@@ -13,7 +13,7 @@
 #
 # Variables: TEAM (Apple developer team id), DEVICE (udid), SIM (simulator name)
 
-ISH_SRC   ?= $(CURDIR)/../ish-arm64
+ISH_SRC   ?= $(CURDIR)/ish-arm64
 ISH_BUILD ?= $(ISH_SRC)/build-arm64-release
 PROJECT   ?= $(CURDIR)/DSH.xcodeproj
 SCHEME    ?= DSH

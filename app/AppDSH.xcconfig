@@ -1,10 +1,10 @@
 // DSH — DeepSeek Harness for iPad/iPhone.
-// Builds the iSH-ARM64 emulator (../ish-arm64) with a WKWebView front end and
+// Builds the iSH-ARM64 emulator (./ish-arm64) with a WKWebView front end and
 // a bundled Alpine + Node + dsh root filesystem (build/root.tar.gz).
-// SRCROOT is dsh-ios/; ISH_SRC points at the emulator sources.
-#include "../../ish-arm64/app/AppARM64.xcconfig"
+// SRCROOT is the repo root; ISH_SRC points at the emulator sources.
+#include "../ish-arm64/app/AppARM64.xcconfig"
 
-ISH_SRC = $(SRCROOT)/../ish-arm64
+ISH_SRC = $(SRCROOT)/ish-arm64
 
 PRODUCT_NAME = DSH
 DSH_BUNDLE_ID_PREFIX = com.xnuapp

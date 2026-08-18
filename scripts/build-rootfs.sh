@@ -10,7 +10,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
-ISH_SRC="${ISH_SRC:-$ROOT/../ish-arm64}"
+ISH_SRC="${ISH_SRC:-$ROOT/ish-arm64}"
 ISH_BUILD="${ISH_BUILD:-$ISH_SRC/build-arm64-release}"
 WORK="${WORK:-$ROOT/build/rootfs-work}"
 OUT="${OUT:-$ROOT/build/root.tar.gz}"

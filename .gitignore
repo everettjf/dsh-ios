@@ -1,24 +1,10 @@
-# Track only what the DSH iOS app needs to build and run:
-#   dsh-ios/    app sources, rootfs recipe, tests, Makefile
-#   ish-arm64/  the iSH-ARM64 emulator fork it embeds (with our fixes)
-#   .github/    CI
-#   site/       GitHub Pages project page
-# Everything else in this workspace (analysis PDF, deepseek-harness checkout,
-# iGhostty, scratch work dirs) is ignored.
-/*
-!/.gitignore
-!/.github/
-!/dsh-ios/
-!/ish-arm64/
-!/site/
-!/README.md
-
-# Generated artifacts
-dsh-ios/build/
+# generated
+build/
 *.xcresult
+xcuserdata/
+DSH.xcodeproj/project.xcworkspace/xcuserdata/
 ish-arm64/build-arm64-release/
 ish-arm64/build/
 ish-arm64/e2e_out/
 ish-arm64/deps/build/
-xcuserdata/
 .DS_Store
