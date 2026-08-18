@@ -18,7 +18,7 @@ ISH_BUILD ?= $(ISH_SRC)/build-arm64-release
 PROJECT   ?= $(CURDIR)/DSH.xcodeproj
 SCHEME    ?= DSH
 TEAM      ?= YPV49M8592
-DEVICE    ?= 00008122-001461960A8A801C
+DEVICE    ?=                       # udid of the connected device (xcrun devicectl list devices)
 SIM       ?= iPad Air 11-inch (M4)
 BUNDLE_ID ?= com.xnuapp.dsh
 XCB        = xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Release DSH_DEVELOPMENT_TEAM=$(TEAM)
