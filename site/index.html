@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSH — DeepSeek Harness on iPad &amp; iPhone</title>
+<meta name="description" content="DSH runs DeepSeek Harness entirely on your iPad or iPhone: an embedded iSH-ARM64 Linux emulator boots Alpine + Node 22 + dsh and shows the harness web UI in the app. No jailbreak, no server.">
+<meta property="og:title" content="DSH — DeepSeek Harness on iPad & iPhone">
+<meta property="og:description" content="Run DeepSeek Harness fully on-device. Open source, GPL-3.0.">
+<meta property="og:image" content="img/ipad-air-workspace.png">
+<link rel="icon" href="img/icon.png">
+<style>
+  :root {
+    --bg: #0f1116; --bg2: #151821; --card: #1a1e29; --line: #262b39;
+    --fg: #e6e8f0; --muted: #9aa1b5; --accent: #4e98ff; --accent2: #7bb6ff;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); line-height: 1.6; }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 72px 0 40px; text-align: center; background: radial-gradient(900px 400px at 50% -10%, #1b2a4a 0%, transparent 70%); }
+  header img.icon { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 10px 40px rgba(78,152,255,.25); }
+  h1 { font-size: 44px; margin: 18px 0 8px; letter-spacing: -.5px; }
+  h1 code { font-family: var(--mono); color: var(--accent); }
+  .tag { color: var(--muted); font-size: 19px; max-width: 720px; margin: 0 auto 26px; }
+  .cta a { display: inline-block; margin: 6px; padding: 12px 20px; border-radius: 10px; font-weight: 600; }
+  .cta .primary { background: var(--accent); color: #fff; }
+  .cta .primary:hover { background: #3f86ea; text-decoration: none; }
+  .cta .ghost { border: 1px solid var(--line); color: var(--fg); }
+  .badges { margin-top: 14px; color: var(--muted); font-size: 14px; }
+  .badges span { display: inline-block; padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; margin: 3px; }
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 34px 0 10px; }
+  .shots figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .shots img { width: 100%; display: block; }
+  .shots figcaption { padding: 10px 14px; color: var(--muted); font-size: 14px; }
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 26px; margin: 0 0 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  pre { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; }
+  pre .c { color: var(--muted); }
+  .arch { font-family: var(--mono); font-size: 13px; color: #cfd5e6; white-space: pre; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  footer { padding: 36px 0 60px; color: var(--muted); font-size: 14px; text-align: center; border-top: 1px solid var(--line); }
+  @media (max-width: 720px) { .shots { grid-template-columns: 1fr; } h1 { font-size: 34px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <img class="icon" src="img/icon.png" alt="DSH app icon">
+    <h1><code>dsh-ios</code> — DeepSeek Harness on iPad &amp; iPhone</h1>
+    <p class="tag">Run <a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a> entirely on your device. A native iOS app embeds the iSH‑ARM64 Linux emulator, boots Alpine + Node 22 + <code>dsh</code>, and shows the harness's own web UI. No jailbreak, no server, no Mac in the loop.</p>
+    <div class="cta">
+      <a class="primary" href="https://github.com/everettjf/dsh-ios">View on GitHub</a>
+      <a class="ghost" href="https://github.com/everettjf/dsh-ios/tree/main/dsh-ios#quick-start">Build it yourself</a>
+    </div>
+    <div class="badges"><span>iOS / iPadOS 16+</span><span>Apple Silicon simulator</span><span>GPL‑3.0</span><span>Objective‑C · C · asm</span><span>All test suites green</span></div>
+    <div class="shots">
+      <figure><img src="img/ipad-air-m3-first-launch.png" alt="First launch on a real iPad Air"><figcaption>Real iPad Air (M3, iOS 27): the guest booted, DeepSeek Harness served on 127.0.0.1:3080 inside the app.</figcaption></figure>
+      <figure><img src="img/ipad-air-workspace.png" alt="Workspace with sessions on iPad Air"><figcaption>Sessions, workspace, model picker and permission preset — the stock dsh web UI.</figcaption></figure>
+    </div>
+  </div>
+</header>
+
+<section id="features"><div class="wrap">
+  <h2>What you get</h2>
+  <div class="grid">
+    <div class="card"><h3>Fully on‑device</h3><p>Alpine 3.21 (aarch64), Node.js 22 and <code>@deepseek-ai/dsh</code> run inside the app in the iSH‑ARM64 userspace emulator. Only model API calls leave the device.</p></div>
+    <div class="card"><h3>The real harness UI</h3><p>A <code>WKWebView</code> shows dsh's own web app served on loopback — sessions, workspaces, tools, permission presets, everything.</p></div>
+    <div class="card"><h3>A shell when you want one</h3><p>The <code>&gt;_</code> button opens an Alpine terminal in the same guest: <code>apk add</code>, <code>npm i -g</code>, poke at <code>~/.dsh</code>.</p></div>
+    <div class="card"><h3>Supervised server</h3><p>Free‑port selection, HTTP readiness probe, crash restart with back‑off, foreground health check, live log tail on the startup overlay.</p></div>
+    <div class="card"><h3>Safe updates</h3><p>A new guest image in an app update is imported as a fresh root; your sessions, credentials and workspace migrate automatically.</p></div>
+    <div class="card"><h3>Streaming under emulation</h3><p>Jitless Node has no WebAssembly, so DSH ships a <code>fetch()</code> polyfill with real streaming bodies — LLM SSE works, and a mock‑server test proves it.</p></div>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <h2>How it works</h2>
+<pre class="arch">┌─ DSH.app ────────────────────────────────────────────────────────┐
+│  DSHRootViewController ──► WKWebView ──► http://127.0.0.1:3080    │
+│         │                                        ▲                │
+│  DSHHarness  (port pick · readiness probe · restart · health)     │
+│         │  ISHShellExecutor                      │ loopback       │
+│  ┌──────▼──── iSH-ARM64 emulator (Alpine 3.21 aarch64) ───────┐   │
+│  │  /usr/local/bin/dsh-serve                                  │   │
+│  │    → node --expose-internals @deepseek-ai/dsh web          │   │
+│  │        --host 127.0.0.1 --port N  ─────────────────────────┘   │
+│  └────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────┘</pre>
+  <p style="color:var(--muted)">The guest image is built reproducibly <em>on the Mac inside the same emulator</em> and shipped as <code>root.tar.gz</code>. Getting here needed a handful of emulator fixes that are part of the repo: missing NEON conversion instructions used by libvips/sharp, an <code>FMOV</code>‑immediate decoding bug that broke ordinary float constants, a <code>waitpid()</code> EINTR bug that broke gcc and node‑gyp, and the streaming fetch polyfill.</p>
+</div></section>
+
+<section id="build"><div class="wrap">
+  <h2>Build &amp; run</h2>
+<pre><span class="c"># macOS on Apple Silicon, Xcode 26/27, brew install meson ninja, Node ≥ 20, gem install xcodeproj</span>
+git clone git@github.com:everettjf/dsh-ios.git &amp;&amp; cd dsh-ios/dsh-ios
+make emulator        <span class="c"># iSH-ARM64 CLI + fakefsify</span>
+make rootfs          <span class="c"># build/root.tar.gz — Alpine + Node 22 + dsh (~95 MB, ~6 min)</span>
+open DSH.xcodeproj   <span class="c"># DSH scheme → your iPad → Run   (or: make run TEAM=… DEVICE=…)</span>
+make test            <span class="c"># emulator + rootfs + XCTest/XCUITest on the simulator, unattended</span></pre>
+  <table>
+    <tr><th>Suite</th><th>Covers</th></tr>
+    <tr><td><code>tests/emu-test.sh</code></td><td>NEON gadgets &amp; FMOV fix (C compiled with gcc inside the guest), waitpid regression, fetch polyfill</td></tr>
+    <tr><td><code>tests/rootfs-test.sh</code></td><td>image import, guest self test, profile patch, headless LLM round trip through a mock DeepSeek SSE server, server reachable over loopback</td></tr>
+    <tr><td><code>DSHTests</code></td><td>port allocator, log ring, readiness probe, supervisor state machine; guest integration on simulator/device</td></tr>
+    <tr><td><code>DSHUITests</code></td><td>boots to the DeepSeek Harness UI, log sheet, terminal sheet</td></tr>
+  </table>
+</div></section>
+
+<footer><div class="wrap">
+  <img src="img/simulator-ipad-air-m4.png" alt="DSH on the iPad simulator" style="width:260px;border-radius:10px;border:1px solid var(--line);margin-bottom:18px">
+  <div><a href="https://github.com/everettjf/dsh-ios">github.com/everettjf/dsh-ios</a> · GPL‑3.0 (embeds the GPLv3 <a href="https://github.com/ish-app/ish">iSH</a> / <a href="https://github.com/OpenMinis/ish-arm64">iSH‑ARM64</a> emulator) · Not affiliated with DeepSeek or the iSH project.</div>
+</div></footer>
+</body>
+</html>

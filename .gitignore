@@ -2,6 +2,7 @@
 #   dsh-ios/    app sources, rootfs recipe, tests, Makefile
 #   ish-arm64/  the iSH-ARM64 emulator fork it embeds (with our fixes)
 #   .github/    CI
+#   site/       GitHub Pages project page
 # Everything else in this workspace (analysis PDF, deepseek-harness checkout,
 # iGhostty, scratch work dirs) is ignored.
 /*
@@ -9,6 +10,8 @@
 !/.github/
 !/dsh-ios/
 !/ish-arm64/
+!/site/
+!/README.md
 
 # Generated artifacts
 dsh-ios/build/
