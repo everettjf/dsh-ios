@@ -9,6 +9,7 @@
 #import "DSHHostBridge.h"
 #import "DSHDeviceCapability.h"
 #import "DSHEventKitCapability.h"
+#import "DSHHealthCapability.h"
 #import "AppDelegate.h"
 #import <UIKit/UIKit.h>
 
@@ -116,6 +117,7 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     DSHHostBridge *bridge = DSHHostBridge.shared;
     [DSHDeviceCapability installOn:bridge];
     [DSHEventKitCapability installOn:bridge];
+    [DSHHealthCapability installOn:bridge];
     if ([bridge start]) {
         NSMutableDictionary *env = [DSHHarness.shared.extraEnvironment mutableCopy];
         [env addEntriesFromDictionary:bridge.guestEnvironment];

@@ -230,4 +230,147 @@ export function apply(ctx) {
     },
     presentCall: () => ({ card: "generic", title: "Read reminders", kind: "other" }),
   }));
+
+  ctx.tools.register(defineTool({
+    name: "health_query",
+    description:
+      "Read Apple Health data from this device. Pick one metric per call:\n" +
+      "- `activity`: steps, walking/running distance and active energy, one row per day.\n" +
+      "- `heart_rate`: daily min/average/max and resting heart rate.\n" +
+      "- `sleep`: one row per day (asleep, in bed and awake minutes), attributed to the day a sleep stretch ends, so a night across midnight counts on the waking day.\n" +
+      "- `workouts`: individual workouts, most recent first.\n" +
+      "An empty result carries a `note`: iOS does not let an app tell 'no data' apart from 'read access declined', " +
+      "so never conclude from an empty answer that the user did not walk, sleep or exercise — relay the note instead. " +
+      "This is health information: report what the user asked for and do not volunteer diagnoses.",
+    parameters: {
+      metric: {
+        type: "string",
+        enum: ["activity", "heart_rate", "sleep", "workouts"],
+        description: "Which data to read. Required.",
+      },
+      days: { type: "number", description: "How many days back, including today. Default 7 (30 for workouts), max 366." },
+      limit: { type: "number", description: "Workouts only: maximum rows. Default 50, max 200." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          metric: { type: "string" },
+          unit: { type: "string" },
+          from: { type: "string", description: "ISO 8601 start of the window." },
+          to: { type: "string", description: "ISO 8601 end of the window." },
+          totalSteps: { type: "number" },
+          days: {
+            type: "array",
+            description: "activity and heart_rate: one entry per day.",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                date: { type: "string", description: "YYYY-MM-DD." },
+                steps: { type: "number" },
+                distanceKm: { type: "number" },
+                activeEnergyKcal: { type: "number" },
+                averageBpm: { type: "number" },
+                minBpm: { type: "number" },
+                maxBpm: { type: "number" },
+                restingBpm: { type: "number" },
+              },
+            },
+          },
+          nights: {
+            type: "array",
+            description: "sleep: one entry per night.",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                date: { type: "string" },
+                asleepMinutes: { type: "number" },
+                inBedMinutes: { type: "number" },
+                awakeMinutes: { type: "number" },
+                start: { type: "string" },
+                end: { type: "string" },
+              },
+            },
+          },
+          workouts: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                type: { type: "string" },
+                start: { type: "string" },
+                end: { type: "string" },
+                durationMinutes: { type: "number" },
+                activeEnergyKcal: { type: "number" },
+                distanceKm: { type: "number" },
+                source: { type: "string" },
+              },
+            },
+          },
+          truncated: { type: "boolean" },
+          note: { type: "string", description: "Present when the window came back empty, or the query timed out." },
+        },
+      },
+      render: (_args, value) => {
+        const lines = [];
+        if (value.metric === "activity") {
+          lines.push(`Activity ${value.from} → ${value.to} (${value.totalSteps ?? 0} steps total):`);
+          for (const d of value.days ?? []) {
+            const extra = [
+              d.distanceKm !== undefined ? `${d.distanceKm} km` : null,
+              d.activeEnergyKcal !== undefined ? `${d.activeEnergyKcal} kcal` : null,
+            ].filter(Boolean);
+            lines.push(`- ${d.date}: ${d.steps} steps${extra.length ? ` (${extra.join(", ")})` : ""}`);
+          }
+        } else if (value.metric === "heart_rate") {
+          lines.push(`Heart rate ${value.from} → ${value.to} (bpm):`);
+          for (const d of value.days ?? []) {
+            const parts = [
+              d.averageBpm !== undefined ? `avg ${d.averageBpm}` : null,
+              d.minBpm !== undefined ? `min ${d.minBpm}` : null,
+              d.maxBpm !== undefined ? `max ${d.maxBpm}` : null,
+              d.restingBpm !== undefined ? `resting ${d.restingBpm}` : null,
+            ].filter(Boolean);
+            lines.push(`- ${d.date}: ${parts.join(", ")}`);
+          }
+        } else if (value.metric === "sleep") {
+          lines.push(`Sleep ${value.from} → ${value.to}:`);
+          for (const n of value.nights ?? []) {
+            const hours = (n.asleepMinutes / 60).toFixed(1);
+            // Not "night of": a daytime nap lands in the same bucket, so the
+            // row is the day's total sleep, not strictly one night.
+            lines.push(`- ${n.date}: ${hours}h asleep (${n.inBedMinutes} min in bed, ${n.awakeMinutes} min awake)`);
+          }
+        } else {
+          lines.push(`Workouts ${value.from} → ${value.to}${value.truncated ? " (truncated)" : ""}:`);
+          for (const w of value.workouts ?? []) {
+            const extra = [
+              w.distanceKm !== undefined ? `${w.distanceKm} km` : null,
+              w.activeEnergyKcal !== undefined ? `${w.activeEnergyKcal} kcal` : null,
+            ].filter(Boolean);
+            lines.push(`- ${w.start}: ${w.type}, ${w.durationMinutes} min${extra.length ? ` (${extra.join(", ")})` : ""}`);
+          }
+        }
+        if (value.note) lines.push(value.note);
+        return [{ type: "text", text: lines.join("\n") }];
+      },
+    },
+    execute: ({ metric, days, limit }) => {
+      if (!metric) throw new Error("metric is required: activity, heart_rate, sleep or workouts");
+      const query = new URLSearchParams();
+      if (days !== undefined) query.set("days", String(days));
+      if (limit !== undefined) query.set("limit", String(limit));
+      const suffix = query.toString();
+      return call(`/v1/health/${metric}${suffix ? `?${suffix}` : ""}`);
+    },
+    presentCall: (args) => ({
+      card: "generic",
+      title: `Read Health: ${args.metric ?? "activity"}`,
+      kind: "other",
+    }),
+  }));
 }

@@ -35,12 +35,14 @@
 	<string>DSH lets the agent read your calendar when you turn the Calendar capability on.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>DSH lets the agent read your calendar when you turn the Calendar capability on.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>DSH can read your Health data — steps, heart rate, sleep and workouts — only after you switch Apple Health on in DSH ▸ Capabilities, and only to answer what you ask the agent.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DSH runs a local web server inside the app and connects to it over loopback.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>DSH lets the agent read your reminders when you turn the Reminders capability on.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>DSH lets the agent read your reminders when you turn the Reminders capability on.</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>DSH runs a local web server inside the app and connects to it over loopback.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

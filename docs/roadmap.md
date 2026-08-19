@@ -14,23 +14,21 @@ which this plan references rather than repeats.
 | Guest image auto-upgrade with user-data migration | done |
 | Host bridge: listener, token, capability registry, `device_info` | done |
 | Calendar and Reminders (read) over EventKit, off by default | done |
+| Apple Health (read): activity, heart rate, sleep, workouts | done |
+| Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 16, app 32 (device + simulator), UI 4 | done |
+| Tests: emulator 3, rootfs 24, app 42 (device + simulator), UI 5 | done |
 | Distribution: build-it-yourself only | open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
 
-## Next: host bridge Phase 1 — settings and confirmation
+## Next: per-call confirmation and the first write capability
 
-The bridge can already refuse a call because a capability is off, but nothing
-in the UI can turn one on, and nothing asks the user before a sensitive call.
-That is the whole of Phase 1.
+The Capabilities screen shipped, so switches exist and take effect on the
+agent's next tool call. What is still missing is the other half of Phase 1: a
+gate for calls that *change* something, and the first capability that needs it.
 
-1. **Capabilities screen.** A list from `DSHCapabilityRegistry`: title, one-line
-   description, state, a switch, and when it was last used. Reachable from the
-   `⋯` menu. Writes through `setEnabled:forIdentifier:`, which the bridge
-   already honours per call, so no restart is needed.
-2. **Per-call confirmation.** For `DSHCapabilityGatePerCall`, the handler posts
+1. **Per-call confirmation.** For `DSHCapabilityGatePerCall`, the handler posts
    a native alert (what is being asked, by which capability) and waits with a
    timeout; on timeout or refusal the route answers `permission_denied` with
    `recoverable: true` so the model can explain rather than hang. The open
@@ -38,35 +36,26 @@ That is the whole of Phase 1.
    vs per-session grants — has to be settled here; the current proposal is
    per-session for reads, per-call for writes, with a badge in the DSH bar while
    a session grant is live.
-3. **First users of both paths:** Calendar and Reminders are already in and
-   need the screen to be switchable at all (they ship off, and today the only
-   way to turn them on is a debugger or a test); clipboard (`GET`/`POST
-   /v1/clipboard`) and creating a reminder (`POST /v1/reminders`) exercise the
-   per-call confirmation. None of these needs an entitlement, so Phase 1 stays
+2. **First users of it:** clipboard (`GET`/`POST /v1/clipboard`) and creating a
+   reminder (`POST /v1/reminders`). Neither needs an entitlement, so this stays
    inside the current signing setup.
-4. **Tests.** Registry persistence; a route gated per-call that is refused on
-   timeout; XCUITest that flips a switch and sees the tool start failing;
-   guest-side round trip for clipboard through `tests/rootfs-test.sh`.
+3. **Tests.** A route gated per-call that is refused on timeout; guest-side
+   round trip for clipboard through `tests/rootfs-test.sh`. The XCUITest that
+   flips a switch already exists (`testCapabilitiesScreenTogglesHealth`).
 
-## Then: Phase 2 — Apple Health (read-only)
+## Done: Apple Health (read-only)
 
-The motivating capability, and the only one that changes how the app is signed.
+Shipped as `health.read` with `GET /v1/health/activity|heart_rate|sleep|workouts`
+and a single `health_query` tool. Two notes for anyone building on it:
 
-- **Signing.** `com.apple.developer.healthkit` is not in the team wildcard
-  profile DSH uses today, so this needs an explicit App ID for
-  `com.xnuapp.dsh` with HealthKit enabled, plus
-  `NSHealthShareUsageDescription`. No Apple approval is required (unlike Font
-  Enumeration), but every contributor building the app will need their own
-  explicit App ID from that point on — the README has to say so.
-- **Routes.** `GET /v1/health/steps|heart_rate|sleep|workouts`, each taking
-  `days` and `limit`, aggregated per day rather than per sample, capped
-  server-side with `truncated: true` when the cap bites.
-- **Authorization.** HealthKit's own dialog is one gate, the capability switch
-  is the other. An unauthorized read answers `permission_denied` with
-  `recoverable: true` instead of blocking the turn.
-- **Tests.** Aggregation unit-tested with injected samples; a device test that
-  asserts the `unavailable`/`permission_denied` behaviour so the suite never
-  depends on real health data being present.
+- **Signing changed.** `com.apple.developer.healthkit` is not in the team
+  wildcard profile, so the app now needs an *explicit* App ID for its bundle id
+  with HealthKit enabled. Xcode's automatic signing creates one on the first
+  build after the capability is added; contributors building the app under their
+  own team will each need this — see the README's build section.
+- **Read permission is invisible by design** (details in
+  [host-bridge.md §4](host-bridge.md#health-is-the-one-capability-that-cannot-report-its-own-permission));
+  every empty answer therefore carries a `note`, and the tests assert it.
 
 ## Then: Phase 3 — the long tail
 

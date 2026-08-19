@@ -155,7 +155,11 @@
     XCTAssertEqual([registry stateForIdentifier:@"device.info"], DSHCapabilityStateDisabled);
     [registry setEnabled:YES forIdentifier:@"device.info"];
     XCTAssertEqual([registry stateForIdentifier:@"device.info"], DSHCapabilityStateGranted);
-    XCTAssertEqual([registry stateForIdentifier:@"health.read"], DSHCapabilityStateUnavailable,
+    // Deliberately not a real identifier: an unknown capability must read as
+    // unavailable, not as denied, so the model can tell "never built" from
+    // "switched off". (Do not reuse a shipping id here — it will start passing
+    // for the wrong reason the day that capability lands.)
+    XCTAssertEqual([registry stateForIdentifier:@"nonexistent.capability"], DSHCapabilityStateUnavailable,
                    @"a capability this build does not ship is unavailable, not denied");
 }
 

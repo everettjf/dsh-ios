@@ -76,6 +76,13 @@ stock dsh web UI.</sub>
 Node.js ≥ 20 + npm, the `xcodeproj` Ruby gem (`gem install xcodeproj`, or
 CocoaPods), an Apple developer team for device signing.
 
+Because the app reads Apple Health, it needs the `com.apple.developer.healthkit`
+entitlement, which the team *wildcard* profile does not carry: on your first
+device build, open Signing & Capabilities, pick your team, and let Xcode create
+an explicit App ID for the bundle id. (If you would rather not, remove the
+`HealthKit` capability and `app/DSH.entitlements` — everything else works
+without it.)
+
 ```bash
 git clone https://github.com/everettjf/dsh-ios.git && cd dsh-ios
 make emulator        # iSH-ARM64 CLI + fakefsify (used to build and test the guest image)
@@ -183,16 +190,28 @@ settings live in `app/AppDSH.xcconfig`; the bundle id is `com.xnuapp.dsh`
 ## iOS capabilities (host bridge)
 
 The app runs a loopback HTTP listener that dsh tools inside the guest call to
-reach iOS capabilities. Shipping today: `device_info` (model, iOS version,
-locale, battery, thermal state), `calendar_query` and `reminders_query` (read
-your events and reminders through EventKit). Apple Health, clipboard, location,
-photos, the share sheet and Shortcuts are designed but not built — each is one
-route in the app plus one tool in the guest plugin.
+reach iOS capabilities. Shipping today:
 
-Calendar and Reminders are **off by default** and additionally need iOS's own
-permission; a call made before either gate is open comes back as a recoverable
-`permission_denied` telling the model what the user has to do, rather than
-hanging the turn on a dialog.
+| Tool | What it reads | Gate |
+|---|---|---|
+| `device_info` | model, iOS version, locale, battery, thermal state | on by default |
+| `calendar_query` | events from your calendars | switch + iOS permission |
+| `reminders_query` | reminders and due dates | switch + iOS permission |
+| `health_query` | steps/distance/energy, heart rate, sleep, workouts | switch + iOS permission |
+
+Clipboard, location, photos, the share sheet and Shortcuts are designed but not
+built — each is one route in the app plus one tool in the guest plugin.
+
+Everything except `device_info` ships **off**. Turn it on in **⋯ ▸
+Capabilities**; the switch takes effect on the agent's next tool call, including
+mid-turn, and iOS's own permission still applies on top. A call made before
+either gate is open comes back as a recoverable `permission_denied` telling the
+model what the user has to do, rather than hanging the turn on a dialog.
+
+Apple Health has a wrinkle worth knowing: iOS never tells an app whether *read*
+access was declined, so an empty result and a declined category look identical.
+Health answers therefore carry a note saying so, and the tool is told to relay
+it instead of concluding you took no steps this month.
 
 Capabilities are gated by the app, not by the guest: a random per-launch bearer
 token keeps *other apps* out, while a per-capability switch (and, for sensitive
