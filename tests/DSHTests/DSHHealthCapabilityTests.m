@@ -76,6 +76,56 @@ static NSString *const kHealthRead = @"health.read";
                   @"unexpected state %ld", (long) state);
 }
 
+/// Prints the two facts that decide whether anything Health-related can happen
+/// at all. Without them a green run is ambiguous: the data tests skip
+/// themselves when HealthKit is unavailable, so "all passed" can mean "nothing
+/// was exercised". This is a report, not a gate — it asserts nothing about the
+/// tester's own privacy choices.
+- (void)testReportHealthAuthorizationState {
+    BOOL available = HKHealthStore.isHealthDataAvailable;
+    NSLog(@"[dsh-test] HealthKit available on this device: %@", available ? @"YES" : @"NO");
+    if (!available)
+        return;
+
+    HKHealthStore *store = [HKHealthStore new];
+    __block HKAuthorizationRequestStatus status = HKAuthorizationRequestStatusUnknown;
+    __block NSError *failure = nil;
+    XCTestExpectation *done = [self expectationWithDescription:@"request status"];
+    [store getRequestStatusForAuthorizationToShareTypes:[NSSet set]
+                                              readTypes:[DSHHealthCapability readTypes]
+                                             completion:^(HKAuthorizationRequestStatus s, NSError *error) {
+        status = s;
+        failure = error;
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:20];
+    NSString *name = status == HKAuthorizationRequestStatusShouldRequest ? @"shouldRequest (iOS has never asked)"
+                   : status == HKAuthorizationRequestStatusUnnecessary ? @"unnecessary (already asked)"
+                   : @"unknown";
+    NSLog(@"[dsh-test] HealthKit request status: %@%@", name, failure ? [@" error: " stringByAppendingString:failure.description] : @"");
+    if (status != HKAuthorizationRequestStatusUnnecessary)
+        return;  // nothing has been granted yet, so the queries would only report the note
+
+    // Shapes only — row counts and whether the "iOS hides read denials" note
+    // fired. The values themselves are the tester's health data and have no
+    // business in a build log.
+    [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:kHealthRead];
+    NSDictionary *shape = @{
+        @"/v1/health/activity?days=7": @"days",
+        @"/v1/health/heart_rate?days=7": @"days",
+        @"/v1/health/sleep?days=7": @"nights",
+        @"/v1/health/workouts?days=30": @"workouts",
+    };
+    for (NSString *path in shape) {
+        NSInteger routeStatus = 0;
+        NSDictionary *json = [self get:path status:&routeStatus];
+        NSString *key = shape[path];
+        NSLog(@"[dsh-test] %@ → %ld, %lu %@%@", path, (long) routeStatus,
+              (unsigned long) [json[key] count], key,
+              json[@"note"] ? @", note present (no data, or the category was declined)" : @"");
+    }
+}
+
 - (void)testAvailabilityFollowsHealthKit {
     DSHCapability *capability = [DSHCapabilityRegistry.shared capabilityWithIdentifier:kHealthRead];
     XCTAssertNotNil(capability);
