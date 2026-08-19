@@ -13,6 +13,8 @@
 #import "ISHShellExecutor.h"
 #import "DSHRootUpgrader.h"
 #import "DSHHostBridge.h"
+#import "DSHCapability.h"
+#import <HealthKit/HealthKit.h>
 #import "DSHMockLLMServer.h"
 
 @interface DSHGuestIntegrationTests : XCTestCase
@@ -181,6 +183,53 @@
     XCTAssertTrue([out containsString:@"systemVersion"], @"no device facts in the answer:\n%@", out);
     XCTAssertTrue([out containsString:UIDevice.currentDevice.systemVersion],
                   @"the model should see this device's iOS version (%@):\n%@", UIDevice.currentDevice.systemVersion, out);
+}
+
+/// The same whole path for a capability that is off by default and needs iOS's
+/// own permission. On a test device neither grant is guaranteed, so this asserts
+/// what must hold either way: the tool is offered, the call completes, and the
+/// model is told something actionable instead of the turn hanging on a dialog.
+- (void)testAgentCallsHealthThroughTheBridge {
+    [self waitForReady];
+    if (!HKHealthStore.isHealthDataAvailable)
+        return;
+    DSHMockLLMServer *model = [DSHMockLLMServer new];
+    XCTAssertNotNil(model);
+    model.requestTool = @"health_query";
+    model.toolArguments = @"{\"metric\":\"activity\",\"days\":3}";
+    [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:@"health.read"];
+
+    DSHHostBridge *bridge = DSHHostBridge.shared;
+    NSString *command = [NSString stringWithFormat:
+        @"cd /root/workspace && HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=%@ "
+        @"DSH_HOST_BRIDGE_URL=%@ DSH_HOST_BRIDGE_TOKEN=%@ "
+        @"node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js "
+        @"--profile headless 'How active have I been?' 2>&1 | tail -25",
+        model.baseURLString, bridge.baseURLString, bridge.token];
+
+    XCTestExpectation *done = [self expectationWithDescription:@"health agent"];
+    NSMutableString *out = [NSMutableString string];
+    [ISHShellExecutor executeCommand:command lineCallback:^(NSString *line, BOOL isStdErr) {
+        if (![line containsString:@"expose_wasm"]) [out appendFormat:@"%@\n", line];
+    } completion:^(ISHShellExecutionResult *result) {
+        [done fulfill];
+    }];
+    // Generous, but far below a hang: the point is that a missing permission
+    // ends the turn quickly rather than blocking on a system dialog.
+    [self waitForExpectations:@[done] timeout:300];
+    [model stop];
+    [DSHCapabilityRegistry.shared setEnabled:NO forIdentifier:@"health.read"];
+
+    BOOL offered = NO;
+    for (NSString *tools in model.offeredToolsPerRequest)
+        offered = offered || [tools containsString:@"health_query"];
+    XCTAssertTrue(offered, @"health_query was never offered to the model:\n%@", out);
+
+    BOOL answered = [out containsString:@"Activity "] || [out containsString:@"steps"];
+    BOOL refusedClearly = [out containsString:@"Health access"] || [out containsString:@"permission_denied"]
+        || [out containsString:@"Settings"];
+    XCTAssertTrue(answered || refusedClearly,
+                  @"the model got neither health data nor an actionable refusal:\n%@", out);
 }
 
 - (void)testGuestNodeAndDshVersions {

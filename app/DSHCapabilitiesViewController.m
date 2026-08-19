@@ -65,8 +65,8 @@
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     if (section == 0)
         return @"Anything switched on here can be read by the agent running in DSH — including by a model answering over the network. "
-                "Switches take effect immediately, including in the middle of a turn. Items marked “needs iOS permission” also have to be "
-                "allowed in the system dialog, and can be revoked in Settings ▸ Privacy.";
+                "Switches take effect immediately, including in the middle of a turn. Items that say “Also needs iOS permission” ask iOS as soon "
+                "as you switch them on; that grant can be revoked later in Settings ▸ Privacy.";
     return @"The bridge listens on this device only (127.0.0.1) and requires a token that changes every launch, so other apps cannot reach it.";
 }
 
@@ -140,6 +140,10 @@
     }]];
     [alert addAction:[UIAlertAction actionWithTitle:@"Allow" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:capability.identifier];
+        // Ask iOS now, while the user is here and expecting it, instead of
+        // letting the agent's first call fail on a permission it never asked for.
+        if (capability.requestSystemPermission)
+            capability.requestSystemPermission();
     }]];
     [self presentViewController:alert animated:YES completion:nil];
 }

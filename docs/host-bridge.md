@@ -170,6 +170,11 @@ an empty result — indistinguishable from a genuinely empty week.
 
 Two consequences, both load-bearing:
 
+0. Switching the capability on in **⋯ ▸ Capabilities** triggers the HealthKit
+   sheet immediately (`DSHCapability.requestSystemPermission`), so the user
+   answers it while they are looking at the screen instead of discovering the
+   permission through the agent's first failed call. The same hook backs
+   Calendar and Reminders.
 1. The only signal the app can act on is
    `getRequestStatusForAuthorizationToShareTypes:readTypes:`, which says whether
    the sheet still has to be shown. `shouldRequest` triggers the sheet and

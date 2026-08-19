@@ -176,18 +176,23 @@ static const NSInteger kMaxDays = 366;
 
 + (void)installOn:(DSHHostBridge *)bridge {
     DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
-    [registry registerCapability:[[DSHCapability alloc] initWithIdentifier:DSHCapabilityCalendarRead
-                                                                    title:@"Calendar (read)"
-                                                                  details:@"Events from your calendars, so the agent can answer questions about your schedule."
-                                                                     gate:DSHCapabilityGateSystemPermission
-                                                         enabledByDefault:NO
-                                                                available:YES]];
-    [registry registerCapability:[[DSHCapability alloc] initWithIdentifier:DSHCapabilityRemindersRead
-                                                                    title:@"Reminders (read)"
-                                                                  details:@"Your reminders and their due dates."
-                                                                     gate:DSHCapabilityGateSystemPermission
-                                                         enabledByDefault:NO
-                                                                available:YES]];
+    DSHCapability *calendar = [[DSHCapability alloc] initWithIdentifier:DSHCapabilityCalendarRead
+                                                                  title:@"Calendar (read)"
+                                                                details:@"Events from your calendars, so the agent can answer questions about your schedule."
+                                                                   gate:DSHCapabilityGateSystemPermission
+                                                       enabledByDefault:NO
+                                                              available:YES];
+    calendar.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeEvent]; };
+    [registry registerCapability:calendar];
+
+    DSHCapability *reminders = [[DSHCapability alloc] initWithIdentifier:DSHCapabilityRemindersRead
+                                                                  title:@"Reminders (read)"
+                                                                details:@"Your reminders and their due dates."
+                                                                   gate:DSHCapabilityGateSystemPermission
+                                                       enabledByDefault:NO
+                                                              available:YES];
+    reminders.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeReminder]; };
+    [registry registerCapability:reminders];
 
     [bridge registerRoute:@"GET" path:@"/v1/calendar/events" capability:DSHCapabilityCalendarRead
                   handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {

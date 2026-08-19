@@ -317,8 +317,11 @@ export function apply(ctx) {
       },
       render: (_args, value) => {
         const lines = [];
+        // A timed-out query answers with a note and no window, so the range is
+        // printed only when there is one.
+        const range = value.from && value.to ? ` ${value.from} → ${value.to}` : "";
         if (value.metric === "activity") {
-          lines.push(`Activity ${value.from} → ${value.to} (${value.totalSteps ?? 0} steps total):`);
+          lines.push(`Activity${range} (${value.totalSteps ?? 0} steps total):`);
           for (const d of value.days ?? []) {
             const extra = [
               d.distanceKm !== undefined ? `${d.distanceKm} km` : null,
@@ -327,7 +330,7 @@ export function apply(ctx) {
             lines.push(`- ${d.date}: ${d.steps} steps${extra.length ? ` (${extra.join(", ")})` : ""}`);
           }
         } else if (value.metric === "heart_rate") {
-          lines.push(`Heart rate ${value.from} → ${value.to} (bpm):`);
+          lines.push(`Heart rate${range} (bpm):`);
           for (const d of value.days ?? []) {
             const parts = [
               d.averageBpm !== undefined ? `avg ${d.averageBpm}` : null,
@@ -338,7 +341,7 @@ export function apply(ctx) {
             lines.push(`- ${d.date}: ${parts.join(", ")}`);
           }
         } else if (value.metric === "sleep") {
-          lines.push(`Sleep ${value.from} → ${value.to}:`);
+          lines.push(`Sleep${range}:`);
           for (const n of value.nights ?? []) {
             const hours = (n.asleepMinutes / 60).toFixed(1);
             // Not "night of": a daytime nap lands in the same bucket, so the
@@ -346,7 +349,7 @@ export function apply(ctx) {
             lines.push(`- ${n.date}: ${hours}h asleep (${n.inBedMinutes} min in bed, ${n.awakeMinutes} min awake)`);
           }
         } else {
-          lines.push(`Workouts ${value.from} → ${value.to}${value.truncated ? " (truncated)" : ""}:`);
+          lines.push(`Workouts${range}${value.truncated ? " (truncated)" : ""}:`);
           for (const w of value.workouts ?? []) {
             const extra = [
               w.distanceKm !== undefined ? `${w.distanceKm} km` : null,

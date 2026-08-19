@@ -17,8 +17,11 @@ static const NSInteger kDefaultLimit = 50;
 static const NSInteger kMaxLimit = 200;
 /// HealthKit queries are asynchronous and the bridge handler is synchronous on
 /// a background queue, so each query waits — bounded, so a wedged query answers
-/// the agent instead of holding its turn open.
-static const int64_t kQueryTimeoutSeconds = 15;
+/// the agent instead of holding its turn open. The budget matters: the activity
+/// route runs three queries back to back, and the guest plugin gives up on the
+/// whole request after 20s, so the per-query bound has to leave all three
+/// inside that. HealthKit normally answers in milliseconds.
+static const int64_t kQueryTimeoutSeconds = 5;
 
 @implementation DSHHealthCapability
 
@@ -213,6 +216,7 @@ static const int64_t kQueryTimeoutSeconds = 15;
 
     NSMutableArray *rows = [NSMutableArray array];
     __block double totalSteps = 0;
+    __block BOOL sawAnything = NO;
     NSDate *end = NSDate.date;
     [steps enumerateStatisticsFromDate:start toDate:end withBlock:^(HKStatistics *statistics, BOOL *stop) {
         NSDate *day = statistics.startDate;
@@ -228,6 +232,7 @@ static const int64_t kQueryTimeoutSeconds = 15;
         double kcal = energyDay ? [energyDay doubleValueForUnit:HKUnit.kilocalorieUnit] : 0;
         if (kcal > 0) row[@"activeEnergyKcal"] = @((NSInteger) round(kcal));
 
+        sawAnything = sawAnything || stepCount > 0 || km > 0 || kcal > 0;
         [rows addObject:row];
     }];
 
@@ -238,7 +243,9 @@ static const int64_t kQueryTimeoutSeconds = 15;
         @"totalSteps": @((NSInteger) totalSteps),
         @"days": rows,
     } mutableCopy];
-    if (totalSteps == 0)
+    // Steps may legitimately be zero while distance or energy are not, so the
+    // note keys off "nothing at all", not off steps.
+    if (!sawAnything)
         body[@"note"] = [self emptyNote];
     return body;
 }
@@ -442,13 +449,14 @@ static const int64_t kQueryTimeoutSeconds = 15;
 #pragma mark Install
 
 + (void)installOn:(DSHHostBridge *)bridge {
-    [DSHCapabilityRegistry.shared registerCapability:
-        [[DSHCapability alloc] initWithIdentifier:DSHCapabilityHealthRead
-                                            title:@"Apple Health (read)"
-                                          details:@"Steps, distance, energy, heart rate, sleep and workouts from Health."
-                                             gate:DSHCapabilityGateSystemPermission
-                                 enabledByDefault:NO
-                                        available:HKHealthStore.isHealthDataAvailable]];
+    DSHCapability *health = [[DSHCapability alloc] initWithIdentifier:DSHCapabilityHealthRead
+                                                                title:@"Apple Health (read)"
+                                                              details:@"Steps, distance, energy, heart rate, sleep and workouts from Health."
+                                                                 gate:DSHCapabilityGateSystemPermission
+                                                     enabledByDefault:NO
+                                                            available:HKHealthStore.isHealthDataAvailable];
+    health.requestSystemPermission = ^{ [self requestAuthorization]; };
+    [DSHCapabilityRegistry.shared registerCapability:health];
 
     DSHHostBridgeHandler (^guarded)(DSHHostBridgeResponse *(^)(DSHHostBridgeRequest *)) =
         ^DSHHostBridgeHandler (DSHHostBridgeResponse *(^body)(DSHHostBridgeRequest *)) {

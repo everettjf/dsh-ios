@@ -166,8 +166,9 @@ app 内运行一个 loopback HTTP 服务，guest 里的 dsh 工具通过它访�
 剪贴板、位置、照片、分享、Shortcuts 已完成设计但尚未实现——每加一个能力 = app 侧一个
 路由 + guest 插件里一个 tool。
 
-除 `device_info` 外**默认全部关闭**，在 **⋯ ▸ Capabilities** 里打开；开关对 agent 的
-下一次工具调用即刻生效（回合中途也算），iOS 自己的授权仍然叠加在上面。任一道门没开时
+除 `device_info` 外**默认全部关闭**，在 **⋯ ▸ Capabilities** 里打开——打开时立刻弹出
+iOS 的授权框（不用等 agent 先失败一次），开关本身对 agent 的下一次工具调用即刻生效
+（回合中途也算）。任一道门没开时
 调用会返回可恢复的 `permission_denied`，告诉模型需要用户做什么，而不是卡在系统弹窗上等。
 
 Apple Health 有个值得注意的地方：iOS 从不告诉 app **读**权限是否被拒绝，所以"没有数据"

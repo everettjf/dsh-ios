@@ -23,6 +23,7 @@
 - (instancetype)init {
     if (self = [super init]) {
         _reply = @"MOCK-REPLY: hello from the in-app mock model";
+        _toolArguments = @"{}";
         _offeredToolsPerRequest = @[];
         _queue = dispatch_queue_create("dsh.test.mockllm", DISPATCH_QUEUE_CONCURRENT);
         int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -163,7 +164,7 @@
 - (void)sendToolCall:(NSString *)tool to:(int)fd {
     [self writeSSEHead:fd];
     NSDictionary *call = @{ @"index": @0, @"id": @"call_mock_1", @"type": @"function",
-                            @"function": @{ @"name": tool, @"arguments": @"{}" } };
+                            @"function": @{ @"name": tool, @"arguments": self.toolArguments ?: @"{}" } };
     [self writeString:[self chunkWithDelta:@{ @"role": @"assistant", @"content": @"", @"tool_calls": @[call] } finish:nil] to:fd];
     [self writeString:[self chunkWithDelta:@{} finish:@"tool_calls"] to:fd];
     [self writeString:@"data: [DONE]\n\n" to:fd];

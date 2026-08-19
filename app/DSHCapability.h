@@ -46,6 +46,12 @@ NSString *DSHCapabilityStateName(DSHCapabilityState state);
                    enabledByDefault:(BOOL)enabledByDefault
                          available:(BOOL)available NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
+
+/// Asks the underlying framework for its permission, if it has one. Set by the
+/// capability's own module; called when the user switches the capability on, so
+/// the system dialog appears then rather than on the agent's first (failing)
+/// call. Must be safe to call more than once and from the main thread.
+@property (nonatomic, copy, nullable) void (^requestSystemPermission)(void);
 @end
 
 extern NSNotificationName const DSHCapabilityRegistryDidChangeNotification;
