@@ -10,17 +10,25 @@
 # Try to find an aarch64 compiler
 clang = find_program('/usr/local/opt/llvm/bin/clang', '/opt/homebrew/opt/llvm/bin/clang', '/opt/local/bin/clang', 'clang', required: false)
 
+# The check has to gate the build, not merely warn: Apple's clang compiles for
+# aarch64 but cannot link an ELF (no lld), which would fail the configure step
+# on a stock macOS toolchain.
+vdso_cc_usable = false
 if clang.found()
-    # Check if the compiler supports aarch64 target
     check_cc = find_program('./check-cc-arm64.sh', required: false)
     if check_cc.found()
         result = run_command(check_cc, clang, check: false)
-        if result.returncode() != 0
-            message('ARM64 VDSO: Cross-compiler check failed')
+        vdso_cc_usable = result.returncode() == 0
+        if not vdso_cc_usable
+            message('ARM64 VDSO: cross-compiler check failed, building a stub instead')
             message(result.stdout() + result.stderr())
         endif
+    else
+        vdso_cc_usable = true
     endif
+endif
 
+if vdso_cc_usable
     vdso_compiler = [clang, '-target', 'aarch64-linux-gnu', '-fuse-ld=lld']
 
     vdso = custom_target('vdso-arm64',
@@ -34,7 +42,9 @@ if clang.found()
 else
     # Create a dummy vdso target if no compiler is available
     # This allows building for ARM64 guest even without a vdso
-    message('ARM64 VDSO: No suitable cross-compiler found, VDSO will not be built')
+    # A stub lets the configure step finish, but the guest needs the real VDSO
+    # to run: install lld (brew install lld) and reconfigure.
+    warning('ARM64 VDSO: no aarch64 cross-toolchain with lld — building a stub. The emulator will build but guest processes will not run; install lld and reconfigure.')
     # Create an empty file as placeholder
     vdso = custom_target('vdso-arm64-stub',
         output: 'libvdso.so.elf',

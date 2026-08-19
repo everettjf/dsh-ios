@@ -19,7 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Tools
-        run: brew install meson ninja
+        run: |
+          brew install meson ninja lld
+          echo "$(brew --prefix lld)/bin" >> "$GITHUB_PATH"   # ld.lld, needed for the guest VDSO
       - name: Build the emulator
         run: make emulator
       - name: Emulator regression tests
@@ -46,7 +48,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Tools
         run: |
-          brew install meson ninja
+          brew install meson ninja lld
+          echo "$(brew --prefix lld)/bin" >> "$GITHUB_PATH"   # ld.lld, needed for the guest VDSO
           gem list xcodeproj -i || sudo gem install xcodeproj --no-document
       - name: Build the emulator (needed to produce the guest image)
         run: make emulator
