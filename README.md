@@ -177,6 +177,13 @@ site/           project page (GitHub Pages → https://xnu.app/dsh-ios/)
 settings live in `app/AppDSH.xcconfig`; the bundle id is `com.xnuapp.dsh`
 (change `DSH_BUNDLE_ID_PREFIX` for your own builds).
 
+## Roadmap
+
+[docs/host-bridge.md](docs/host-bridge.md) proposes a loopback bridge that lets
+the agent reach iOS capabilities as ordinary dsh tools — Apple Health, clipboard,
+location, calendar, photos, share sheet, Shortcuts. Each capability is one route
+in the app plus one tool in the guest plugin.
+
 ## FAQ
 
 **Does it need a jailbreak, TrollStore or a special entitlement?** No. It is a

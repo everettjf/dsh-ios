@@ -151,6 +151,12 @@ site/           项目主页（GitHub Pages → https://xnu.app/dsh-ios/）
 `DSH.xcodeproj` 由 `scripts/gen-xcode-project.rb`（`make project`）生成，增删源码文件后重新运行即可。
 所有构建设置在 `app/AppDSH.xcconfig`；bundle id 为 `com.xnuapp.dsh`（自己构建请改 `DSH_BUNDLE_ID_PREFIX`）。
 
+## 路线图
+
+[docs/host-bridge.md](docs/host-bridge.md) 提出了一个 loopback bridge：让 agent 以
+普通 dsh 工具的形式访问 iOS 能力——Apple Health、剪贴板、位置、日历、照片、分享、
+Shortcuts。每加一个能力 = app 侧一个路由 + guest 插件里一个 tool。
+
 ## 常见问题
 
 **需要越狱、TrollStore 或特殊 entitlement 吗？** 不需要。它就是一个普通的沙箱 app：模拟器纯用户态，node 以 jitless 运行。
