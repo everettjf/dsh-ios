@@ -108,4 +108,126 @@ export function apply(ctx) {
     execute: () => call("/v1/device"),
     presentCall: () => ({ card: "generic", title: "Read device information", kind: "other" }),
   }));
+
+  ctx.tools.register(defineTool({
+    name: "calendar_query",
+    description:
+      "Read events from the user's calendars on this device. `days` looks forward (7 by default); a negative value looks back. " +
+      "Results are capped and report whether they were truncated. " +
+      "If the capability is off in DSH's settings, or iOS has not granted calendar access yet, the call fails with a message saying so — relay it to the user instead of retrying blindly.",
+    parameters: {
+      days: { type: "number", description: "Days ahead (negative for the past). Default 7, max 366." },
+      limit: { type: "number", description: "Maximum events to return. Default 50, max 200." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          events: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: { type: "string" },
+                start: { type: "string", description: "ISO 8601." },
+                end: { type: "string", description: "ISO 8601." },
+                allDay: { type: "boolean" },
+                calendar: { type: "string" },
+                location: { type: "string" },
+                notes: { type: "string", description: "Truncated to 500 characters." },
+                attendeeCount: { type: "number" },
+              },
+            },
+          },
+          from: { type: "string" },
+          to: { type: "string" },
+          truncated: { type: "boolean", description: "True when more events matched than were returned." },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: value.events.length === 0
+          ? `No events between ${value.from} and ${value.to}.`
+          : [
+              `Events ${value.from} → ${value.to}${value.truncated ? " (truncated)" : ""}:`,
+              ...value.events.map((e) => {
+                const when = e.allDay ? `${e.start} (all day)` : `${e.start} → ${e.end}`;
+                const where = e.location ? ` @ ${e.location}` : "";
+                return `- ${e.title} — ${when}${where} [${e.calendar}]`;
+              }),
+            ].join("\n"),
+      }],
+    },
+    execute: ({ days, limit }) => {
+      const query = new URLSearchParams();
+      if (days !== undefined) query.set("days", String(days));
+      if (limit !== undefined) query.set("limit", String(limit));
+      const suffix = query.toString();
+      return call(`/v1/calendar/events${suffix ? `?${suffix}` : ""}`);
+    },
+    presentCall: (args) => ({
+      card: "generic",
+      title: `Read calendar (${args.days ?? 7} days)`,
+      kind: "other",
+    }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "reminders_query",
+    description:
+      "Read the user's reminders on this device, soonest due first. Completed ones are left out unless `completed` is true. " +
+      "Same failure behaviour as calendar_query when the capability is off or iOS has not granted access.",
+    parameters: {
+      completed: { type: "boolean", description: "Include completed reminders. Default false." },
+      limit: { type: "number", description: "Maximum reminders to return. Default 50, max 200." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          reminders: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: { type: "string" },
+                completed: { type: "boolean" },
+                list: { type: "string" },
+                due: { type: "string", description: "ISO 8601; absent when the reminder has no due date." },
+                priority: { type: "number" },
+                notes: { type: "string", description: "Truncated to 500 characters." },
+              },
+            },
+          },
+          truncated: { type: "boolean" },
+          note: { type: "string" },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: value.reminders.length === 0
+          ? "No reminders."
+          : [
+              `Reminders${value.truncated ? " (truncated)" : ""}:`,
+              ...value.reminders.map((r) => {
+                const due = r.due ? ` — due ${r.due}` : "";
+                const state = r.completed ? " [done]" : "";
+                return `- ${r.title}${due} [${r.list}]${state}`;
+              }),
+            ].join("\n"),
+      }],
+    },
+    execute: ({ completed, limit }) => {
+      const query = new URLSearchParams();
+      if (completed) query.set("completed", "true");
+      if (limit !== undefined) query.set("limit", String(limit));
+      const suffix = query.toString();
+      return call(`/v1/reminders${suffix ? `?${suffix}` : ""}`);
+    },
+    presentCall: () => ({ card: "generic", title: "Read reminders", kind: "other" }),
+  }));
 }

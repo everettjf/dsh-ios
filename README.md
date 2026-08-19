@@ -183,10 +183,16 @@ settings live in `app/AppDSH.xcconfig`; the bundle id is `com.xnuapp.dsh`
 ## iOS capabilities (host bridge)
 
 The app runs a loopback HTTP listener that dsh tools inside the guest call to
-reach iOS capabilities. The first one ships today: `device_info` (model, iOS
-version, locale, battery, thermal state). Apple Health, clipboard, location,
-calendar, photos, the share sheet and Shortcuts are designed but not built —
-each is one route in the app plus one tool in the guest plugin.
+reach iOS capabilities. Shipping today: `device_info` (model, iOS version,
+locale, battery, thermal state), `calendar_query` and `reminders_query` (read
+your events and reminders through EventKit). Apple Health, clipboard, location,
+photos, the share sheet and Shortcuts are designed but not built — each is one
+route in the app plus one tool in the guest plugin.
+
+Calendar and Reminders are **off by default** and additionally need iOS's own
+permission; a call made before either gate is open comes back as a recoverable
+`permission_denied` telling the model what the user has to do, rather than
+hanging the turn on a dialog.
 
 Capabilities are gated by the app, not by the guest: a random per-launch bearer
 token keeps *other apps* out, while a per-capability switch (and, for sensitive

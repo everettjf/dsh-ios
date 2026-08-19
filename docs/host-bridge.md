@@ -1,7 +1,7 @@
 # Host Bridge — giving the agent access to iOS capabilities
 
-**Status:** Phase 0 implemented (bridge, capability registry, `device_info`);
-Phases 1–3 designed · **Tracking PR:** this one · **Author:** @everettjf
+**Status:** implemented — the bridge, the capability registry, `device_info`,
+and Calendar/Reminders (read); Health and the settings UI still designed only · **Tracking PR:** this one · **Author:** @everettjf
 
 DSH runs DeepSeek Harness inside an emulated Linux guest. The guest is a good
 sandbox but a poor citizen of the device: it cannot read Apple Health, take a
@@ -119,7 +119,7 @@ none of these need Apple's approval, unlike e.g. Font Enumeration).
 
 | Capability | Route | iOS API | Info.plist / entitlement | Explicit App ID? | Risk | Confirm |
 |---|---|---|---|---|---|---|
-| Device info | `/v1/device` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
+| Device info ✅ | `/v1/device` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
 | Clipboard read | `/v1/clipboard` | `UIPasteboard` | — | no | medium | system paste banner |
 | Clipboard write | `/v1/clipboard` (POST) | `UIPasteboard` | — | no | medium | per call |
 | Battery / thermal | `/v1/device/power` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
@@ -127,7 +127,9 @@ none of these need Apple's approval, unlike e.g. Font Enumeration).
 | Notifications | `/v1/notify` | `UNUserNotificationCenter` | — | no | low | system prompt |
 | **Health (read)** | `/v1/health/*` | HealthKit | `NSHealthShareUsageDescription` + `com.apple.developer.healthkit` | **yes** | high | system + app toggle |
 | Location | `/v1/location` | CoreLocation | `NSLocationWhenInUseUsageDescription` | no | high | system prompt |
-| Calendar / reminders | `/v1/calendar/*` | EventKit | `NSCalendarsFullAccessUsageDescription` | no | high | system + per-write |
+| Calendar (read) ✅ | `/v1/calendar/events` | EventKit | `NSCalendarsFullAccessUsageDescription` (+ pre-17 key) | no | high | switch + system |
+| Reminders (read) ✅ | `/v1/reminders` | EventKit | `NSRemindersFullAccessUsageDescription` (+ pre-17 key) | no | high | switch + system |
+| Reminders (write) | `/v1/reminders` (POST) | EventKit | as above | no | high | per call |
 | Contacts | `/v1/contacts` | Contacts | `NSContactsUsageDescription` | no | high | system + app toggle |
 | Photos (read/pick) | `/v1/photos/*` | PhotosUI picker | `NSPhotoLibraryUsageDescription` | no | high | user picks items |
 | Camera / mic capture | `/v1/capture/*` | AVFoundation | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` | no | high | per call |

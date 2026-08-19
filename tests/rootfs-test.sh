@@ -90,6 +90,18 @@ sed 's/^/     /' "$WORK/bridge-tool.txt" | tail -3
 check "device_info tool reached the bridge" grep -q '\[stub\] GET /v1/device' "$WORK/stub-bridge.log"
 check "tool result reached the model"       grep -q 'model: iPad15,3' "$WORK/bridge-tool.txt"
 
+# The calendar and reminders tools go through the same path.
+for tool in calendar_query reminders_query; do
+    kill $MOCK_PID 2>/dev/null
+    node "$HERE/mock-deepseek.mjs" "$MOCK_PORT" --tool "$tool" > "$WORK/mock-$tool.log" 2>&1 &
+    MOCK_PID=$!
+    sleep 1
+    guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
+           DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=$BRIDGE_TOKEN; \
+           cd /root/workspace; node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile headless 'What is on my schedule?'" > "$WORK/tool-$tool.txt"
+    check "$tool reaches the bridge and renders a result" grep -qE 'Standup|Buy milk' "$WORK/tool-$tool.txt"
+done
+
 # A wrong token must fail loudly instead of silently returning nothing.
 guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
        DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=wrong-token; \
