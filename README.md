@@ -159,10 +159,10 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 |---|---|---|
 | `tests/emu-test.sh` | the new NEON gadgets and the FMOV fix (C test compiled with gcc *inside* the guest), the `waitpid` regression, the fetch polyfill (host node, 11 checks) | macOS |
 | `tests/rootfs-test.sh` | imports `root.tar.gz` like the app does, guest self test (node-pty/koffi/ripgrep/sharp), profile patch, **headless LLM round trip through a mock DeepSeek SSE server**, every bridge tool driven through a real agent turn against a stub bridge, `dsh-serve` reachable over loopback | macOS |
-| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; Calendar, Reminders and Health routes (off by default, refused before the framework is touched, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
+| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; the confirmation gate (background → refuse, no stacking, always answers); every capability route (off by default, refused before the framework is touched, validated before the user is asked, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout, the Capabilities screen's switches | simulator / device |
 
-Status: all suites green (`make test`: 3 + 22 + 51 + 5 checks; the same 51
+Status: all suites green (`make test`: 3 + 33 + 77 + 5 checks; the same 77
 unit + guest-integration tests also run on the iPad Air). Everything runs locally — the build
 needs an Apple Silicon Mac with Xcode, an emulator toolchain and (for the
 device suites) a connected iPhone or iPad, so there is no hosted CI.
@@ -192,17 +192,31 @@ settings live in `app/AppDSH.xcconfig`; the bundle id is `com.xnuapp.dsh`
 The app runs a loopback HTTP listener that dsh tools inside the guest call to
 reach iOS capabilities. Shipping today:
 
-| Tool | What it reads | Gate |
+| Tool | What it does | Gate |
 |---|---|---|
-| `device_info` | model, iOS version, locale, battery, thermal state | on by default |
-| `calendar_query` | events from your calendars | switch + iOS permission |
-| `reminders_query` | reminders and due dates | switch + iOS permission |
+| `device_info`, `device_power` | model, iOS version, locale, battery, heat | on by default |
+| `clipboard_read` | what you last copied | switch (iOS shows its paste banner) |
+| `calendar_query`, `reminders_query` | your events and reminders | switch + iOS permission |
 | `health_query` | steps/distance/energy, heart rate, sleep, workouts | switch + iOS permission |
+| `location_query` | one fix, with its accuracy — never tracking | switch + iOS permission |
+| `contacts_search` | look up a person by name (no way to list everyone) | switch + iOS permission |
+| `notify` | a notification when a long task finishes, 10/hour | switch + iOS permission |
+| `file_import` | you pick a file and hand it to the agent | the picker is the consent |
+| `clipboard_write` | replaces your clipboard | **asks every time** |
+| `calendar_create_event`, `reminders_create` | adds an event or reminder | **asks every time** |
+| `file_export` | saves a file out of DSH | **asks every time** |
+| `shortcut_run` | runs one of your shortcuts | **asks every time** |
 
-Clipboard, location, photos, the share sheet and Shortcuts are designed but not
-built — each is one route in the app plus one tool in the guest plugin.
+Photos and the share sheet are designed but not built — each is one route in the
+app plus one tool in the guest plugin.
 
-Everything except `device_info` ships **off**. Turn it on in **⋯ ▸
+Anything that changes something asks first, and the alert names the actual
+effect ("Add this reminder? “buy milk”, due Friday, in Home") rather than the
+capability. A confirmation that nobody answers is refused rather than left
+hanging, a call that arrives while DSH is in the background is refused instead
+of queueing a dialog you cannot see, and a burst of calls cannot stack alerts.
+
+Everything except `device_info`/`device_power` ships **off**. Turn it on in **⋯ ▸
 Capabilities** — enabling one asks iOS for its permission right there, and the
 switch takes effect on the agent's next tool call, including mid-turn. A call made before
 either gate is open comes back as a recoverable `permission_denied` telling the

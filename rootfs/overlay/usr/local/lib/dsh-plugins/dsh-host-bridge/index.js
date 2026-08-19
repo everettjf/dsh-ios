@@ -376,4 +376,361 @@ export function apply(ctx) {
       kind: "other",
     }),
   }));
+
+  ctx.tools.register(defineTool({
+    name: "device_power",
+    description:
+      "Battery level and state, thermal state and low power mode, plus `shouldDeferExpensiveWork` — " +
+      "check it before starting something long or CPU-heavy on the user's phone.",
+    parameters: {},
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          batteryLevel: { type: "number", description: "Percent; absent when unknown." },
+          batteryState: { type: "string" },
+          thermalState: { type: "string", description: "nominal | fair | serious | critical." },
+          lowPowerMode: { type: "boolean" },
+          shouldDeferExpensiveWork: { type: "boolean" },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: Object.entries(value).map(([key, v]) => `${key}: ${v}`).join("\n"),
+      }],
+    },
+    execute: () => call("/v1/device/power"),
+    presentCall: () => ({ card: "generic", title: "Check battery and thermal state", kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "clipboard_read",
+    description:
+      "Read what the user last copied. iOS shows its own paste banner every time, so the user always knows. " +
+      "Long text is truncated and says so.",
+    parameters: {},
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          text: { type: "string" },
+          hasText: { type: "boolean" },
+          hasImage: { type: "boolean", description: "An image is on the clipboard; this tool cannot read it." },
+          hasURL: { type: "boolean" },
+          characters: { type: "number" },
+          truncated: { type: "boolean" },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: value.hasText
+          ? `Clipboard (${value.characters} characters${value.truncated ? ", truncated" : ""}):\n${value.text}`
+          : value.hasImage ? "The clipboard holds an image, which this tool cannot read."
+          : "The clipboard is empty.",
+      }],
+    },
+    execute: () => call("/v1/clipboard"),
+    presentCall: () => ({ card: "generic", title: "Read the clipboard", kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "clipboard_write",
+    description:
+      "Replace what the user has copied. This overwrites their clipboard, so only do it when they asked for something to be copied. " +
+      "The user is asked to confirm every call and can decline; if they do, do not try again with the same text.",
+    parameters: {
+      text: { type: "string", description: "The text to put on the clipboard. Required." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { written: { type: "boolean" }, characters: { type: "number" } },
+      },
+      render: (_args, value) => [{ type: "text", text: `Copied ${value.characters} characters to the clipboard.` }],
+    },
+    execute: ({ text }) => {
+      if (typeof text !== "string") throw new Error("text is required");
+      return call("/v1/clipboard", { method: "POST", body: { text } });
+    },
+    presentCall: () => ({ card: "generic", title: "Copy text to the clipboard", kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "location_query",
+    description:
+      "One location fix from the device, with its accuracy in metres. There is no tracking and no history — each call is a fresh fix. " +
+      "Always state the accuracy rather than implying the position is exact. Fails clearly if the user has not allowed location access.",
+    parameters: {},
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          latitude: { type: "number" },
+          longitude: { type: "number" },
+          accuracyMeters: { type: "number" },
+          altitudeMeters: { type: "number" },
+          speedMetersPerSecond: { type: "number" },
+          timestamp: { type: "string" },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: `${value.latitude.toFixed(5)}, ${value.longitude.toFixed(5)} (±${value.accuracyMeters} m) at ${value.timestamp}`,
+      }],
+    },
+    execute: () => call("/v1/location"),
+    presentCall: () => ({ card: "generic", title: "Get the current location", kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "contacts_search",
+    description:
+      "Look up people in the user's contacts by name. You must say who you are looking for — there is no way to list every contact, by design. " +
+      "Treat what comes back as private: use it for the task at hand and do not repeat more of it than the user needs.",
+    parameters: {
+      query: { type: "string", description: "Name to search for. Required." },
+      limit: { type: "number", description: "Maximum matches. Default 10, max 25." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          query: { type: "string" },
+          contacts: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                name: { type: "string" },
+                organization: { type: "string" },
+                nickname: { type: "string" },
+                birthday: { type: "string" },
+                phones: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: { label: { type: "string" }, number: { type: "string" } },
+                  },
+                },
+                emails: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: { label: { type: "string" }, address: { type: "string" } },
+                  },
+                },
+                addresses: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: { label: { type: "string" }, address: { type: "string" } },
+                  },
+                },
+              },
+            },
+          },
+          truncated: { type: "boolean" },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: value.contacts.length === 0
+          ? `No contact matches “${value.query}”.`
+          : value.contacts.map((c) => {
+              const bits = [
+                ...(c.phones ?? []).map((p) => `${p.label || "phone"}: ${p.number}`),
+                ...(c.emails ?? []).map((e) => `${e.label || "email"}: ${e.address}`),
+                ...(c.addresses ?? []).map((a) => `${a.label || "address"}: ${a.address.replace(/\n/g, ", ")}`),
+                c.birthday ? `birthday: ${c.birthday}` : null,
+              ].filter(Boolean);
+              return `${c.name}${c.organization ? ` (${c.organization})` : ""}\n  ${bits.join("\n  ")}`;
+            }).join("\n"),
+      }],
+    },
+    execute: ({ query, limit }) => {
+      if (!query) throw new Error("query is required: name the person to look up");
+      const params = new URLSearchParams({ q: query });
+      if (limit !== undefined) params.set("limit", String(limit));
+      return call(`/v1/contacts?${params}`);
+    },
+    presentCall: (args) => ({ card: "generic", title: `Look up “${args.query}” in contacts`, kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "notify",
+    description:
+      "Send the user a notification on this device — for when a long task finishes and they are not looking at DSH. " +
+      "Limited to 10 an hour; if that runs out, just say it in the conversation instead. Do not use it for things the user is already watching happen.",
+    parameters: {
+      title: { type: "string", description: "Short headline. Required." },
+      body: { type: "string", description: "Optional second line." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { delivered: { type: "boolean" }, remainingThisHour: { type: "number" } },
+      },
+      render: (_args, value) => [{ type: "text", text: `Notification sent (${value.remainingThisHour} left this hour).` }],
+    },
+    execute: ({ title, body }) => {
+      if (!title) throw new Error("title is required");
+      return call("/v1/notify", { method: "POST", body: { title, body } });
+    },
+    presentCall: (args) => ({ card: "generic", title: `Notify: ${args.title}`, kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "calendar_create_event",
+    description:
+      "Add an event to the user's default calendar. `start` and `end` take ISO 8601, or \"YYYY-MM-DD HH:mm\" / \"YYYY-MM-DD\" in the device's own time zone — " +
+      "prefer the local forms, since that is what the user means. Without `end` the event lasts an hour (or a day when `allDay`). " +
+      "The user confirms every call and sees the title, time and calendar first; if they decline, ask what to change rather than retrying.",
+    parameters: {
+      title: { type: "string", description: "Required." },
+      start: { type: "string", description: "Required." },
+      end: { type: "string" },
+      allDay: { type: "boolean" },
+      location: { type: "string" },
+      notes: { type: "string" },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          created: { type: "boolean" },
+          title: { type: "string" },
+          start: { type: "string" },
+          end: { type: "string" },
+          allDay: { type: "boolean" },
+          calendar: { type: "string" },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: `Added “${value.title}” to ${value.calendar}: ${value.start}${value.allDay ? " (all day)" : ` → ${value.end}`}`,
+      }],
+    },
+    execute: (args) => {
+      if (!args.title || !args.start) throw new Error("title and start are required");
+      return call("/v1/calendar/events", { method: "POST", body: args });
+    },
+    presentCall: (args) => ({ card: "generic", title: `Create event “${args.title}”`, kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "reminders_create",
+    description:
+      "Add a reminder to the user's default list, optionally with a due date (same date formats as calendar_create_event). " +
+      "A due date also sets an alarm, so the user actually gets reminded. Confirmed by the user every call.",
+    parameters: {
+      title: { type: "string", description: "Required." },
+      due: { type: "string" },
+      notes: { type: "string" },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          created: { type: "boolean" },
+          title: { type: "string" },
+          due: { type: "string" },
+          list: { type: "string" },
+        },
+      },
+      render: (_args, value) => [{
+        type: "text",
+        text: `Added “${value.title}” to ${value.list}${value.due ? `, due ${value.due}` : ""}.`,
+      }],
+    },
+    execute: (args) => {
+      if (!args.title) throw new Error("title is required");
+      return call("/v1/reminders", { method: "POST", body: args });
+    },
+    presentCall: (args) => ({ card: "generic", title: `Create reminder “${args.title}”`, kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "file_import",
+    description:
+      "Ask the user to hand you a file: opens the iOS file picker and returns the chosen file's contents, base64-encoded. " +
+      "Write it into the workspace yourself (Buffer.from(base64, 'base64')) before working on it. " +
+      "The user may close the picker without choosing, which is a normal answer, not an error to retry.",
+    parameters: {},
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string" },
+          bytes: { type: "number" },
+          base64: { type: "string" },
+        },
+      },
+      render: (_args, value) => [{ type: "text", text: `The user picked “${value.name}” (${value.bytes} bytes).` }],
+    },
+    execute: () => call("/v1/files/import", { method: "POST", body: {} }),
+    presentCall: () => ({ card: "generic", title: "Ask the user for a file", kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "file_export",
+    description:
+      "Save a file out of DSH: the user confirms, then chooses where it goes in the iOS save dialog. " +
+      "Send the contents base64-encoded, at most 8 MB. Use it when the user asks for something they want to keep or open elsewhere.",
+    parameters: {
+      name: { type: "string", description: "File name, e.g. report.md. Required." },
+      base64: { type: "string", description: "File contents, base64-encoded. Required." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { saved: { type: "boolean" }, name: { type: "string" }, bytes: { type: "number" } },
+      },
+      render: (_args, value) => [{ type: "text", text: `Saved “${value.name}” (${value.bytes} bytes).` }],
+    },
+    execute: ({ name, base64 }) => {
+      if (!name || typeof base64 !== "string") throw new Error("name and base64 are required");
+      return call("/v1/files/export", { method: "POST", body: { name, base64 } });
+    },
+    presentCall: (args) => ({ card: "generic", title: `Save “${args.name}”`, kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "shortcut_run",
+    description:
+      "Run one of the user's own Shortcuts by name, optionally with text input. Two things to understand before using it:\n" +
+      "- A shortcut can do anything the user built it to do, and DSH cannot see inside it. The user confirms every call.\n" +
+      "- Running one opens the Shortcuts app, which sends DSH to the background and stops this turn. There is no result to read. " +
+      "Say what you asked for and let the user tell you what happened when they come back.",
+    parameters: {
+      name: { type: "string", description: "The shortcut's name, exactly as in the Shortcuts app. Required." },
+      input: { type: "string", description: "Optional text input for the shortcut." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { started: { type: "boolean" }, name: { type: "string" }, note: { type: "string" } },
+      },
+      render: (_args, value) => [{ type: "text", text: `Started the shortcut “${value.name}”. ${value.note}` }],
+    },
+    execute: ({ name, input }) => {
+      if (!name) throw new Error("name is required");
+      return call("/v1/shortcut/run", { method: "POST", body: { name, input } });
+    },
+    presentCall: (args) => ({ card: "generic", title: `Run shortcut “${args.name}”`, kind: "other" }),
+  }));
 }

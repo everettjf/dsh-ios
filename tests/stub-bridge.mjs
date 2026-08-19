@@ -32,16 +32,26 @@ const server = http.createServer((req, res) => {
       { id: 'calendar.read', title: 'Calendar (read)', details: '…', state: 'granted', gate: 'system-permission' },
       { id: 'reminders.read', title: 'Reminders (read)', details: '…', state: 'granted', gate: 'system-permission' },
       { id: 'health.read', title: 'Apple Health (read)', details: '…', state: 'granted', gate: 'system-permission' },
+      { id: 'clipboard.read', title: 'Clipboard (read)', details: '…', state: 'granted', gate: 'enabled-only' },
+      { id: 'clipboard.write', title: 'Clipboard (write)', details: '…', state: 'prompt', gate: 'per-call' },
+      { id: 'location.read', title: 'Location', details: '…', state: 'granted', gate: 'system-permission' },
+      { id: 'contacts.read', title: 'Contacts (read)', details: '…', state: 'granted', gate: 'system-permission' },
+      { id: 'notifications.post', title: 'Notifications', details: '…', state: 'granted', gate: 'system-permission' },
+      { id: 'files.import', title: 'Files (import)', details: '…', state: 'granted', gate: 'enabled-only' },
+      { id: 'files.export', title: 'Files (export)', details: '…', state: 'prompt', gate: 'per-call' },
+      { id: 'shortcuts.run', title: 'Shortcuts', details: '…', state: 'prompt', gate: 'per-call' },
+      { id: 'calendar.write', title: 'Calendar (create)', details: '…', state: 'prompt', gate: 'per-call' },
+      { id: 'reminders.write', title: 'Reminders (create)', details: '…', state: 'prompt', gate: 'per-call' },
     ] });
   } else if (path === '/v1/device') {
     send(200, DEVICE);
-  } else if (path === '/v1/calendar/events') {
+  } else if (path === '/v1/calendar/events' && req.method === 'GET') {
     send(200, {
       events: [{ title: 'Standup', start: '2026-08-19T09:00:00Z', end: '2026-08-19T09:15:00Z',
                  allDay: false, calendar: 'Work', location: 'Zoom' }],
       from: '2026-08-19T00:00:00Z', to: '2026-08-26T00:00:00Z', truncated: false,
     });
-  } else if (path === '/v1/reminders') {
+  } else if (path === '/v1/reminders' && req.method === 'GET') {
     send(200, {
       reminders: [{ title: 'Buy milk', completed: false, list: 'Home', due: '2026-08-20T17:00:00Z' }],
       truncated: false,
@@ -70,6 +80,38 @@ const server = http.createServer((req, res) => {
       workouts: [{ type: 'Running', start: '2026-08-18T06:30:00Z', end: '2026-08-18T07:10:00Z',
                    durationMinutes: 40, activeEnergyKcal: 388, distanceKm: 7.2, source: 'Apple Watch' }],
     });
+  } else if (path === '/v1/device/power') {
+    send(200, { batteryLevel: 68, batteryState: 'unplugged', thermalState: 'fair',
+                lowPowerMode: false, shouldDeferExpensiveWork: false });
+  } else if (path === '/v1/clipboard' && req.method === 'GET') {
+    send(200, { text: 'STUB-CLIPBOARD-42', hasText: true, hasImage: false, hasURL: false,
+                characters: 17, truncated: false });
+  } else if (path === '/v1/clipboard' && req.method === 'POST') {
+    send(200, { written: true, characters: 11 });
+  } else if (path === '/v1/location') {
+    send(200, { latitude: 37.33182, longitude: -122.03118, accuracyMeters: 65,
+                timestamp: '2026-08-19T12:00:00Z' });
+  } else if (path === '/v1/contacts') {
+    send(200, { query: 'ada', truncated: false, contacts: [
+      { name: 'Ada Lovelace', organization: 'Analytical Engines',
+        phones: [{ label: 'mobile', number: '+1 555 0100' }],
+        emails: [{ label: 'work', address: 'ada@example.com' }] },
+    ] });
+  } else if (path === '/v1/notify') {
+    send(200, { delivered: true, remainingThisHour: 9 });
+  } else if (path === '/v1/files/import') {
+    // "STUB-FILE-CONTENT" base64-encoded.
+    send(200, { name: 'notes.txt', bytes: 17, base64: 'U1RVQi1GSUxFLUNPTlRFTlQ=' });
+  } else if (path === '/v1/files/export') {
+    send(200, { saved: true, name: 'report.md', bytes: 5 });
+  } else if (path === '/v1/shortcut/run') {
+    send(200, { started: true, name: 'Log Water',
+                note: 'Shortcuts has been opened; DSH is in the background and this turn stops here.' });
+  } else if (path === '/v1/calendar/events' && req.method === 'POST') {
+    send(200, { created: true, title: 'Standup', start: '2026-08-20T09:00:00Z',
+                end: '2026-08-20T09:30:00Z', allDay: false, calendar: 'Work' });
+  } else if (path === '/v1/reminders' && req.method === 'POST') {
+    send(200, { created: true, title: 'Buy milk', due: '2026-08-20T17:00:00Z', list: 'Home' });
   } else if (path === '/v1/health/empty') {
     // What a route answers when the user shared nothing — the note is the point.
     send(200, { metric: 'activity', days: [], note: 'No samples in this window. iOS does not let an app see whether read access was declined.' });

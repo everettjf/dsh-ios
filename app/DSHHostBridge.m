@@ -252,7 +252,18 @@ static const NSTimeInterval kSocketTimeout = 15;
     }
     while (buffer.length - bodyStart < contentLength) {
         ssize_t n = recv(fd, chunk, sizeof(chunk), 0);
-        if (n <= 0) { close(fd); return; }
+        if (n <= 0) {
+            // The headers promised a body that never arrived: a stalled client,
+            // or one that dropped the body but kept Content-Length — which is
+            // exactly what NSURLSession does to a GET. Closing silently here
+            // looks like a hang from the other end, so answer instead. The
+            // socket's receive timeout is what bounds the wait.
+            [self sendResponse:[DSHHostBridgeResponse errorWithStatus:400 code:@"invalid_request"
+                                                              message:@"the request announced a body it did not send"
+                                                          recoverable:NO] to:fd];
+            [self finishConnection:fd];
+            return;
+        }
         [buffer appendBytes:chunk length:n];
     }
     NSData *body = contentLength ? [buffer subdataWithRange:NSMakeRange(bodyStart, contentLength)] : nil;

@@ -14,6 +14,28 @@
     [bridge registerRoute:@"GET" path:@"/v1/device" capability:@"device.info" handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {
         return [DSHHostBridgeResponse ok:[self snapshot]];
     }];
+    // Same capability, cheaper answer: power and heat change minute to minute,
+    // and an agent deciding whether to start something expensive should not
+    // have to pull the whole device snapshot to find out.
+    [bridge registerRoute:@"GET" path:@"/v1/device/power" capability:@"device.info" handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {
+        return [DSHHostBridgeResponse ok:[self powerSnapshot]];
+    }];
+}
+
++ (NSDictionary *)powerSnapshot {
+    NSDictionary *full = [self snapshot];
+    NSMutableDictionary *out = [@{
+        @"thermalState": full[@"thermalState"],
+        @"lowPowerMode": full[@"lowPowerMode"],
+        // Says out loud what "serious"/"critical" means for the agent's plans,
+        // which is the only reason it asked.
+        @"shouldDeferExpensiveWork": @([full[@"thermalState"] isEqualToString:@"serious"]
+                                       || [full[@"thermalState"] isEqualToString:@"critical"]
+                                       || [full[@"lowPowerMode"] boolValue]),
+    } mutableCopy];
+    if (full[@"batteryLevel"]) out[@"batteryLevel"] = full[@"batteryLevel"];
+    if (full[@"batteryState"]) out[@"batteryState"] = full[@"batteryState"];
+    return out;
 }
 
 + (NSString *)hardwareModel {
