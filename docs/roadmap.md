@@ -12,7 +12,8 @@ which this plan references rather than repeats.
 | App: WKWebView front end, supervised `dsh web`, terminal, server log | done |
 | Background boot with progress + ETA (launch watchdog safe) | done |
 | Guest image auto-upgrade with user-data migration | done |
-| Host bridge Phase 0: listener, token, capability registry, `device_info` | done |
+| Host bridge: listener, token, capability registry, `device_info` | done |
+| Calendar and Reminders (read) over EventKit, off by default | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
 | Tests: emulator 3, rootfs 16, app 32 (device + simulator), UI 4 | done |
 | Distribution: build-it-yourself only | open |
@@ -37,9 +38,11 @@ That is the whole of Phase 1.
    vs per-session grants — has to be settled here; the current proposal is
    per-session for reads, per-call for writes, with a badge in the DSH bar while
    a session grant is live.
-3. **First users of both paths:** clipboard (`GET`/`POST /v1/clipboard`,
-   `UIPasteboard`) and the share sheet (`POST /v1/share`,
-   `UIActivityViewController`). Neither needs an entitlement, so Phase 1 stays
+3. **First users of both paths:** Calendar and Reminders are already in and
+   need the screen to be switchable at all (they ship off, and today the only
+   way to turn them on is a debugger or a test); clipboard (`GET`/`POST
+   /v1/clipboard`) and creating a reminder (`POST /v1/reminders`) exercise the
+   per-call confirmation. None of these needs an entitlement, so Phase 1 stays
    inside the current signing setup.
 4. **Tests.** Registry persistence; a route gated per-call that is refused on
    timeout; XCUITest that flips a switch and sees the tool start failing;

@@ -31,6 +31,14 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>DSH lets the agent read your calendar when you turn the Calendar capability on.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>DSH lets the agent read your calendar when you turn the Calendar capability on.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>DSH lets the agent read your reminders when you turn the Reminders capability on.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>DSH lets the agent read your reminders when you turn the Reminders capability on.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>DSH runs a local web server inside the app and connects to it over loopback.</string>
 	<key>UIApplicationSceneManifest</key>

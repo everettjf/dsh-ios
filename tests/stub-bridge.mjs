@@ -27,9 +27,24 @@ const server = http.createServer((req, res) => {
   }
   const path = req.url.split('?')[0];
   if (path === '/v1/capabilities') {
-    send(200, { capabilities: [{ id: 'device.info', title: 'Device information', details: '…', state: 'granted', gate: 'enabled-only' }] });
+    send(200, { capabilities: [
+      { id: 'device.info', title: 'Device information', details: '…', state: 'granted', gate: 'enabled-only' },
+      { id: 'calendar.read', title: 'Calendar (read)', details: '…', state: 'granted', gate: 'system-permission' },
+      { id: 'reminders.read', title: 'Reminders (read)', details: '…', state: 'granted', gate: 'system-permission' },
+    ] });
   } else if (path === '/v1/device') {
     send(200, DEVICE);
+  } else if (path === '/v1/calendar/events') {
+    send(200, {
+      events: [{ title: 'Standup', start: '2026-08-19T09:00:00Z', end: '2026-08-19T09:15:00Z',
+                 allDay: false, calendar: 'Work', location: 'Zoom' }],
+      from: '2026-08-19T00:00:00Z', to: '2026-08-26T00:00:00Z', truncated: false,
+    });
+  } else if (path === '/v1/reminders') {
+    send(200, {
+      reminders: [{ title: 'Buy milk', completed: false, list: 'Home', due: '2026-08-20T17:00:00Z' }],
+      truncated: false,
+    });
   } else {
     send(404, { error: { code: 'invalid_request', message: `no route for ${req.method} ${path}`, recoverable: false } });
   }

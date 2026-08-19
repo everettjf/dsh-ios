@@ -154,10 +154,14 @@ site/           项目主页（GitHub Pages → https://xnu.app/dsh-ios/）
 
 ## iOS 能力（host bridge）
 
-app 内运行一个 loopback HTTP 服务，guest 里的 dsh 工具通过它访问 iOS 能力。目前已
-落地第一个：`device_info`（型号、iOS 版本、地区、电量、温度状态）。Apple Health、
-剪贴板、位置、日历、照片、分享、Shortcuts 已完成设计但尚未实现——每加一个能力 =
-app 侧一个路由 + guest 插件里一个 tool。
+app 内运行一个 loopback HTTP 服务，guest 里的 dsh 工具通过它访问 iOS 能力。已落地：
+`device_info`（型号、iOS 版本、地区、电量、温度状态）、`calendar_query` 与
+`reminders_query`（通过 EventKit 读日历事件和提醒事项）。Apple Health、剪贴板、位置、
+照片、分享、Shortcuts 已完成设计但尚未实现——每加一个能力 = app 侧一个路由 +
+guest 插件里一个 tool。
+
+日历和提醒**默认关闭**，且还需要 iOS 自己的授权；任一道门没开时调用会返回可恢复的
+`permission_denied`，告诉模型需要用户做什么，而不是卡在系统弹窗上等。
 
 能力由 app 把关，而不是 guest：每次启动随机生成的 bearer token 挡住**其他 app**，
 而每个能力的开关（敏感能力还要原生确认）才是约束 **agent** 的手段——agent 在 guest
