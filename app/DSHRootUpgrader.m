@@ -17,6 +17,18 @@ static NSString *const kInstalledRootHashKey = @"DSHInstalledRootHash";
 static NSString *const kPendingMigrationRootKey = @"DSHPendingMigrationRoot";
 static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
 
+/// Bridges Roots' import progress to a block.
+@interface DSHImportProgress : NSObject <ProgressReporter>
+@property (nonatomic, copy, nullable) void (^handler)(double, NSString *);
+@end
+
+@implementation DSHImportProgress
+- (void)updateProgress:(double)fraction message:(NSString *)message {
+    if (self.handler) self.handler(fraction, message);
+}
+- (BOOL)shouldCancel { return NO; }
+@end
+
 @interface DSHRootUpgrader ()
 @property (nonatomic, readwrite, nullable) NSString *bundledRootHash;
 @end
@@ -49,12 +61,20 @@ static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
 }
 
 - (BOOL)prepareRootsBeforeBoot {
+    return [self prepareRootsBeforeBootWithProgress:nil];
+}
+
+- (BOOL)prepareRootsBeforeBootWithProgress:(void (^)(double, NSString *))progressHandler {
     NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
     NSString *bundled = self.bundledRootHash;
     // Look before Roots.instance exists: its first access imports the bundled
     // image as "default", which is exactly the fresh-install case.
     NSURL *rootsDir = [ContainerURL() URLByAppendingPathComponent:@"roots"];
     BOOL hadRoots = [NSFileManager.defaultManager contentsOfDirectoryAtPath:rootsDir.path error:nil].count > 0;
+    if (!hadRoots && progressHandler)
+        progressHandler(0, @"Installing the Linux image…");
+    // First access imports the bundled image on a fresh install (no progress
+    // callback available there — Roots owns that path).
     Roots *roots = Roots.instance;
     if (bundled == nil)
         return NO;
@@ -83,7 +103,9 @@ static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
     NSURL *archive = [NSBundle.mainBundle URLForResource:@"root" withExtension:@"tar.gz"];
     NSError *error;
     NSLog(@"[dsh-ios] importing updated guest image as root %@", newName);
-    if (![roots importRootFromArchive:archive name:newName error:&error progressReporter:nil]) {
+    DSHImportProgress *reporter = [DSHImportProgress new];
+    reporter.handler = progressHandler;
+    if (![roots importRootFromArchive:archive name:newName error:&error progressReporter:reporter]) {
         NSLog(@"[dsh-ios] import of updated root failed: %@ — keeping the current root", error);
         return NO;
     }

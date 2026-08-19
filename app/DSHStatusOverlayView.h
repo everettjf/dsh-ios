@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// Drives the progress bar: elapsed vs. expected seconds since `startedAt`.
 /// Pass nil startedAt to hide the estimate (e.g. "Loading the interface…").
 - (void)setProgressStartedAt:(nullable NSDate *)startedAt expected:(NSTimeInterval)expected;
+/// Shows a measured fraction (0…1) instead of a time estimate; pass a negative
+/// fraction for "busy, no measurable progress".
+- (void)setDeterminateProgress:(double)fraction detail:(nullable NSString *)detail;
 - (void)showFailure:(NSString *)message;
 - (void)hide;
 - (void)setLogText:(NSString *)text;

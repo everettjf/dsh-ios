@@ -24,9 +24,13 @@ NS_ASSUME_NONNULL_BEGIN
 /// Name of the root whose user data still has to be migrated, if any.
 @property (nonatomic, readonly, nullable) NSString *pendingMigrationRoot;
 
-/// Call BEFORE the kernel mounts the root (i.e. before AppDelegate.boot).
-/// Imports the bundled image as a new default root when it changed. Returns
-/// YES when a new root was imported (a migration is then pending).
+/// Call BEFORE the kernel mounts the root (i.e. before AppDelegate.boot), on a
+/// background thread: importing the image takes tens of seconds. Imports the
+/// bundled image as a new default root when it changed and returns YES (a
+/// migration is then pending). `progress` is called on the calling thread with
+/// a 0…1 fraction while the image is being written.
+- (BOOL)prepareRootsBeforeBootWithProgress:(nullable void (^)(double fraction, NSString *message))progress;
+/// Convenience: no progress reporting.
 - (BOOL)prepareRootsBeforeBoot;
 
 /// Call AFTER the kernel booted. Copies user data from the previous root

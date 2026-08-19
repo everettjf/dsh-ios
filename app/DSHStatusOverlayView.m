@@ -153,6 +153,15 @@
     }
 }
 
+- (void)setDeterminateProgress:(double)fraction detail:(NSString *)detail {
+    self.progressStartedAt = nil;
+    self.expected = 0;
+    self.progress.hidden = fraction < 0;
+    if (fraction >= 0)
+        [self.progress setProgress:(float) MIN(fraction, 1.0) animated:YES];
+    self.elapsedLabel.text = detail ?: @"";
+}
+
 - (void)setProgressStartedAt:(NSDate *)startedAt expected:(NSTimeInterval)expected {
     self.progressStartedAt = startedAt;
     self.expected = expected;

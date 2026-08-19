@@ -4,41 +4,33 @@
 //
 
 #import "DSHAppDelegate.h"
+#import "DSHBootCoordinator.h"
 #import "DSHHarness.h"
-#import "DSHRootUpgrader.h"
 #import "DSHRootViewController.h"
 
+// iSH's AppDelegate boots the kernel inside -willFinishLaunching. That takes
+// far longer than iOS's launch watchdog allows on a phone (importing the guest
+// image alone can take a minute), so DSH overrides both launch methods, keeps
+// only their cheap parts, and lets DSHBootCoordinator do the work in the
+// background while the UI is already on screen.
 @implementation DSHAppDelegate
 
 - (BOOL)application:(UIApplication *)application willFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey,id> *)launchOptions {
-    // Import an updated guest image (if this build ships one) before the
-    // kernel mounts the default root.
-    if (![NSUserDefaults.standardUserDefaults boolForKey:@"recovery"])
-        [DSHRootUpgrader.shared prepareRootsBeforeBoot];
-    return [super application:application willFinishLaunchingWithOptions:launchOptions];
+    NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
+    if ([defaults boolForKey:@"hail mary"]) {
+        [defaults removeObjectForKey:@"Boot Command"];
+        [defaults removeObjectForKey:@"Init Command"];
+        [defaults setBool:NO forKey:@"hail mary"];
+    }
+    return YES;   // deliberately no [super ...]: that would boot synchronously
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    BOOL ok = [super application:application didFinishLaunchingWithOptions:launchOptions];
-    // The kernel booted in -willFinishLaunching (or failed: bootError != 0).
-    if (AppDelegate.bootError != 0) {
-        NSLog(@"[dsh-ios] kernel boot failed with %d; not starting harness", AppDelegate.bootError);
-        return ok;
-    }
-    DSHHarness *harness = DSHHarness.shared;
-    if (DSHRootUpgrader.shared.pendingMigrationRoot != nil) {
-        [harness.log append:@"[dsh-ios] new guest image installed; migrating your sessions and workspace…"];
-        [DSHRootUpgrader.shared migrateIfNeededWithCompletion:^(BOOL migrated, NSError *error) {
-            if (error)
-                [harness.log append:[NSString stringWithFormat:@"[dsh-ios] migration problem: %@", error.localizedDescription]];
-            else if (migrated)
-                [harness.log append:@"[dsh-ios] migration complete"];
-            [harness start];
-        }];
-    } else {
-        [harness start];
-    }
-    return ok;
+    if ([NSUserDefaults.standardUserDefaults boolForKey:@"recovery"])
+        return YES;
+    // Kicks off image import → kernel boot → data migration → harness start.
+    [DSHBootCoordinator.shared start];
+    return YES;
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application {

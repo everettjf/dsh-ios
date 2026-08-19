@@ -5,6 +5,7 @@
 
 #import "DSHRootViewController.h"
 #import "DSHHarness.h"
+#import "DSHBootCoordinator.h"
 #import "DSHLogViewController.h"
 #import "DSHStatusOverlayView.h"
 #import "TerminalViewController.h"
@@ -42,6 +43,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
     [nc addObserver:self selector:@selector(harnessStateChanged:) name:DSHHarnessStateDidChangeNotification object:nil];
     [nc addObserver:self selector:@selector(logChanged:) name:DSHLogBufferDidChangeNotification object:nil];
+    [nc addObserver:self selector:@selector(bootStateChanged:) name:DSHBootStateDidChangeNotification object:nil];
     [self applyHarnessState];
 }
 
@@ -187,6 +189,10 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     [self applyHarnessState];
 }
 
+- (void)bootStateChanged:(NSNotification *)note {
+    [self applyHarnessState];
+}
+
 - (void)logChanged:(NSNotification *)note {
     [self.overlay setLogText:[DSHHarness.shared.log tail:12]];
 }
@@ -204,8 +210,19 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     self.statusDot.accessibilityValue = DSHHarnessStateName(h.state);
     self.titleLabel.text = h.port ? [NSString stringWithFormat:@"DSH · :%u", h.port] : @"DSH";
 
-    if (AppDelegate.bootError != 0) {
-        [self.overlay showFailure:[NSString stringWithFormat:@"The Linux guest failed to boot (error %d).", AppDelegate.bootError]];
+    // Before the guest is up, the boot coordinator owns the overlay.
+    DSHBootCoordinator *boot = DSHBootCoordinator.shared;
+    self.terminalButton.enabled = boot.phase == DSHBootPhaseReady;
+    if (boot.phase != DSHBootPhaseReady) {
+        if (boot.phase == DSHBootPhaseFailed) {
+            [self.overlay showFailure:boot.statusMessage];
+        } else {
+            [self.overlay showStarting:boot.statusMessage];
+            [self.overlay setDeterminateProgress:boot.progress
+                                          detail:boot.progress >= 0
+                                                 ? [NSString stringWithFormat:@"%.0f%% · first launch only", boot.progress * 100]
+                                                 : @"this takes a moment on first launch"];
+        }
         return;
     }
 
