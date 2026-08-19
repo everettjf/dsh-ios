@@ -167,7 +167,7 @@ in `NSUserDefaults`, `GET /v1/capabilities` + `GET /v1/device`. Guest side: the
 `/usr/local/lib/dsh-plugins/`, mounted from `cordis.patch.yml`, exposing
 `device_info`. Env (`DSH_HOST_BRIDGE_URL`, `DSH_HOST_BRIDGE_TOKEN`) injected via
 the existing `DSHHarness.extraEnvironment`.
-*Tests (all green):* `DSHHostBridgeTests` covers auth, the loopback `Host`
+*Tests (all green, run locally — `make test` plus `make test-device-unit`):* `DSHHostBridgeTests` covers auth, the loopback `Host`
 check, unknown routes, the body limit, capability gating and the
 snapshot/schema contract; `DSHGuestIntegrationTests` calls the real bridge from
 inside the guest on device (and asserts an unauthenticated guest process gets

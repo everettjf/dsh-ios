@@ -132,7 +132,7 @@ make test-device        # 再加 UI 测试（需先在 iPad 设置 ▸ 开发者
 | `DSHTests`（XCTest，宿主在 app 内） | 端口分配、日志环、就绪探测、监督器状态机（假 launcher + 本地 HTTP 服务器）；host bridge 的认证/能力开关/限流；guest 集成：真实服务响应、`dsh-selftest`、node/dsh 版本、镜像簿记、**用 app 内 mock 模型跑完整一轮 agent 对话并通过 bridge 调用 `device_info`** | 模拟器 / 真机 |
 | `DSHUITests`（XCUITest） | 启动到 DeepSeek Harness 界面、状态栏端口、服务日志页、终端页、横屏布局 | 模拟器 / 真机 |
 
-现状：全部通过（`make test`：3 + 16 + 32 + 4 项；iPad Air 真机 32/32 单元 + guest 集成测试）。CI：[`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml)。
+现状：全部通过（`make test`：3 + 16 + 32 + 4 项；iPad Air 真机 32/32 单元 + guest 集成测试）。测试都在本地跑：构建需要 Apple Silicon Mac + Xcode + 模拟器工具链，真机套件还需要连着 iPhone / iPad，因此没有托管 CI。
 
 ## 目录结构
 
