@@ -1,0 +1,10 @@
+# LLDB settings for debugging DSH.
+#
+# The emulator uses signals as ordinary machinery, not as faults:
+#   SIGUSR1  wakes guest threads and interrupts blocking syscalls
+#            (that is why a paused debugger lands in __psynch_cvwait under
+#             sys_wait4 — the guest is simply waiting)
+#   SIGTTIN  arrives from terminal handling
+#   SIGPIPE  arrives when a guest process closes a pipe
+# Without this, Xcode stops on each of them and looks like a crash.
+process handle -n false -p true -s false SIGUSR1 SIGTTIN SIGPIPE
