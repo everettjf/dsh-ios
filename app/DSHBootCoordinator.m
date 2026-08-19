@@ -6,6 +6,8 @@
 #import "DSHBootCoordinator.h"
 #import "DSHHarness.h"
 #import "DSHRootUpgrader.h"
+#import "DSHHostBridge.h"
+#import "DSHDeviceCapability.h"
 #import "AppDelegate.h"
 #import <UIKit/UIKit.h>
 
@@ -61,6 +63,8 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
         return;
     self.started = YES;
     [self setPhase:DSHBootPhaseImportingImage message:@"Preparing the Linux environment…" progress:-1];
+    // UIApplication is main-thread-only; grab the delegate here, not on the queue.
+    AppDelegate *app = (AppDelegate *) UIApplication.sharedApplication.delegate;
 
     dispatch_async(self.queue, ^{
         NSDate *t0 = NSDate.date;
@@ -76,7 +80,6 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
 
         // 2. Boot the emulator kernel (mount the fakefs, start init).
         [self setPhase:DSHBootPhaseBootingKernel message:@"Booting the Linux guest…" progress:-1];
-        AppDelegate *app = (AppDelegate *) UIApplication.sharedApplication.delegate;
         int err = [app boot];
         self.bootError = err;
         [DSHHarness.shared.log append:[NSString stringWithFormat:@"[dsh-ios] guest boot %@ (image %.1fs, total %.1fs)",
@@ -107,6 +110,17 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
 
 - (void)finishReady {
     [self setPhase:DSHBootPhaseReady message:@"Starting DeepSeek Harness…" progress:-1];
+    // The host bridge must be listening before dsh-serve starts: its URL and
+    // token reach the guest through the server's environment.
+    DSHHostBridge *bridge = DSHHostBridge.shared;
+    [DSHDeviceCapability installOn:bridge];
+    if ([bridge start]) {
+        NSMutableDictionary *env = [DSHHarness.shared.extraEnvironment mutableCopy];
+        [env addEntriesFromDictionary:bridge.guestEnvironment];
+        DSHHarness.shared.extraEnvironment = env;
+    } else {
+        [DSHHarness.shared.log append:@"[dsh-ios] host bridge could not start; iOS capabilities are unavailable"];
+    }
     [DSHHarness.shared start];
 }
 

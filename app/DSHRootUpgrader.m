@@ -141,9 +141,15 @@ static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
         completion(NO, e);
         return;
     }
+    // The harness home carries user data (sessions, credentials, settings) and
+    // the patch files this image ships. Copy the whole directory for the data,
+    // then put this image's patches back — otherwise an update silently keeps
+    // the previous image's configuration, including which plugins are mounted.
     NSString *script = [NSString stringWithFormat:
         @"set -e; P=%@; "
         @"if [ -d \"$P/root/.dsh\" ]; then rm -rf /root/.dsh && cp -a \"$P/root/.dsh\" /root/.dsh; fi; "
+        @"install -m 0644 /usr/local/share/dsh/home.patch.yml /root/.dsh/cordis.patch.yml; "
+        @"[ -d /root/.dsh/profiles/web ] && install -m 0644 /usr/local/share/dsh/cordis.patch.yml /root/.dsh/profiles/web/cordis.patch.yml; "
         @"if [ -d \"$P/root/workspace\" ]; then mkdir -p /root/workspace && cp -a \"$P/root/workspace/.\" /root/workspace/; fi; "
         @"for f in .gitconfig .ssh .npmrc .profile .ashrc; do [ -e \"$P/root/$f\" ] && cp -a \"$P/root/$f\" /root/ || true; done; "
         @"echo MIGRATION-DONE", kPrevMountPoint];

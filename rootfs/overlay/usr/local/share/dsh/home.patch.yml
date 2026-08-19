@@ -1,0 +1,8 @@
+# Harness-home patch layer, applied to every profile (web, headless, …).
+#
+# The host bridge plugin exposes the DSH app's iOS capabilities as dsh tools.
+# It registers nothing when DSH_HOST_BRIDGE_URL/_TOKEN are absent, so the same
+# guest image still runs outside the app (CLI emulator, tests).
+- insert:
+    - id: host-bridge
+      name: /usr/local/lib/dsh-plugins/dsh-host-bridge/index.js

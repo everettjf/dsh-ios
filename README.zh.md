@@ -128,10 +128,10 @@ make test-device        # 再加 UI 测试（需先在 iPad 设置 ▸ 开发者
 |---|---|---|
 | `tests/emu-test.sh` | 新增的 NEON gadget 与 FMOV 修复（在 guest 里用 gcc 编译的 C 测试）、`waitpid` 回归、fetch polyfill（宿主 node，11 项） | macOS |
 | `tests/rootfs-test.sh` | 像 app 一样导入 `root.tar.gz`、guest 自检（node-pty/koffi/ripgrep/sharp）、profile patch、**通过 mock DeepSeek SSE 服务器的 headless 完整对话回路**、`dsh-serve` 本机可达 | macOS |
-| `DSHTests`（XCTest，宿主在 app 内） | 端口分配、日志环、就绪探测、监督器状态机（假 launcher + 本地 HTTP 服务器）；guest 集成：真实服务响应、`dsh-selftest`、node/dsh 版本、镜像簿记 | 模拟器 / 真机 |
+| `DSHTests`（XCTest，宿主在 app 内） | 端口分配、日志环、就绪探测、监督器状态机（假 launcher + 本地 HTTP 服务器）；host bridge 的认证/能力开关/限流；guest 集成：真实服务响应、`dsh-selftest`、node/dsh 版本、镜像簿记、**用 app 内 mock 模型跑完整一轮 agent 对话并通过 bridge 调用 `device_info`** | 模拟器 / 真机 |
 | `DSHUITests`（XCUITest） | 启动到 DeepSeek Harness 界面、状态栏端口、服务日志页、终端页、横屏布局 | 模拟器 / 真机 |
 
-现状：全部通过（`make test`：3 + 12 + 15 + 4 项；iPhone 17 Pro 真机 15/15 + 3 项 UI，iPad Air 真机 15/15 单元 + guest 集成测试）。CI：[`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml)。
+现状：全部通过（`make test`：3 + 16 + 32 + 4 项；iPad Air 真机 32/32 单元 + guest 集成测试）。CI：[`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml)。
 
 ## 目录结构
 
@@ -151,11 +151,18 @@ site/           项目主页（GitHub Pages → https://xnu.app/dsh-ios/）
 `DSH.xcodeproj` 由 `scripts/gen-xcode-project.rb`（`make project`）生成，增删源码文件后重新运行即可。
 所有构建设置在 `app/AppDSH.xcconfig`；bundle id 为 `com.xnuapp.dsh`（自己构建请改 `DSH_BUNDLE_ID_PREFIX`）。
 
-## 路线图
+## iOS 能力（host bridge）
 
-[docs/host-bridge.md](docs/host-bridge.md) 提出了一个 loopback bridge：让 agent 以
-普通 dsh 工具的形式访问 iOS 能力——Apple Health、剪贴板、位置、日历、照片、分享、
-Shortcuts。每加一个能力 = app 侧一个路由 + guest 插件里一个 tool。
+app 内运行一个 loopback HTTP 服务，guest 里的 dsh 工具通过它访问 iOS 能力。目前已
+落地第一个：`device_info`（型号、iOS 版本、地区、电量、温度状态）。Apple Health、
+剪贴板、位置、日历、照片、分享、Shortcuts 已完成设计但尚未实现——每加一个能力 =
+app 侧一个路由 + guest 插件里一个 tool。
+
+能力由 app 把关，而不是 guest：每次启动随机生成的 bearer token 挡住**其他 app**，
+而每个能力的开关（敏感能力还要原生确认）才是约束 **agent** 的手段——agent 在 guest
+里是 root，能读到我们放在那里的任何秘密。每次调用都会记录到「服务日志」。
+
+协议、安全模型、能力/权限矩阵和实施计划见 [docs/host-bridge.md](docs/host-bridge.md)。
 
 ## 常见问题
 
