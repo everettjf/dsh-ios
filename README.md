@@ -156,7 +156,9 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout | simulator / device |
 
 Status: all suites green (`make test`: 3 + 16 + 32 + 4 checks; iPad Air 32/32
-unit + guest-integration tests on device). CI: [`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml).
+unit + guest-integration tests on device). Everything runs locally — the build
+needs an Apple Silicon Mac with Xcode, an emulator toolchain and (for the
+device suites) a connected iPhone or iPad, so there is no hosted CI.
 
 ## Project layout
 
