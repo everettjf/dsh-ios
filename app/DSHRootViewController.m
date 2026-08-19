@@ -277,6 +277,9 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
 }
 
 - (void)presentTerminal {
+    // iSH's terminal offers to "install the built-in APK" on first use; our
+    // guest ships with apk already, so skip that startup message.
+    [NSUserDefaults.standardUserDefaults setInteger:1 forKey:@"Skip Startup Message"];
     if (self.terminalVC == nil) {
         UIStoryboard *sb = [UIStoryboard storyboardWithName:@"Terminal" bundle:nil];
         TerminalViewController *vc = [sb instantiateInitialViewController];
