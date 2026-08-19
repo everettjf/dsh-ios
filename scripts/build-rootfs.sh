@@ -92,6 +92,8 @@ test -f build/Release/pty.node
 # then drop in our patch layer.
 node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile web --dump-config >/dev/null
 install -m 0644 /usr/local/share/dsh/cordis.patch.yml /root/.dsh/profiles/web/cordis.patch.yml
+# Home-level layer: applies to every profile (see rootfs/overlay/.../home.patch.yml).
+install -m 0644 /usr/local/share/dsh/home.patch.yml /root/.dsh/cordis.patch.yml
 mkdir -p /root/workspace
 # Slim down: build tooling is only needed for node-pty.
 apk del --no-progress nodejs-dev python3 make g++ >/dev/null 2>&1 || true

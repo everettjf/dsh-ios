@@ -13,6 +13,15 @@ export DSH_WORKSPACE="${DSH_WORKSPACE:-/root/workspace}"
 PORT="${DSH_PORT:-3080}"
 
 mkdir -p "$DSH_WORKSPACE"
+
+# Keep the patches this image ships in place. A harness home migrated from an
+# older image (see DSHRootUpgrader) carries that image's copies, which would
+# silently pin old settings — and would drop plugins this image adds, such as
+# the host bridge.
+mkdir -p "$DSH_HOME"
+install -m 0644 /usr/local/share/dsh/home.patch.yml "$DSH_HOME/cordis.patch.yml"
+[ -d "$DSH_HOME/profiles/web" ] && install -m 0644 /usr/local/share/dsh/cordis.patch.yml "$DSH_HOME/profiles/web/cordis.patch.yml"
+
 cd "$DSH_WORKSPACE"
 
 # --expose-internals: cordis-plugin-hmr needs Node internals; the prebuilt

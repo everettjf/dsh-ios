@@ -8,9 +8,12 @@
 //
 
 #import <XCTest/XCTest.h>
+#import <UIKit/UIKit.h>
 #import "DSHHarness.h"
 #import "ISHShellExecutor.h"
 #import "DSHRootUpgrader.h"
+#import "DSHHostBridge.h"
+#import "DSHMockLLMServer.h"
 
 @interface DSHGuestIntegrationTests : XCTestCase
 @end
@@ -64,10 +67,12 @@
 - (void)testBundledRootImageIsTheInstalledOne {
     // After launch the imported root must match the image in the bundle and
     // no user-data migration may be left pending.
+    // The import runs in the background now, so wait for the guest to be up
+    // before asking which image is installed.
+    [self waitForReady];
     DSHRootUpgrader *u = DSHRootUpgrader.shared;
     XCTAssertNotNil(u.bundledRootHash, @"root.tar.gz.sha256 must be in the bundle");
     XCTAssertEqualObjects(u.installedRootHash, u.bundledRootHash);
-    [self waitForReady];
     XCTAssertNil(u.pendingMigrationRoot);
     // The guest carries the marker the rootfs build wrote for the RootfsPatch overlay.
     XCTestExpectation *done = [self expectationWithDescription:@"overlay"];
@@ -80,6 +85,102 @@
         [done fulfill];
     }];
     [self waitForExpectations:@[done] timeout:60];
+}
+
+/// The real end-to-end path: the guest reaches the app's bridge over loopback
+/// and gets this device's facts back.
+- (void)testGuestReachesTheHostBridge {
+    [self waitForReady];
+    DSHHostBridge *bridge = DSHHostBridge.shared;
+    XCTAssertTrue(bridge.running, @"the bridge should be listening once the harness started");
+    XCTAssertNotNil(bridge.baseURLString);
+
+    NSString *command = [NSString stringWithFormat:
+        @"node -e \"fetch('%@/v1/device',{headers:{authorization:'Bearer %@'}})"
+        @".then(r=>r.text()).then(t=>console.log('BRIDGE:'+t))"
+        @".catch(e=>console.log('BRIDGE-ERR:'+e.message))\" 2>&1",
+        bridge.baseURLString, bridge.token];
+    XCTestExpectation *done = [self expectationWithDescription:@"bridge"];
+    NSMutableString *out = [NSMutableString string];
+    [ISHShellExecutor executeCommand:command lineCallback:^(NSString *line, BOOL isStdErr) {
+        if (![line containsString:@"expose_wasm"]) [out appendFormat:@"%@\n", line];
+    } completion:^(ISHShellExecutionResult *result) {
+        XCTAssertEqual(result.exitCode, 0, @"guest fetch failed: %@", out);
+        XCTAssertTrue([out containsString:@"BRIDGE:"], @"no bridge answer: %@", out);
+        XCTAssertTrue([out containsString:@"systemVersion"], @"unexpected payload: %@", out);
+        XCTAssertTrue([out containsString:UIDevice.currentDevice.systemVersion],
+                      @"the guest should see this device's iOS version: %@", out);
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:180];
+}
+
+/// A guest process without the token must be refused, so the bridge is not an
+/// open door for anything else running in the Linux image.
+- (void)testGuestWithoutTokenIsRefusedByTheBridge {
+    [self waitForReady];
+    DSHHostBridge *bridge = DSHHostBridge.shared;
+    NSString *command = [NSString stringWithFormat:
+        @"node -e \"fetch('%@/v1/device').then(r=>console.log('STATUS:'+r.status))"
+        @".catch(e=>console.log('ERR:'+e.message))\" 2>&1", bridge.baseURLString];
+    XCTestExpectation *done = [self expectationWithDescription:@"unauthorized"];
+    NSMutableString *out = [NSMutableString string];
+    [ISHShellExecutor executeCommand:command lineCallback:^(NSString *line, BOOL isStdErr) {
+        if (![line containsString:@"expose_wasm"]) [out appendFormat:@"%@\n", line];
+    } completion:^(ISHShellExecutionResult *result) {
+        XCTAssertTrue([out containsString:@"STATUS:401"], @"expected 401, got: %@", out);
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:180];
+}
+
+/// dsh must have been handed the bridge coordinates, otherwise the plugin
+/// registers no tools.
+- (void)testHarnessEnvironmentCarriesBridgeCoordinates {
+    [self waitForReady];
+    NSDictionary *env = DSHHarness.shared.extraEnvironment;
+    XCTAssertEqualObjects(env[@"DSH_HOST_BRIDGE_URL"], DSHHostBridge.shared.baseURLString);
+    XCTAssertEqualObjects(env[@"DSH_HOST_BRIDGE_TOKEN"], DSHHostBridge.shared.token);
+}
+
+/// The whole path, on this device, with no network: an in-app mock model asks
+/// for `device_info`, the guest plugin calls the app's bridge, and this
+/// device's real facts come back to the model.
+- (void)testAgentCallsDeviceInfoThroughTheBridge {
+    [self waitForReady];
+    DSHMockLLMServer *model = [DSHMockLLMServer new];
+    XCTAssertNotNil(model, @"mock model server should bind a port");
+    model.requestTool = @"device_info";
+
+    DSHHostBridge *bridge = DSHHostBridge.shared;
+    // A fresh guest process does not inherit dsh-serve's environment, so pass
+    // the bridge coordinates (and the mock model) explicitly.
+    NSString *command = [NSString stringWithFormat:
+        @"cd /root/workspace && HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=%@ "
+        @"DSH_HOST_BRIDGE_URL=%@ DSH_HOST_BRIDGE_TOKEN=%@ "
+        @"node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js "
+        @"--profile headless 'What device is this?' 2>&1 | tail -20",
+        model.baseURLString, bridge.baseURLString, bridge.token];
+
+    XCTestExpectation *done = [self expectationWithDescription:@"agent"];
+    NSMutableString *out = [NSMutableString string];
+    [ISHShellExecutor executeCommand:command lineCallback:^(NSString *line, BOOL isStdErr) {
+        if (![line containsString:@"expose_wasm"]) [out appendFormat:@"%@\n", line];
+    } completion:^(ISHShellExecutionResult *result) {
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:300];
+    [model stop];
+
+    XCTAssertGreaterThanOrEqual(model.requestCount, 2u, @"the harness should have called the model at least twice");
+    BOOL offered = NO;
+    for (NSString *tools in model.offeredToolsPerRequest)
+        offered = offered || [tools containsString:@"device_info"];
+    XCTAssertTrue(offered, @"device_info was never offered to the model — the plugin did not register it. Output:\n%@", out);
+    XCTAssertTrue([out containsString:@"TOOL-RESULT-BEGIN"], @"the tool result never reached the model:\n%@", out);
+    XCTAssertTrue([out containsString:@"systemVersion"], @"no device facts in the answer:\n%@", out);
+    XCTAssertTrue([out containsString:UIDevice.currentDevice.systemVersion],
+                  @"the model should see this device's iOS version (%@):\n%@", UIDevice.currentDevice.systemVersion, out);
 }
 
 - (void)testGuestNodeAndDshVersions {

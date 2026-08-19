@@ -13,6 +13,8 @@ ISH_BUILD="${ISH_BUILD:-$ISH_SRC/build-arm64-release}"
 TARBALL="${1:-$ROOT/build/root.tar.gz}"
 WORK="${WORK:-$ROOT/build/rootfs-test}"
 PORT="${DSH_TEST_PORT:-3181}"
+MOCK_PORT="${DSH_MOCK_PORT:-3199}"
+BRIDGE_PORT="${DSH_BRIDGE_PORT:-3197}"
 BOOT_TIMEOUT="${DSH_BOOT_TIMEOUT:-300}"
 
 pass=0; fail=0
@@ -40,7 +42,11 @@ if curl -fs -o /dev/null "http://127.0.0.1:$PORT/" 2>/dev/null; then
     echo "port $PORT is already in use on the host; set DSH_TEST_PORT"; exit 2
 fi
 
-cleanup() { pkill -f "$ISH_BUILD/ish -f $WORK/fakefs" 2>/dev/null || true; [ -n "${MOCK_PID:-}" ] && kill "$MOCK_PID" 2>/dev/null; true; }
+cleanup() {
+    pkill -f "$ISH_BUILD/ish -f $WORK/fakefs" 2>/dev/null || true
+    for pid in "${MOCK_PID:-}" "${STUB_PID:-}"; do [ -n "$pid" ] && kill "$pid" 2>/dev/null; done
+    true
+}
 trap cleanup EXIT
 
 echo "== import $TARBALL"
@@ -62,7 +68,6 @@ check "sandbox-policy patched to danger-full-access" grep -q 'danger-full-access
 check "hmr row present (needs --expose-internals)"    grep -q 'cordis-plugin-hmr' "$WORK/config.yml"
 
 echo "== headless LLM round trip through mock DeepSeek server (SSE via fetch polyfill)"
-MOCK_PORT="${DSH_MOCK_PORT:-3199}"
 node "$HERE/mock-deepseek.mjs" "$MOCK_PORT" > "$WORK/mock.log" 2>&1 &
 MOCK_PID=$!
 sleep 1
@@ -70,6 +75,31 @@ guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.
 kill $MOCK_PID 2>/dev/null
 sed 's/^/     /' "$WORK/headless.txt" | tail -3
 check "headless answer streamed from mock server" grep -q 'MOCK-REPLY-7f3a' "$WORK/headless.txt"
+
+echo "== host bridge: agent calls device_info through a stub bridge"
+BRIDGE_TOKEN="stub-token-$$"
+node "$HERE/stub-bridge.mjs" "$BRIDGE_PORT" "$BRIDGE_TOKEN" > "$WORK/stub-bridge.log" 2>&1 &
+STUB_PID=$!
+node "$HERE/mock-deepseek.mjs" "$MOCK_PORT" --tool device_info > "$WORK/mock-tool.log" 2>&1 &
+MOCK_PID=$!
+sleep 1
+guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
+       DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=$BRIDGE_TOKEN; \
+       cd /root/workspace; node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile headless 'What device is this?'" > "$WORK/bridge-tool.txt"
+sed 's/^/     /' "$WORK/bridge-tool.txt" | tail -3
+check "device_info tool reached the bridge" grep -q '\[stub\] GET /v1/device' "$WORK/stub-bridge.log"
+check "tool result reached the model"       grep -q 'model: iPad15,3' "$WORK/bridge-tool.txt"
+
+# A wrong token must fail loudly instead of silently returning nothing.
+guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
+       DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=wrong-token; \
+       cd /root/workspace; node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile headless 'What device is this?'" > "$WORK/bridge-denied.txt"
+check "wrong bridge token is refused" grep -q 'unauthorized' "$WORK/bridge-denied.txt"
+
+# The same image must still work with no bridge at all (CLI, tests, macOS).
+guest "export HOME=/root; node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile web --dump-config" > "$WORK/config-nobridge.yml"
+check "plugin loads without bridge environment" grep -q 'host-bridge' "$WORK/config-nobridge.yml"
+kill $STUB_PID $MOCK_PID 2>/dev/null
 
 echo "== boot dsh-serve on 127.0.0.1:$PORT (timeout ${BOOT_TIMEOUT}s)"
 start=$(date +%s)

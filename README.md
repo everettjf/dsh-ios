@@ -151,11 +151,11 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 |---|---|---|
 | `tests/emu-test.sh` | the new NEON gadgets and the FMOV fix (C test compiled with gcc *inside* the guest), the `waitpid` regression, the fetch polyfill (host node, 11 checks) | macOS |
 | `tests/rootfs-test.sh` | imports `root.tar.gz` like the app does, guest self test (node-pty/koffi/ripgrep/sharp), profile patch, **headless LLM round trip through a mock DeepSeek SSE server**, `dsh-serve` reachable over loopback | macOS |
-| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping | simulator / device |
+| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **a whole agent turn calling `device_info` through the bridge against an in-app mock model** | simulator / device |
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout | simulator / device |
 
-Status: all suites green (`make test`: 3 + 12 + 15 + 4 checks; iPhone 17 Pro
-15/15 + 3 UI, iPad Air 15/15 unit + guest-integration tests). CI: [`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml).
+Status: all suites green (`make test`: 3 + 16 + 32 + 4 checks; iPad Air 32/32
+unit + guest-integration tests on device). CI: [`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml).
 
 ## Project layout
 
@@ -177,12 +177,22 @@ site/           project page (GitHub Pages → https://xnu.app/dsh-ios/)
 settings live in `app/AppDSH.xcconfig`; the bundle id is `com.xnuapp.dsh`
 (change `DSH_BUNDLE_ID_PREFIX` for your own builds).
 
-## Roadmap
+## iOS capabilities (host bridge)
 
-[docs/host-bridge.md](docs/host-bridge.md) proposes a loopback bridge that lets
-the agent reach iOS capabilities as ordinary dsh tools — Apple Health, clipboard,
-location, calendar, photos, share sheet, Shortcuts. Each capability is one route
-in the app plus one tool in the guest plugin.
+The app runs a loopback HTTP listener that dsh tools inside the guest call to
+reach iOS capabilities. The first one ships today: `device_info` (model, iOS
+version, locale, battery, thermal state). Apple Health, clipboard, location,
+calendar, photos, the share sheet and Shortcuts are designed but not built —
+each is one route in the app plus one tool in the guest plugin.
+
+Capabilities are gated by the app, not by the guest: a random per-launch bearer
+token keeps *other apps* out, while a per-capability switch (and, for sensitive
+ones, a native confirmation) is what keeps the *agent* honest — it runs as root
+in the guest and can read any secret we put there. Every call is logged to
+*Server Log*.
+
+See [docs/host-bridge.md](docs/host-bridge.md) for the protocol, the security
+model, the capability/permission matrix and the delivery plan.
 
 ## FAQ
 

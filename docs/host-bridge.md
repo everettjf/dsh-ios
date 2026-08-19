@@ -1,6 +1,7 @@
 # Host Bridge — giving the agent access to iOS capabilities
 
-**Status:** design / roadmap · **Tracking PR:** this one · **Author:** @everettjf
+**Status:** Phase 0 implemented (bridge, capability registry, `device_info`);
+Phases 1–3 designed · **Tracking PR:** this one · **Author:** @everettjf
 
 DSH runs DeepSeek Harness inside an emulated Linux guest. The guest is a good
 sandbox but a poor citizen of the device: it cannot read Apple Health, take a
@@ -158,7 +159,7 @@ the agent can then read them with the tools it already has.
 
 ## 5. Delivery plan
 
-**Phase 0 — bridge skeleton (no new permissions).**
+**Phase 0 — bridge skeleton (no new permissions).** ✅ *shipped in this PR*
 `DSHHostBridge` (NWListener on loopback, token, routing, JSON, logging into
 `DSHLogBuffer`), capability registry with per-capability on/off state persisted
 in `NSUserDefaults`, `GET /v1/capabilities` + `GET /v1/device`. Guest side: the
@@ -166,9 +167,38 @@ in `NSUserDefaults`, `GET /v1/capabilities` + `GET /v1/device`. Guest side: the
 `/usr/local/lib/dsh-plugins/`, mounted from `cordis.patch.yml`, exposing
 `device_info`. Env (`DSH_HOST_BRIDGE_URL`, `DSH_HOST_BRIDGE_TOKEN`) injected via
 the existing `DSHHarness.extraEnvironment`.
-*Tests:* XCTest for routing/auth/limits (host-side, no guest needed);
-`tests/rootfs-test.sh` gains a case that calls the bridge from inside the guest
-against a stub listener; XCUITest asserts a bridge call appears in *Server Log*.
+*Tests (all green):* `DSHHostBridgeTests` covers auth, the loopback `Host`
+check, unknown routes, the body limit, capability gating and the
+snapshot/schema contract; `DSHGuestIntegrationTests` calls the real bridge from
+inside the guest on device (and asserts an unauthenticated guest process gets
+401); `tests/rootfs-test.sh` runs a whole agent turn — mock LLM asks for
+`device_info`, the plugin calls a stub bridge, the result reaches the model —
+plus the wrong-token and no-bridge-environment cases.
+
+What Phase 0 taught us, worth keeping in mind for later capabilities:
+
+- **A response must not close the socket while the client is still sending.**
+  Refusing an oversized body with 413 and closing immediately made the client
+  see a connection reset instead of the answer — on device, not in the
+  simulator. The bridge now half-closes and drains before closing.
+- **An image update must not silently keep the previous image's configuration.**
+  `DSHRootUpgrader` copies the whole harness home for the user's data, which
+  also copied the old `cordis.patch.yml` — so a new plugin shipped with a new
+  image never got mounted. Migration now restores the image's own patches, and
+  `dsh-serve` re-installs them on every start so the state is self-healing.
+
+- Tool registration must be **synchronous** inside `apply()`. Cordis tracks
+  registrations as reversible effects of the plugin; an async registration both
+  escapes that scope and misses the first request. Whether a capability is
+  usable is therefore decided per call, by the app — which is also what lets the
+  user flip a switch without restarting the harness.
+- `output.schema` needs `additionalProperties: false` and `output.render` must
+  return `ContentBlock[]`, not a string. A field the app adds without updating
+  the plugin's schema fails every call; `testDeviceSnapshotMatchesThePluginSchema`
+  is the tripwire.
+- The plugin is mounted from the **home-level** patch
+  (`~/.dsh/cordis.patch.yml`, written by `scripts/build-rootfs.sh`) so every
+  profile gets it — `web` for the app, `headless` for the tests.
 
 **Phase 1 — settings + confirmation UI.**
 A capabilities screen in the app (list, toggles, "last used"), and the
