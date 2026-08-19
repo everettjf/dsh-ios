@@ -28,8 +28,9 @@ DERIVED    = $(shell ls -dt ~/Library/Developer/Xcode/DerivedData/DSH-*/Build/Pr
 
 all: emulator rootfs project app
 
+# libapps and libarchive are vendored (they were submodules upstream), so there
+# is nothing to fetch — a fresh clone can build straight away.
 emulator:
-	cd $(ISH_SRC) && git submodule update --init deps/libapps deps/libarchive
 	cd $(ISH_SRC) && { [ -d build-arm64-release ] || meson setup build-arm64-release -Dguest_arch=arm64 --buildtype=release; }
 	ninja -C $(ISH_BUILD)
 
@@ -56,6 +57,8 @@ test-emu: emulator
 test-rootfs: emulator
 	tests/rootfs-test.sh
 
+# SIM may name any installed simulator; `make test-sim SIM="$$(scripts/pick-simulator.sh)"`
+# picks one that exists on this machine (used by CI).
 test-sim: project
 	rm -rf build/test-sim.xcresult
 	-xcrun simctl boot "$(SIM)" 2>/dev/null
