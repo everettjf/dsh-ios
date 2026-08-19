@@ -42,6 +42,15 @@ static const NSTimeInterval kBootTimeout = 300;   // first launch imports the ro
 }
 
 - (void)testHarnessBootsAndShowsWebUI {
+    // While starting, the overlay shows a progress bar and an elapsed/ETA line.
+    XCUIElement *progress = self.app.progressIndicators[@"dsh.overlay.progress"];
+    XCUIElement *elapsed = self.app.staticTexts[@"dsh.overlay.elapsed"];
+    if ([progress waitForExistenceWithTimeout:5]) {
+        XCTAssertTrue([elapsed waitForExistenceWithTimeout:5]);
+        NSPredicate *hasEta = [NSPredicate predicateWithFormat:@"label CONTAINS 'elapsed'"];
+        XCTestExpectation *e = [self expectationForPredicate:hasEta evaluatedWithObject:elapsed handler:nil];
+        [self waitForExpectations:@[e] timeout:10];
+    }
     [self attachScreenshot:@"01-launch"];
     [self waitForHarnessReady];
     [self attachScreenshot:@"02-ready"];

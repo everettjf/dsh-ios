@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) dispatch_block_t logHandler;
 
 - (void)showStarting:(NSString *)message;
+/// Drives the progress bar: elapsed vs. expected seconds since `startedAt`.
+/// Pass nil startedAt to hide the estimate (e.g. "Loading the interface…").
+- (void)setProgressStartedAt:(nullable NSDate *)startedAt expected:(NSTimeInterval)expected;
 - (void)showFailure:(NSString *)message;
 - (void)hide;
 - (void)setLogText:(NSString *)text;

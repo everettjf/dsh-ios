@@ -9,6 +9,8 @@
 #import "DSHGuestLauncher.h"
 
 NSNotificationName const DSHHarnessStateDidChangeNotification = @"DSHHarnessStateDidChangeNotification";
+static NSString *const kExpectedStartupKey = @"DSHExpectedStartupDuration";
+static const NSTimeInterval kDefaultExpectedStartup = 25;
 
 NSString *DSHHarnessStateName(DSHHarnessState state) {
     switch (state) {
@@ -61,6 +63,15 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
         _state = DSHHarnessStateIdle;
     }
     return self;
+}
+
+- (NSTimeInterval)expectedStartupDuration {
+    double stored = [NSUserDefaults.standardUserDefaults doubleForKey:kExpectedStartupKey];
+    return stored > 1 ? stored : kDefaultExpectedStartup;
+}
+
+- (NSDate *)launchStartedAt {
+    return self.state == DSHHarnessStateStarting ? self.lastLaunchAt : nil;
 }
 
 - (NSURL *)baseURL {
@@ -167,6 +178,10 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
             return;
         if (ready) {
             self.lastStartupDuration = elapsed;
+            // Smooth the estimate for next time (EMA, weight on the new sample).
+            double prev = [NSUserDefaults.standardUserDefaults doubleForKey:kExpectedStartupKey];
+            double next = prev > 1 ? prev * 0.5 + elapsed * 0.5 : elapsed;
+            [NSUserDefaults.standardUserDefaults setDouble:next forKey:kExpectedStartupKey];
             self.consecutiveCrashes = 0;
             [self.log append:[NSString stringWithFormat:@"[dsh-ios] server answered after %.1fs", elapsed]];
             self.state = DSHHarnessStateReady;

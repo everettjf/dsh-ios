@@ -55,6 +55,11 @@ extern NSNotificationName const DSHHarnessStateDidChangeNotification;
 @property (nonatomic, readonly, nullable) NSString *lastError;
 @property (nonatomic, readonly) int guestPid;
 @property (nonatomic, readonly) NSTimeInterval lastStartupDuration;
+/// Expected time from launch to first HTTP answer, from previous runs on this
+/// device (25 s until measured once). Used for the startup progress estimate.
+@property (nonatomic, readonly) NSTimeInterval expectedStartupDuration;
+/// When the current launch started (nil when not starting).
+@property (nonatomic, readonly, nullable) NSDate *launchStartedAt;
 
 /// Guest command that serves the web UI. Default /usr/local/bin/dsh-serve.
 @property (nonatomic, copy) NSString *serverExecutable;

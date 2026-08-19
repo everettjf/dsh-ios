@@ -22,7 +22,7 @@ DEVICE    ?=                       # udid of the connected device (xcrun devicec
 SIM       ?= iPad Air 11-inch (M4)
 BUNDLE_ID ?= com.xnuapp.dsh
 XCB        = xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Release DSH_DEVELOPMENT_TEAM=$(TEAM)
-DERIVED    = $(shell ls -d ~/Library/Developer/Xcode/DerivedData/DSH-*/Build/Products 2>/dev/null | head -1)
+DERIVED    = $(shell ls -dt ~/Library/Developer/Xcode/DerivedData/DSH-*/Build/Products 2>/dev/null | head -1)
 
 .PHONY: all emulator rootfs project app install run test test-emu test-rootfs test-sim test-device test-device-unit archive clean
 

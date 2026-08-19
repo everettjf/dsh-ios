@@ -17,6 +17,9 @@
 @property (nonatomic) UIButton *logButton;
 @property (nonatomic) UIStackView *buttons;
 @property (nonatomic, nullable) NSDate *startedAt;
+@property (nonatomic, nullable) NSDate *progressStartedAt;
+@property (nonatomic) NSTimeInterval expected;
+@property (nonatomic) UIProgressView *progress;
 @property (nonatomic, nullable) NSTimer *timer;
 @property (nonatomic, readwrite, getter=isShowingFailure) BOOL showingFailure;
 @end
@@ -54,6 +57,14 @@
         message.accessibilityIdentifier = @"dsh.overlay.message";
         self.messageLabel = message;
 
+        UIProgressView *progress = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
+        progress.trackTintColor = [UIColor.secondaryLabelColor colorWithAlphaComponent:0.25];
+        progress.progressTintColor = [UIColor colorNamed:@"DSHAccent"] ?: UIColor.systemBlueColor;
+        progress.layer.cornerRadius = 2;
+        progress.clipsToBounds = YES;
+        progress.accessibilityIdentifier = @"dsh.overlay.progress";
+        self.progress = progress;
+
         UILabel *elapsed = [UILabel new];
         elapsed.font = [UIFont monospacedDigitSystemFontOfSize:12 weight:UIFontWeightRegular];
         elapsed.textColor = UIColor.tertiaryLabelColor;
@@ -83,7 +94,7 @@
         buttons.alignment = UIStackViewAlignmentCenter;
         self.buttons = buttons;
 
-        UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[title, subtitle, spinner, message, elapsed, buttons, log]];
+        UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[title, subtitle, spinner, message, progress, elapsed, buttons, log]];
         stack.axis = UILayoutConstraintAxisVertical;
         stack.alignment = UIStackViewAlignmentCenter;
         stack.spacing = 10;
@@ -99,6 +110,8 @@
             [stack.widthAnchor constraintLessThanOrEqualToAnchor:self.widthAnchor constant:-48],
             [stack.widthAnchor constraintLessThanOrEqualToConstant:560],
             [message.widthAnchor constraintEqualToAnchor:stack.widthAnchor],
+            [progress.widthAnchor constraintEqualToAnchor:stack.widthAnchor constant:-40],
+            [progress.heightAnchor constraintEqualToConstant:4],
             [log.widthAnchor constraintEqualToAnchor:stack.widthAnchor],
             [log.heightAnchor constraintEqualToConstant:170],
             [stack.widthAnchor constraintGreaterThanOrEqualToConstant:280],
@@ -140,9 +153,17 @@
     }
 }
 
+- (void)setProgressStartedAt:(NSDate *)startedAt expected:(NSTimeInterval)expected {
+    self.progressStartedAt = startedAt;
+    self.expected = expected;
+    self.progress.hidden = startedAt == nil;
+    [self tick];
+}
+
 - (void)showFailure:(NSString *)message {
     self.hidden = NO;
     self.showingFailure = YES;
+    self.progress.hidden = YES;
     [self stopTimer];
     self.messageLabel.text = message;
     self.messageLabel.textColor = UIColor.systemRedColor;
@@ -174,13 +195,28 @@
     if (self.startedAt == nil)
         return;
     NSTimeInterval t = -self.startedAt.timeIntervalSinceNow;
-    self.elapsedLabel.text = [NSString stringWithFormat:@"%.0f s · first start takes about half a minute", t];
+    if (self.progressStartedAt == nil || self.expected <= 0) {
+        self.elapsedLabel.text = [NSString stringWithFormat:@"%.0f s", t];
+        return;
+    }
+    NSTimeInterval done = -self.progressStartedAt.timeIntervalSinceNow;
+    NSTimeInterval left = self.expected - done;
+    // Asymptotic fill: never reaches 100% until the server really answers.
+    float fraction = done < self.expected ? (float) (done / self.expected) * 0.9f
+                                          : 0.9f + 0.1f * (float) (1 - exp(-(done - self.expected) / 15.0));
+    [self.progress setProgress:fraction animated:YES];
+    if (left > 0.5)
+        self.elapsedLabel.text = [NSString stringWithFormat:@"%.0f s elapsed · about %.0f s left", done, left];
+    else
+        self.elapsedLabel.text = [NSString stringWithFormat:@"%.0f s elapsed · almost there (this device usually takes ~%.0f s)", done, self.expected];
 }
 
 - (void)stopTimer {
     [self.timer invalidate];
     self.timer = nil;
     self.startedAt = nil;
+    self.progressStartedAt = nil;
+    [self.progress setProgress:0 animated:NO];
 }
 
 @end

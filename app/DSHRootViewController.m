@@ -213,9 +213,11 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
         case DSHHarnessStateIdle:
         case DSHHarnessStateStarting:
             [self.overlay showStarting:@"Starting DeepSeek Harness…"];
+            [self.overlay setProgressStartedAt:h.launchStartedAt ?: NSDate.date expected:h.expectedStartupDuration];
             break;
         case DSHHarnessStateRestarting:
             [self.overlay showStarting:@"Restarting the harness…"];
+            [self.overlay setProgressStartedAt:nil expected:0];
             self.pageLoaded = NO;
             break;
         case DSHHarnessStateReady:
@@ -238,6 +240,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     if (url == nil)
         return;
     [self.overlay showStarting:@"Loading the interface…"];
+    [self.overlay setProgressStartedAt:nil expected:0];
     self.loadedPort = DSHHarness.shared.port;
     self.pageLoaded = NO;
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
