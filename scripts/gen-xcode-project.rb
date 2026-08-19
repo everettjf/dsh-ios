@@ -237,6 +237,10 @@ project.save
 # --- scheme -------------------------------------------------------------------
 scheme = Xcodeproj::XCScheme.new
 scheme.configure_with_targets(dsh, tests, launch_target: true)
+# The emulator uses SIGUSR1/SIGTTIN/SIGPIPE as normal machinery; without this
+# LLDB stops on every one of them and it looks like a crash. See .lldbinit.
+scheme.launch_action.xml_element.attributes['customLLDBInitFile'] = '$(SRCROOT)/.lldbinit'
+scheme.test_action.xml_element.attributes['customLLDBInitFile'] = '$(SRCROOT)/.lldbinit'
 scheme.add_build_target(uitests, false)
 scheme.test_action.add_testable(Xcodeproj::XCScheme::TestAction::TestableReference.new(uitests))
 %w[test_action launch_action profile_action analyze_action archive_action].each do |a|
