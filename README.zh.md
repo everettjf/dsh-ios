@@ -36,6 +36,11 @@ Alpine Linux 镜像（含 Node.js 22 和 `@deepseek-ai/dsh`），托管 `dsh web
 工作区——模型选择、"Guest Ask" 权限预设等都是 dsh 原生的 Web UI。</sub>
 
 <details>
+<summary>iPhone 17 Pro：启动页、界面、终端、服务日志</summary>
+<p align="center"><img src="docs/screenshots/iphone-17-pro-montage.png" alt="iPhone 17 Pro 上的 DSH"></p>
+</details>
+
+<details>
 <summary>也能在 Apple Silicon 的 iPad 模拟器上运行</summary>
 <p align="center"><img src="docs/screenshots/simulator-ipad-air-m4.png" width="420" alt="iPad Air 模拟器上的 DSH"></p>
 </details>

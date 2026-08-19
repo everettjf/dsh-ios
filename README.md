@@ -39,6 +39,11 @@ model picker, the “Guest Ask” permission preset and everything else is the
 stock dsh web UI.</sub>
 
 <details>
+<summary>iPhone 17 Pro: startup overlay, UI, terminal, server log</summary>
+<p align="center"><img src="docs/screenshots/iphone-17-pro-montage.png" alt="DSH on iPhone 17 Pro"></p>
+</details>
+
+<details>
 <summary>Also runs on the Apple Silicon iPad simulator</summary>
 <p align="center"><img src="docs/screenshots/simulator-ipad-air-m4.png" width="420" alt="DSH on the iPad Air simulator"></p>
 </details>
