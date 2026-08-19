@@ -1,43 +1,67 @@
-# CI for dsh-ios: emulator + rootfs + simulator XCTest, all unattended.
-# Needs a macOS Apple Silicon runner with Xcode 26+ (macos-15-xlarge or self-hosted).
+# CI for dsh-ios: the emulator, the guest image and the app's test suites.
+#
+# Runs on GitHub's standard macOS runner, which is Apple Silicon (required: the
+# emulator's gadgets are arm64 assembly) and free for public repositories.
 name: dsh-ios
 on:
   push:
-    paths-ignore: ['site/**', '.github/workflows/pages.yml']
+    branches: [main]
+    paths-ignore: ['site/**', '.github/workflows/pages.yml', '**/*.md']
   pull_request:
-    paths-ignore: ['site/**']
+    paths-ignore: ['site/**', '**/*.md']
   workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: macos-15-xlarge
+  emulator:
+    name: Emulator + guest image
+    runs-on: macos-15
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: false }
       - name: Tools
-        run: |
-          brew install meson ninja
-          gem list xcodeproj -i || sudo gem install xcodeproj
-          node -v && npm -v
-      - name: Emulator (iSH-ARM64 CLI)
+        run: brew install meson ninja
+      - name: Build the emulator
         run: make emulator
       - name: Emulator regression tests
         run: make test-emu
-      - name: Root filesystem
+      - name: Build the guest image
         run: make rootfs
-      - name: Rootfs integration tests
+      - name: Rootfs + host bridge integration tests
         run: make test-rootfs
-      - name: Unit + UI tests on the simulator
-        run: make test-sim TEAM= SIM="iPad Air 11-inch (M4)"
-      - name: Unsigned device build (archive-ability)
-        run: |
-          xcodebuild -project DSH.xcodeproj -scheme DSH -configuration Release \
-            -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO DSH_DEVELOPMENT_TEAM= build
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: dsh-ios-results
+          name: rootfs-logs
           path: |
-            build/*.xcresult
             build/root.tar.gz.sha256
+            build/rootfs-test/*.log
+            build/rootfs-test/*.txt
+          if-no-files-found: ignore
+
+  app:
+    name: App build + tests (simulator)
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: |
+          brew install meson ninja
+          gem list xcodeproj -i || sudo gem install xcodeproj --no-document
+      - name: Build the emulator (needed to produce the guest image)
+        run: make emulator
+      - name: Build the guest image
+        run: make rootfs
+      - name: Unsigned device build
+        run: |
+          make project
+          xcodebuild -project DSH.xcodeproj -scheme DSH -configuration Release \
+            -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO DSH_DEVELOPMENT_TEAM= build
+      - name: Unit + UI tests on the simulator
+        run: make test-sim TEAM= SIM="$(scripts/pick-simulator.sh)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xcresults
+          path: build/*.xcresult
+          if-no-files-found: ignore
