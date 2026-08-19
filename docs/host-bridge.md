@@ -159,6 +159,9 @@ the agent can then read them with the tools it already has.
 
 ## 5. Delivery plan
 
+Phase-by-phase status, plus the work that is independent of this bridge, lives
+in [roadmap.md](roadmap.md); the phases below give the design detail.
+
 **Phase 0 — bridge skeleton (no new permissions).** ✅ *shipped in this PR*
 `DSHHostBridge` (NWListener on loopback, token, routing, JSON, logging into
 `DSHLogBuffer`), capability registry with per-capability on/off state persisted
