@@ -81,6 +81,21 @@ static const NSTimeInterval kBootTimeout = 300;   // first launch imports the ro
     [self.app.buttons[@"Done"] tap];
 }
 
+- (void)testLandscapeKeepsWebViewAndBar {
+    [self waitForHarnessReady];
+    XCUIDevice.sharedDevice.orientation = UIDeviceOrientationLandscapeLeft;
+    sleep(2);
+    XCUIElement *web = self.app.webViews.firstMatch;
+    XCTAssertTrue([web waitForExistenceWithTimeout:10]);
+    CGRect frame = web.frame;
+    XCTAssertGreaterThan(frame.size.width, frame.size.height, @"web view should be wider than tall in landscape (%@)", NSStringFromCGRect(frame));
+    XCTAssertTrue(self.app.buttons[@"dsh.menu"].isHittable, @"control bar stays reachable in landscape");
+    [self attachScreenshot:@"06-landscape"];
+    XCUIDevice.sharedDevice.orientation = UIDeviceOrientationPortrait;
+    sleep(1);
+    XCTAssertTrue(self.app.webViews.firstMatch.exists);
+}
+
 - (void)testTerminalOpensAndDismisses {
     [self waitForHarnessReady];
     XCUIElement *terminal = self.app.buttons[@"dsh.terminal"];

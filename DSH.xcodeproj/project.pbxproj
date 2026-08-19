@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -116,6 +116,8 @@
 			isa = PBXBuildRule;
 			compilerSpec = com.apple.compilers.proxy.script;
 			fileType = sourcecode.mig;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(DERIVED_FILE_DIR)/mach_excServer.h",
@@ -165,38 +167,39 @@
 		102E4772CDAE08D0878651E5 /* Roots.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = Roots.storyboard; sourceTree = "<group>"; };
 		10ADF05CD52A7BCAD246ED8C /* DSHSceneDelegate.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHSceneDelegate.m; sourceTree = "<group>"; };
 		18DA469BB32F8CF0FBAA3836 /* PassthroughView.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = PassthroughView.m; sourceTree = "<group>"; };
-		19CE37C12A851A16B7DB92E3 /* term.css */ = {isa = PBXFileReference; includeInIndex = 1; path = term.css; sourceTree = "<group>"; };
+		19CE37C12A851A16B7DB92E3 /* term.css */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.css; path = term.css; sourceTree = "<group>"; };
 		1C45F2FFB428CAF72087C80E /* ScrollbarView.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ScrollbarView.m; sourceTree = "<group>"; };
 		1C98A9AFEEFA1AADF073F698 /* ihash1.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = ihash1.png; sourceTree = "<group>"; };
-		1DB1647B0E79CAA05C4D301D /* term.js */ = {isa = PBXFileReference; includeInIndex = 1; path = term.js; sourceTree = "<group>"; };
+		1DB1647B0E79CAA05C4D301D /* term.js */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.javascript; path = term.js; sourceTree = "<group>"; };
 		20C2124F8AA9F250A4354F6C /* idollarhash.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = idollarhash.png; sourceTree = "<group>"; };
-		23014BA02A5D523C657FE8DB /* Makefile */ = {isa = PBXFileReference; includeInIndex = 1; path = Makefile; sourceTree = "<group>"; };
+		23014BA02A5D523C657FE8DB /* Makefile */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		234B58AD5CCAC1394303B054 /* NSObject+SaneKVO.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "NSObject+SaneKVO.m"; sourceTree = "<group>"; };
-		240D4D78A77FB9C766FE7B88 /* libresolv.tbd */ = {isa = PBXFileReference; includeInIndex = 1; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
-		248B432D2582CE815AFB1DD9 /* DSHTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DSHTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		26074E8357A2B33934885F95 /* hook.c */ = {isa = PBXFileReference; includeInIndex = 1; path = hook.c; sourceTree = "<group>"; };
+		240D4D78A77FB9C766FE7B88 /* libresolv.tbd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
+		248B432D2582CE815AFB1DD9 /* DSHTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = DSHTests.xctest; path = "/Users/eevv/github/dsh-ios/build/Debug-iphoneos/DSH.app/PlugIns/DSHTests.xctest"; sourceTree = "<absolute>"; };
+		26074E8357A2B33934885F95 /* hook.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = hook.c; sourceTree = "<group>"; };
 		29C88019D6AE9864CD2EE334 /* Settings.bundle */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		2A971E37051E42EE38A5B2FA /* UpgradeRootViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = UpgradeRootViewController.m; sourceTree = "<group>"; };
 		2AB38D991DF31B17A040DEB6 /* UIApplication+OpenURL.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "UIApplication+OpenURL.m"; sourceTree = "<group>"; };
 		2CAA6E6D1E1F31AE5924707A /* pydann1.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = pydann1.png; sourceTree = "<group>"; };
 		2EBC0D90F4C5F03527F251C2 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		33EF1844185FCAFEC531A871 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		36F63DF93319557B8984222F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		36F63DF93319557B8984222F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		372786BA6F4975E5F4AD90A6 /* DSHStatusOverlayView.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHStatusOverlayView.m; sourceTree = "<group>"; };
 		38ADB5A976780C2C9A39DDBB /* DSHRootUpgrader.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHRootUpgrader.h; sourceTree = "<group>"; };
 		3C39277578162B9975E5AA2D /* 3d.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = 3d.png; sourceTree = "<group>"; };
 		3D7CECE8F339A8C92EBD0F7B /* Icons.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Icons.plist; sourceTree = "<group>"; };
 		422EE6497FD9B4FBC693CEAF /* DSHRootViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHRootViewController.m; sourceTree = "<group>"; };
 		4230C000AC5C3B953DB38159 /* Theme.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = Theme.m; sourceTree = "<group>"; };
-		425868A59C1C8C94A8275386 /* DSHUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DSHUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		425868A59C1C8C94A8275386 /* DSHUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = DSHUITests.xctest; path = "/Users/eevv/github/dsh-ios/build/Debug-iphoneos/DSHUITests-Runner.app/PlugIns/DSHUITests.xctest"; sourceTree = "<absolute>"; };
 		4274A5631DB9FC2029DB8508 /* DSHHarness.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHHarness.h; sourceTree = "<group>"; };
 		459FCACEB156B6185736137F /* FontPickerViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = FontPickerViewController.m; sourceTree = "<group>"; };
 		4C51647167BD96B994AE51C0 /* DSHReadinessProbe.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHReadinessProbe.m; sourceTree = "<group>"; };
 		4EDA002FDBD8A813476CE858 /* rgb.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = rgb.png; sourceTree = "<group>"; };
 		520D74545C8B0E360C356845 /* metal.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = metal.png; sourceTree = "<group>"; };
-		5546C7D5C96B23588A0ED347 /* hterm_all.js */ = {isa = PBXFileReference; includeInIndex = 1; path = hterm_all.js; sourceTree = "<group>"; };
-		569877E6873801E76FCAA79D /* cordis.patch.yml */ = {isa = PBXFileReference; includeInIndex = 1; path = cordis.patch.yml; sourceTree = "<group>"; };
+		5546C7D5C96B23588A0ED347 /* hterm_all.js */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.javascript; path = hterm_all.js; sourceTree = "<group>"; };
+		569877E6873801E76FCAA79D /* cordis.patch.yml */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.yaml; path = cordis.patch.yml; sourceTree = "<group>"; };
 		5990A75100F8C0649328129B /* RootsTableViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = RootsTableViewController.m; sourceTree = "<group>"; };
+		5A7516403035494300E64D96 /* DSH.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DSH.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A8143D445B69CA4E3C7FB50 /* DSHCoreTests.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHCoreTests.m; sourceTree = "<group>"; };
 		5C454A45EDFD50AA278B7566 /* Terminal.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = Terminal.storyboard; sourceTree = "<group>"; };
 		5D20127929039BD0E3373147 /* CurrentRoot.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = CurrentRoot.m; sourceTree = "<group>"; };
@@ -210,13 +213,12 @@
 		736CA7FD816F6138CF9713C7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		7677A0462CEDBFDAD74C5735 /* uninspired.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = uninspired.png; sourceTree = "<group>"; };
 		79977CDC047799D90C813087 /* iOSFS.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = iOSFS.m; sourceTree = "<group>"; };
-		79C9FDD77F54498557FE884D /* DSH.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DSH.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AC8A8D49FEB08EFBCE92733 /* build-rootfs.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "build-rootfs.sh"; sourceTree = "<group>"; };
 		7C23E7652E04B3663497AD64 /* AboutViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AboutViewController.m; sourceTree = "<group>"; };
-		7DC99A9ED349CFB6DD51FF3B /* package.json */ = {isa = PBXFileReference; includeInIndex = 1; path = package.json; sourceTree = "<group>"; };
+		7DC99A9ED349CFB6DD51FF3B /* package.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = package.json; sourceTree = "<group>"; };
 		7F2B45D31DC2CD604F8741B8 /* About.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = About.storyboard; sourceTree = "<group>"; };
 		7F9A7A506F4CDE9C3068DC01 /* DSHGuestLauncher.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHGuestLauncher.h; sourceTree = "<group>"; };
-		80CE22C91E5917E5D9B8D0CA /* fakefs.c */ = {isa = PBXFileReference; includeInIndex = 1; path = fakefs.c; sourceTree = "<group>"; };
+		80CE22C91E5917E5D9B8D0CA /* fakefs.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = fakefs.c; sourceTree = "<group>"; };
 		81DF6EA5547E3D3680C11CC6 /* AccessibilityFixes.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AccessibilityFixes.m; sourceTree = "<group>"; };
 		81FA68C3A43F4408DC011151 /* AppDSH.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = AppDSH.xcconfig; sourceTree = "<group>"; };
 		82AC1E2AF4BF289A3491B256 /* circular.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = circular.png; sourceTree = "<group>"; };
@@ -231,15 +233,15 @@
 		9CA0530BB9B9F16ECE067897 /* ExceptionExfiltrator.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ExceptionExfiltrator.m; sourceTree = "<group>"; };
 		9D7A76CC66DFFD433DE87E11 /* notsurewhatthisis.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = notsurewhatthisis.png; sourceTree = "<group>"; };
 		A2ADD5E8396E97C5DD869570 /* DSHAssets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = DSHAssets.xcassets; sourceTree = "<group>"; };
-		A3473A8B371D6CF57EB258CC /* gen-xcode-project.rb */ = {isa = PBXFileReference; includeInIndex = 1; path = "gen-xcode-project.rb"; sourceTree = "<group>"; };
+		A3473A8B371D6CF57EB258CC /* gen-xcode-project.rb */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.ruby; path = "gen-xcode-project.rb"; sourceTree = "<group>"; };
 		A44F7809B9FE5EA75653F19C /* DSHGuestIntegrationTests.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHGuestIntegrationTests.m; sourceTree = "<group>"; };
 		A630E5428CA5D18FFFCA5412 /* DSHReadinessProbe.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHReadinessProbe.h; sourceTree = "<group>"; };
 		A668F940DD249427BEAE229C /* DSHAppDelegate.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHAppDelegate.m; sourceTree = "<group>"; };
-		A9366BB64F0BC2A432CA9E82 /* neon_convert_test.c */ = {isa = PBXFileReference; includeInIndex = 1; path = neon_convert_test.c; sourceTree = "<group>"; };
+		A9366BB64F0BC2A432CA9E82 /* neon_convert_test.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = neon_convert_test.c; sourceTree = "<group>"; };
 		A97EE62792199893E448E759 /* DSHLogViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHLogViewController.m; sourceTree = "<group>"; };
 		AE20CEC041B3E52B9929DA0A /* AppDelegate.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		B055C48DC366BE14023165C2 /* RootfsPatch.bundle */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "wrapper.plug-in"; path = RootfsPatch.bundle; sourceTree = "<group>"; };
-		B42BE743E39A64CA0B42FAC0 /* fetch-polyfill-test.mjs */ = {isa = PBXFileReference; includeInIndex = 1; path = "fetch-polyfill-test.mjs"; sourceTree = "<group>"; };
+		B42BE743E39A64CA0B42FAC0 /* fetch-polyfill-test.mjs */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "fetch-polyfill-test.mjs"; sourceTree = "<group>"; };
 		B69D479F1DA38B51A5279F89 /* DSHAppDelegate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHAppDelegate.h; sourceTree = "<group>"; };
 		BA9AD7CE51C5252BA2454DB8 /* AltIconViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AltIconViewController.m; sourceTree = "<group>"; };
 		BAE924D8273C2783A2E6485C /* DSHLogViewController.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHLogViewController.h; sourceTree = "<group>"; };
@@ -247,30 +249,30 @@
 		BBC729D145C9DE7C4787C60F /* ThemeViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ThemeViewController.m; sourceTree = "<group>"; };
 		BBE01DB971E132D134D8227F /* DSHHarness.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHHarness.m; sourceTree = "<group>"; };
 		BC85F9ECFA7E6D072C8D1996 /* Terminal.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = Terminal.m; sourceTree = "<group>"; };
-		BD2779087ABD12D311E36172 /* libbz2.tbd */ = {isa = PBXFileReference; includeInIndex = 1; name = libbz2.tbd; path = usr/lib/libbz2.tbd; sourceTree = SDKROOT; };
+		BD2779087ABD12D311E36172 /* libbz2.tbd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbz2.tbd; path = usr/lib/libbz2.tbd; sourceTree = SDKROOT; };
 		BED3436FA9AFC5CD40FC6B5B /* Roots.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = Roots.m; sourceTree = "<group>"; };
 		C027F0211DAC06BEF07F636F /* dollarblock1.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = dollarblock1.png; sourceTree = "<group>"; };
 		C0929D64C03A633D24E0D599 /* DSHTestHTTPServer.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHTestHTTPServer.h; sourceTree = "<group>"; };
 		C0A4CAEEDCB0627A6728D1EC /* rootfs-test.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "rootfs-test.sh"; sourceTree = "<group>"; };
-		C1275601F6B156B2E4EF3EAF /* term.html */ = {isa = PBXFileReference; includeInIndex = 1; path = term.html; sourceTree = "<group>"; };
-		C1C5CBAB77F8886A6FD4B725 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; path = README.md; sourceTree = "<group>"; };
+		C1275601F6B156B2E4EF3EAF /* term.html */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.html; path = term.html; sourceTree = "<group>"; };
+		C1C5CBAB77F8886A6FD4B725 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C1C8D0F06A118FD2DC98EFF4 /* DSHLaunchScreen.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = DSHLaunchScreen.storyboard; sourceTree = "<group>"; };
 		C3476956B62C1EB416663CB6 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C394AD1EFA5724101C253D99 /* AboutExternalKeyboardViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AboutExternalKeyboardViewController.m; sourceTree = "<group>"; };
-		C3BEA0703CC96E82511B4415 /* dsh-selftest */ = {isa = PBXFileReference; includeInIndex = 1; path = "dsh-selftest"; sourceTree = "<group>"; };
+		C3BEA0703CC96E82511B4415 /* dsh-selftest */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "dsh-selftest"; sourceTree = "<group>"; };
 		C4BE0774916962551933CE26 /* DSHLaunchUITests.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHLaunchUITests.m; sourceTree = "<group>"; };
 		CB84F4DFDD9E56E5AA4D3247 /* ISHShellExecutor.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ISHShellExecutor.m; sourceTree = "<group>"; };
 		CD4A00E13CC178F14AF3453D /* DSHPortAllocator.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHPortAllocator.m; sourceTree = "<group>"; };
 		D2F69919B23F34329B7DECA3 /* DSHStatusOverlayView.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHStatusOverlayView.h; sourceTree = "<group>"; };
 		D3B3C55FDCC73EE3E85E15BE /* IOSCalls.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = IOSCalls.m; sourceTree = "<group>"; };
-		D5D359272026726EF89EF16A /* package-lock.json */ = {isa = PBXFileReference; includeInIndex = 1; path = "package-lock.json"; sourceTree = "<group>"; };
+		D5D359272026726EF89EF16A /* package-lock.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "package-lock.json"; sourceTree = "<group>"; };
 		DB83987927CE87E8E9E80FC1 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DC7127D57230B34ABC7C385F /* DSH.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DSH.entitlements; sourceTree = "<group>"; };
 		DEB282A75606E5675F9EED20 /* emu-test.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "emu-test.sh"; sourceTree = "<group>"; };
 		E1A45D346CC67656BC086578 /* DSHGuestLauncher.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHGuestLauncher.m; sourceTree = "<group>"; };
 		E4BD90730CD37D86FABF2A8A /* TerminalView.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = TerminalView.m; sourceTree = "<group>"; };
 		E53A58AD9013232A2668FCF3 /* mach_exc.defs */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.mig; name = mach_exc.defs; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/mach/mach_exc.defs; sourceTree = DEVELOPER_DIR; };
-		E5E10D391863D0A803BA9814 /* mock-deepseek.mjs */ = {isa = PBXFileReference; includeInIndex = 1; path = "mock-deepseek.mjs"; sourceTree = "<group>"; };
+		E5E10D391863D0A803BA9814 /* mock-deepseek.mjs */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "mock-deepseek.mjs"; sourceTree = "<group>"; };
 		E783A5FE129CEA5AE3D092FE /* PasteboardDevice.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = PasteboardDevice.m; sourceTree = "<group>"; };
 		E83BEA146E761FF6D5F08FC1 /* ThemesViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ThemesViewController.m; sourceTree = "<group>"; };
 		E8951A62BBA22993AFE755AA /* ProgressReportViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ProgressReportViewController.m; sourceTree = "<group>"; };
@@ -280,12 +282,12 @@
 		EDAFBF1EE18FC5AD84901692 /* iinhash.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = iinhash.png; sourceTree = "<group>"; };
 		EFA80E1BBA34AEF3302004D4 /* DSHLogBuffer.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHLogBuffer.m; sourceTree = "<group>"; };
 		F079188F059D54AB824F4F07 /* libarchive.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = libarchive.xcodeproj; path = "ish-arm64/deps/libarchive.xcodeproj"; sourceTree = "<group>"; };
-		F13F62D483B3F51CC5AF8AA0 /* DebugServer.c */ = {isa = PBXFileReference; includeInIndex = 1; path = DebugServer.c; sourceTree = "<group>"; };
-		F1E0AA3201C117A78B4AEDA8 /* libiconv.tbd */ = {isa = PBXFileReference; includeInIndex = 1; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
+		F13F62D483B3F51CC5AF8AA0 /* DebugServer.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = DebugServer.c; sourceTree = "<group>"; };
+		F1E0AA3201C117A78B4AEDA8 /* libiconv.tbd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
 		F24616A63CE1871384EEABD0 /* pydann2.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = pydann2.png; sourceTree = "<group>"; };
 		F293815058DD38844F23A067 /* BarButton.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = BarButton.m; sourceTree = "<group>"; };
 		F2FB6CE71CE050651852A472 /* DSHMain.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHMain.m; sourceTree = "<group>"; };
-		F45BBA989F0AEE6FCF06FE4C /* dsh-serve */ = {isa = PBXFileReference; includeInIndex = 1; path = "dsh-serve"; sourceTree = "<group>"; };
+		F45BBA989F0AEE6FCF06FE4C /* dsh-serve */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "dsh-serve"; sourceTree = "<group>"; };
 		F72B488EB3AF16E1AE00F9D8 /* DSHLogBuffer.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHLogBuffer.h; sourceTree = "<group>"; };
 		FA5AD675745194A45649BD4A /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FB51FB21144C47EC5491383A /* DSHRootViewController.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHRootViewController.h; sourceTree = "<group>"; };
@@ -335,7 +337,6 @@
 				C3BEA0703CC96E82511B4415 /* dsh-selftest */,
 				F45BBA989F0AEE6FCF06FE4C /* dsh-serve */,
 			);
-			name = bin;
 			path = bin;
 			sourceTree = "<group>";
 		};
@@ -344,7 +345,6 @@
 			children = (
 				80CE22C91E5917E5D9B8D0CA /* fakefs.c */,
 			);
-			name = tools;
 			path = tools;
 			sourceTree = "<group>";
 		};
@@ -365,9 +365,7 @@
 			isa = PBXGroup;
 			children = (
 				7D15EA02E42C66C113E7FE50 /* libarchive.a */,
-				79C9FDD77F54498557FE884D /* DSH.app */,
-				248B432D2582CE815AFB1DD9 /* DSHTests.xctest */,
-				425868A59C1C8C94A8275386 /* DSHUITests.xctest */,
+				5A7516403035494300E64D96 /* DSH.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -377,7 +375,6 @@
 			children = (
 				5E8511E71AC96458A73CFD82 /* usr */,
 			);
-			name = overlay;
 			path = overlay;
 			sourceTree = "<group>";
 		};
@@ -387,7 +384,6 @@
 				00F192F11F17D94BE94770F3 /* bin */,
 				4D0A5C4E19E2A7517862B8B9 /* share */,
 			);
-			name = local;
 			path = local;
 			sourceTree = "<group>";
 		};
@@ -405,7 +401,6 @@
 				7AC8A8D49FEB08EFBCE92733 /* build-rootfs.sh */,
 				A3473A8B371D6CF57EB258CC /* gen-xcode-project.rb */,
 			);
-			name = scripts;
 			path = scripts;
 			sourceTree = "<group>";
 		};
@@ -414,7 +409,6 @@
 			children = (
 				9322AF5ADF13DB9492851C0C /* dsh */,
 			);
-			name = share;
 			path = share;
 			sourceTree = "<group>";
 		};
@@ -451,7 +445,6 @@
 				C1C8D0F06A118FD2DC98EFF4 /* DSHLaunchScreen.storyboard */,
 				36F63DF93319557B8984222F /* PrivacyInfo.xcprivacy */,
 			);
-			name = app;
 			path = app;
 			sourceTree = "<group>";
 		};
@@ -460,7 +453,6 @@
 			children = (
 				424DED3A41DF44E73935D760 /* local */,
 			);
-			name = usr;
 			path = usr;
 			sourceTree = "<group>";
 		};
@@ -469,7 +461,6 @@
 			children = (
 				5546C7D5C96B23588A0ED347 /* hterm_all.js */,
 			);
-			name = js;
 			path = js;
 			sourceTree = "<group>";
 		};
@@ -478,7 +469,6 @@
 			children = (
 				569877E6873801E76FCAA79D /* cordis.patch.yml */,
 			);
-			name = dsh;
 			path = dsh;
 			sourceTree = "<group>";
 		};
@@ -490,7 +480,6 @@
 				EDA945DCE7C290F54DEAD028 /* deps */,
 				E53A58AD9013232A2668FCF3 /* mach_exc.defs */,
 			);
-			name = "ish-arm64";
 			path = "ish-arm64";
 			sourceTree = "<group>";
 		};
@@ -500,7 +489,6 @@
 				D5D359272026726EF89EF16A /* package-lock.json */,
 				7DC99A9ED349CFB6DD51FF3B /* package.json */,
 			);
-			name = staging;
 			path = staging;
 			sourceTree = "<group>";
 		};
@@ -530,7 +518,6 @@
 				EDAFBF1EE18FC5AD84901692 /* iinhash.png */,
 				0493598A5FD244F53A1F71A5 /* freeiosterminal.png */,
 			);
-			name = Icons;
 			path = Icons;
 			sourceTree = "<group>";
 		};
@@ -595,7 +582,6 @@
 			children = (
 				82631B7DC68074B446F45BCB /* js */,
 			);
-			name = dist;
 			path = dist;
 			sourceTree = "<group>";
 		};
@@ -610,7 +596,6 @@
 				B42BE743E39A64CA0B42FAC0 /* fetch-polyfill-test.mjs */,
 				EF1B18E859780A18A4727A52 /* emu */,
 			);
-			name = tests;
 			path = tests;
 			sourceTree = "<group>";
 		};
@@ -621,7 +606,6 @@
 				33EF1844185FCAFEC531A871 /* LaunchScreen.storyboard */,
 				7F2B45D31DC2CD604F8741B8 /* About.storyboard */,
 			);
-			name = Base.lproj;
 			path = Base.lproj;
 			sourceTree = "<group>";
 		};
@@ -647,7 +631,6 @@
 				C4BE0774916962551933CE26 /* DSHLaunchUITests.m */,
 				05F24819FC6BF33C37C9F22C /* Info.plist */,
 			);
-			name = DSHUITests;
 			path = DSHUITests;
 			sourceTree = "<group>";
 		};
@@ -658,7 +641,6 @@
 				19CE37C12A851A16B7DB92E3 /* term.css */,
 				C1275601F6B156B2E4EF3EAF /* term.html */,
 			);
-			name = terminal;
 			path = terminal;
 			sourceTree = "<group>";
 		};
@@ -667,7 +649,6 @@
 			children = (
 				F6FD1B1B3A685DA0E18266C1 /* hterm */,
 			);
-			name = libapps;
 			path = libapps;
 			sourceTree = "<group>";
 		};
@@ -680,7 +661,6 @@
 				C0929D64C03A633D24E0D599 /* DSHTestHTTPServer.h */,
 				FA5AD675745194A45649BD4A /* Info.plist */,
 			);
-			name = DSHTests;
 			path = DSHTests;
 			sourceTree = "<group>";
 		};
@@ -689,7 +669,6 @@
 			children = (
 				E5A2E531BB4B9561E50262B0 /* libapps */,
 			);
-			name = deps;
 			path = deps;
 			sourceTree = "<group>";
 		};
@@ -698,7 +677,6 @@
 			children = (
 				A9366BB64F0BC2A432CA9E82 /* neon_convert_test.c */,
 			);
-			name = emu;
 			path = emu;
 			sourceTree = "<group>";
 		};
@@ -707,7 +685,6 @@
 			children = (
 				AE82AAB9CFE5E36DF8B84739 /* dist */,
 			);
-			name = hterm;
 			path = hterm;
 			sourceTree = "<group>";
 		};
@@ -717,7 +694,6 @@
 				3217F48A546C0D6812D77A65 /* overlay */,
 				A698925043F649C52080113F /* staging */,
 			);
-			name = rootfs;
 			path = rootfs;
 			sourceTree = "<group>";
 		};
@@ -762,7 +738,7 @@
 			);
 			name = DSH;
 			productName = DSH;
-			productReference = 79C9FDD77F54498557FE884D /* DSH.app */;
+			productReference = 5A7516403035494300E64D96 /* DSH.app */;
 			productType = "com.apple.product-type.application";
 		};
 		71B55A1817161E6CDED2F9D4 /* DSHUITests */ = {
@@ -809,8 +785,6 @@
 				Base,
 			);
 			mainGroup = D4F499E13095CA0CA73EE974;
-			minimizedProjectReferenceProxies = 0;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 2CC06F111A09F83A48BA1315 /* Products */;
 			projectDirPath = "";
 			projectReferences = (
@@ -1103,7 +1077,11 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHUITests/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1134,7 +1112,11 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHTests/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1148,6 +1130,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 81FA68C3A43F4408DC011151 /* AppDSH.xcconfig */;
 			buildSettings = {
+				DEVELOPMENT_TEAM = YPV49M8592;
 			};
 			name = Release;
 		};
@@ -1171,7 +1154,11 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHTests/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1185,6 +1172,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 81FA68C3A43F4408DC011151 /* AppDSH.xcconfig */;
 			buildSettings = {
+				DEVELOPMENT_TEAM = YPV49M8592;
 			};
 			name = Debug;
 		};
@@ -1207,7 +1195,11 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHUITests/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

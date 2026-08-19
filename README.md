@@ -67,7 +67,7 @@ stock dsh web UI.</sub>
   so DSH ships a `fetch()` polyfill with proper streaming `Response` bodies;
   the SSE round trip is covered by a test against a mock DeepSeek server.
 - **Downloads & files** — session-log exports land in *Files ▸ DSH ▸ Downloads*.
-- Keyboard: ⌘R reload, ⇧⌘T terminal. iPad first; iPhone works too.
+- Keyboard: ⌘R reload, ⇧⌘T terminal. iPad first; iPhone works too, portrait and landscape.
 
 ## Quick start
 
@@ -152,10 +152,10 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 | `tests/emu-test.sh` | the new NEON gadgets and the FMOV fix (C test compiled with gcc *inside* the guest), the `waitpid` regression, the fetch polyfill (host node, 11 checks) | macOS |
 | `tests/rootfs-test.sh` | imports `root.tar.gz` like the app does, guest self test (node-pty/koffi/ripgrep/sharp), profile patch, **headless LLM round trip through a mock DeepSeek SSE server**, `dsh-serve` reachable over loopback | macOS |
 | `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping | simulator / device |
-| `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet | simulator / device |
+| `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout | simulator / device |
 
-Status: all suites green (`make test`: 3 + 12 + 15 + 3 checks; on an iPad Air
-15/15 unit + guest-integration tests). CI: [`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml).
+Status: all suites green (`make test`: 3 + 12 + 15 + 4 checks; iPhone 17 Pro
+15/15 + 3 UI, iPad Air 15/15 unit + guest-integration tests). CI: [`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml).
 
 ## Project layout
 

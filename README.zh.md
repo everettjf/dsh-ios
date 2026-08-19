@@ -54,7 +54,7 @@ Alpine Linux 镜像（含 Node.js 22 和 `@deepseek-ai/dsh`），托管 `dsh web
 - **安全升级**——app 更新携带新的 guest 镜像时，会作为新 root 导入，并自动迁移 `~/.dsh`（会话、凭据、设置）和工作区。
 - **模拟环境下的真实 LLM 流式输出**——Node 以 jitless 模式运行（没有 WebAssembly），DSH 自带一个返回真实流式 `Response` 的 `fetch()` polyfill；SSE 全链路有针对 mock DeepSeek 服务器的测试。
 - **下载与文件**——会话日志导出保存在「文件 ▸ DSH ▸ Downloads」。
-- 快捷键：⌘R 重新加载，⇧⌘T 终端。以 iPad 为主，iPhone 也可用。
+- 快捷键：⌘R 重新加载，⇧⌘T 终端。以 iPad 为主，iPhone 横竖屏也都可用。
 
 ## 快速开始
 
@@ -129,9 +129,9 @@ make test-device        # 再加 UI 测试（需先在 iPad 设置 ▸ 开发者
 | `tests/emu-test.sh` | 新增的 NEON gadget 与 FMOV 修复（在 guest 里用 gcc 编译的 C 测试）、`waitpid` 回归、fetch polyfill（宿主 node，11 项） | macOS |
 | `tests/rootfs-test.sh` | 像 app 一样导入 `root.tar.gz`、guest 自检（node-pty/koffi/ripgrep/sharp）、profile patch、**通过 mock DeepSeek SSE 服务器的 headless 完整对话回路**、`dsh-serve` 本机可达 | macOS |
 | `DSHTests`（XCTest，宿主在 app 内） | 端口分配、日志环、就绪探测、监督器状态机（假 launcher + 本地 HTTP 服务器）；guest 集成：真实服务响应、`dsh-selftest`、node/dsh 版本、镜像簿记 | 模拟器 / 真机 |
-| `DSHUITests`（XCUITest） | 启动到 DeepSeek Harness 界面、状态栏端口、服务日志页、终端页 | 模拟器 / 真机 |
+| `DSHUITests`（XCUITest） | 启动到 DeepSeek Harness 界面、状态栏端口、服务日志页、终端页、横屏布局 | 模拟器 / 真机 |
 
-现状：全部通过（`make test`：3 + 12 + 15 + 3 项；iPad Air 真机 15/15 单元 + guest 集成测试）。CI：[`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml)。
+现状：全部通过（`make test`：3 + 12 + 15 + 4 项；iPhone 17 Pro 真机 15/15 + 3 项 UI，iPad Air 真机 15/15 单元 + guest 集成测试）。CI：[`.github/workflows/dsh-ios.yml`](.github/workflows/dsh-ios.yml)。
 
 ## 目录结构
 
