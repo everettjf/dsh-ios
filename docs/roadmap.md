@@ -17,7 +17,7 @@ which this plan references rather than repeats.
 | Apple Health (read): activity, heart rate, sleep, workouts | done |
 | Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 24, app 42 (device + simulator), UI 5 | done |
+| Tests: emulator 3, rootfs 22, app 50 (device + simulator), UI 5 | done |
 | Distribution: build-it-yourself only | open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).

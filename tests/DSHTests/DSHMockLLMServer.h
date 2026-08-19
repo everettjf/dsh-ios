@@ -24,6 +24,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// the tool's result is in the conversation, the reply quotes it between
 /// TOOL-RESULT-BEGIN/END markers.
 @property (atomic, copy, nullable) NSString *requestTool;
+/// JSON arguments for that call. Tools with required parameters (health_query's
+/// `metric`) need real ones; defaults to `{}`.
+@property (atomic, copy) NSString *toolArguments;
 /// Plain reply used when no tool is requested.
 @property (atomic, copy) NSString *reply;
 

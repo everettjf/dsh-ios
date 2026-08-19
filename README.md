@@ -158,12 +158,12 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 | Suite | Covers | Runs on |
 |---|---|---|
 | `tests/emu-test.sh` | the new NEON gadgets and the FMOV fix (C test compiled with gcc *inside* the guest), the `waitpid` regression, the fetch polyfill (host node, 11 checks) | macOS |
-| `tests/rootfs-test.sh` | imports `root.tar.gz` like the app does, guest self test (node-pty/koffi/ripgrep/sharp), profile patch, **headless LLM round trip through a mock DeepSeek SSE server**, `dsh-serve` reachable over loopback | macOS |
-| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **a whole agent turn calling `device_info` through the bridge against an in-app mock model** | simulator / device |
-| `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout | simulator / device |
+| `tests/rootfs-test.sh` | imports `root.tar.gz` like the app does, guest self test (node-pty/koffi/ripgrep/sharp), profile patch, **headless LLM round trip through a mock DeepSeek SSE server**, every bridge tool driven through a real agent turn against a stub bridge, `dsh-serve` reachable over loopback | macOS |
+| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; Calendar, Reminders and Health routes (off by default, refused before the framework is touched, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
+| `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout, the Capabilities screen's switches | simulator / device |
 
-Status: all suites green (`make test`: 3 + 16 + 32 + 4 checks; iPad Air 32/32
-unit + guest-integration tests on device). Everything runs locally — the build
+Status: all suites green (`make test`: 3 + 22 + 50 + 5 checks; the same 50
+unit + guest-integration tests also run on the iPad Air). Everything runs locally — the build
 needs an Apple Silicon Mac with Xcode, an emulator toolchain and (for the
 device suites) a connected iPhone or iPad, so there is no hosted CI.
 
@@ -203,8 +203,8 @@ Clipboard, location, photos, the share sheet and Shortcuts are designed but not
 built — each is one route in the app plus one tool in the guest plugin.
 
 Everything except `device_info` ships **off**. Turn it on in **⋯ ▸
-Capabilities**; the switch takes effect on the agent's next tool call, including
-mid-turn, and iOS's own permission still applies on top. A call made before
+Capabilities** — enabling one asks iOS for its permission right there, and the
+switch takes effect on the agent's next tool call, including mid-turn. A call made before
 either gate is open comes back as a recoverable `permission_denied` telling the
 model what the user has to do, rather than hanging the turn on a dialog.
 

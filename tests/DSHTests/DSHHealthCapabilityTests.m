@@ -31,6 +31,11 @@ static NSString *const kHealthRead = @"health.read";
     self.bridge = [DSHHostBridge new];
     XCTAssertTrue([self.bridge start]);
     [DSHHealthCapability installOn:self.bridge];
+    // The switch is persisted in NSUserDefaults and this bundle runs inside the
+    // real app, so a previous run (or a curious tester) could have left it on.
+    // Start from the shipped state; that the *shipped* state is off is asserted
+    // through `enabledByDefault` below.
+    [DSHCapabilityRegistry.shared setEnabled:NO forIdentifier:kHealthRead];
 }
 
 - (void)tearDown {
@@ -62,7 +67,9 @@ static NSString *const kHealthRead = @"health.read";
 
 - (void)testHealthIsOffByDefault {
     DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
-    XCTAssertFalse([registry isEnabled:kHealthRead], @"health must never default to on");
+    XCTAssertFalse([registry capabilityWithIdentifier:kHealthRead].enabledByDefault,
+                   @"health must never ship on");
+    XCTAssertFalse([registry isEnabled:kHealthRead]);
     DSHCapabilityState state = [registry stateForIdentifier:kHealthRead];
     // Unavailable on a build or device without HealthKit; Disabled otherwise.
     XCTAssertTrue(state == DSHCapabilityStateDisabled || state == DSHCapabilityStateUnavailable,
@@ -196,6 +203,14 @@ static NSString *const kHealthRead = @"health.read";
                           @"Strength training");
     XCTAssertTrue([[DSHHealthCapability activityNameFor:(HKWorkoutActivityType) 60000] containsString:@"60000"],
                   @"an unmapped activity must stay identifiable to the model");
+}
+
+/// The settings screen asks iOS the moment the user opts in, which only works
+/// if the capability carries its own request.
+- (void)testCapabilityCanAskForItsSystemPermission {
+    DSHCapability *capability = [DSHCapabilityRegistry.shared capabilityWithIdentifier:kHealthRead];
+    XCTAssertNotNil(capability.requestSystemPermission,
+                    @"a system-permission capability must be able to trigger its own dialog");
 }
 
 /// One sheet, not seven: everything the routes read is requested together.

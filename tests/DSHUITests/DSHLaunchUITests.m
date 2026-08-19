@@ -91,9 +91,14 @@ static const NSTimeInterval kBootTimeout = 300;   // first launch imports the ro
 }
 
 /// The capabilities screen is the only way a user can turn a bridge capability
-/// on, so the switch has to be reachable, honest about what it grants, and
-/// actually persisted.
-- (void)testCapabilitiesScreenTogglesHealth {
+/// on, so the switch has to be reachable, ask before granting, and stick.
+///
+/// This drives `device.info`, the one capability with no system permission
+/// behind it. Capabilities that do have one (Health, Calendar, Reminders) put
+/// up a sheet owned by another process, which XCUITest cannot reliably dismiss
+/// from here; that they can ask at all is asserted in
+/// DSHHealthCapabilityTests.testCapabilityCanAskForItsSystemPermission.
+- (void)testCapabilitiesScreenTogglesACapability {
     [self waitForHarnessReady];
     XCUIElement *menu = self.app.buttons[@"dsh.menu"];
     XCTAssertTrue([menu waitForExistenceWithTimeout:10]);
@@ -104,23 +109,46 @@ static const NSTimeInterval kBootTimeout = 300;   // first launch imports the ro
 
     XCUIElement *table = self.app.tables[@"dsh.capabilities"];
     XCTAssertTrue([table waitForExistenceWithTimeout:10]);
-    XCUIElement *health = self.app.switches[@"dsh.capability.switch.health.read"];
-    XCTAssertTrue([health waitForExistenceWithTimeout:10], @"Apple Health should be listed");
-    XCTAssertEqualObjects(health.value, @"0", @"capabilities ship off");
+    // The sensitive capabilities must at least be listed, or there is no way
+    // for a user to reach them.
+    XCTAssertTrue([self.app.switches[@"dsh.capability.switch.health.read"] waitForExistenceWithTimeout:10],
+                  @"Apple Health should be listed");
+    XCTAssertTrue(self.app.switches[@"dsh.capability.switch.calendar.read"].exists,
+                  @"Calendar should be listed");
     [self attachScreenshot:@"05-capabilities"];
 
-    [health tap];
-    // Turning one on names what is being handed over before it takes effect.
-    XCUIElement *allow = self.app.alerts.buttons[@"Allow"];
-    XCTAssertTrue([allow waitForExistenceWithTimeout:5], @"enabling should ask first");
-    [allow tap];
-    NSPredicate *on = [NSPredicate predicateWithFormat:@"value == '1'"];
-    [self waitForExpectations:@[[self expectationForPredicate:on evaluatedWithObject:health handler:nil]] timeout:10];
+    XCUIElement *device = self.app.switches[@"dsh.capability.switch.device.info"];
+    XCTAssertTrue([device waitForExistenceWithTimeout:10]);
+    NSPredicate *isOn = [NSPredicate predicateWithFormat:@"value == '1'"];
+    NSPredicate *isOff = [NSPredicate predicateWithFormat:@"value == '0'"];
 
-    // And back off, so the suite leaves the device as it found it.
-    [health tap];
-    NSPredicate *off = [NSPredicate predicateWithFormat:@"value == '0'"];
-    [self waitForExpectations:@[[self expectationForPredicate:off evaluatedWithObject:health handler:nil]] timeout:10];
+    // Switches persist across launches and this app is not reinstalled between
+    // runs, so start by normalising rather than assuming a fresh install.
+    // Turning something off is immediate — only turning it on asks.
+    if ([device.value isEqual:@"1"]) {
+        [device tap];
+        [self waitForExpectations:@[[self expectationForPredicate:isOff evaluatedWithObject:device handler:nil]] timeout:10];
+    }
+
+    [device tap];
+    XCUIElement *allow = self.app.alerts.buttons[@"Allow"];
+    XCTAssertTrue([allow waitForExistenceWithTimeout:5], @"enabling should ask first, naming what is granted");
+    [allow tap];
+    [self waitForExpectations:@[[self expectationForPredicate:isOn evaluatedWithObject:device handler:nil]] timeout:10];
+
+    // Cancelling must leave it as it was.
+    [device tap];
+    [self waitForExpectations:@[[self expectationForPredicate:isOff evaluatedWithObject:device handler:nil]] timeout:10];
+    [device tap];
+    XCUIElement *cancel = self.app.alerts.buttons[@"Cancel"];
+    XCTAssertTrue([cancel waitForExistenceWithTimeout:5]);
+    [cancel tap];
+    [self waitForExpectations:@[[self expectationForPredicate:isOff evaluatedWithObject:device handler:nil]] timeout:10];
+
+    // device.info ships on; leave it that way.
+    [device tap];
+    [self.app.alerts.buttons[@"Allow"] tap];
+    [self waitForExpectations:@[[self expectationForPredicate:isOn evaluatedWithObject:device handler:nil]] timeout:10];
     [self.app.buttons[@"Done"] tap];
 }
 
