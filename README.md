@@ -162,7 +162,7 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 | `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; Calendar, Reminders and Health routes (off by default, refused before the framework is touched, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout, the Capabilities screen's switches | simulator / device |
 
-Status: all suites green (`make test`: 3 + 22 + 50 + 5 checks; the same 50
+Status: all suites green (`make test`: 3 + 22 + 51 + 5 checks; the same 51
 unit + guest-integration tests also run on the iPad Air). Everything runs locally — the build
 needs an Apple Silicon Mac with Xcode, an emulator toolchain and (for the
 device suites) a connected iPhone or iPad, so there is no hosted CI.
