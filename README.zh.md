@@ -163,7 +163,8 @@ app 侧一个路由 + guest 插件里一个 tool。
 而每个能力的开关（敏感能力还要原生确认）才是约束 **agent** 的手段——agent 在 guest
 里是 root，能读到我们放在那里的任何秘密。每次调用都会记录到「服务日志」。
 
-协议、安全模型、能力/权限矩阵和实施计划见 [docs/host-bridge.md](docs/host-bridge.md)。
+协议、安全模型与能力/权限矩阵见 [docs/host-bridge.md](docs/host-bridge.md)；
+已完成的部分和后续计划见 [docs/roadmap.md](docs/roadmap.md)。
 
 ## 常见问题
 

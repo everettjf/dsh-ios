@@ -195,7 +195,8 @@ in the guest and can read any secret we put there. Every call is logged to
 *Server Log*.
 
 See [docs/host-bridge.md](docs/host-bridge.md) for the protocol, the security
-model, the capability/permission matrix and the delivery plan.
+model and the capability/permission matrix, and [docs/roadmap.md](docs/roadmap.md)
+for what is built and what comes next.
 
 ## FAQ
 
