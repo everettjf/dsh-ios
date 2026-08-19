@@ -16,59 +16,69 @@ which this plan references rather than repeats.
 | Calendar and Reminders (read) over EventKit, off by default | done |
 | Apple Health (read): activity, heart rate, sleep, workouts | done |
 | Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
+| Per-call confirmation for everything that writes | done |
+| Clipboard, power, location, contacts, notifications, files, Shortcuts | done |
+| Calendar and Reminders: creating, not just reading | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 22, app 51 (device + simulator), UI 5 | done |
+| Tests: emulator 3, rootfs 33, app 77 (device + simulator), UI 5 | done |
 | Distribution: build-it-yourself only | open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
 
-## Next: writing, which needs a different kind of consent
+## Done: the write gate, and nine more capabilities
 
-Everything shipped so far only *reads*, and two gates cover that: the user's
-switch, plus iOS's own permission where the framework has one. Neither is
-enough for a call that changes something — a switch flipped last Tuesday is not
-consent to put a particular string on the clipboard today, and iOS has no
-dialog to lend us for actions inside our own app. `DSHCapabilityGatePerCall`
-exists in the registry with nothing behind it; that is the next thing to build.
+`DSHCallConfirmation` is the gate everything that changes something now sits
+behind. Three rules make blocking a bridge handler on a dialog safe, and each
+one is a test:
 
-**1. Settle per-call vs per-session** ([host-bridge.md §6](host-bridge.md#6-open-questions)).
-A modal on every call is safe and unusable in a long agent turn; a blanket
-session grant is usable and too broad. The proposal to implement: reads keep
-today's switch-plus-system-permission model, writes ask every time, and the
-alert names the concrete effect ("Put 240 characters on the clipboard?", "Create
-reminder “buy milk”, due Friday?") rather than the capability. No session grants
-for writes until something proves they are needed.
+- **Never wait on a dialog nobody can see.** A call arriving while DSH is in
+  the background is refused immediately (`unavailable`, recoverable) rather
+  than queueing an alert the user will meet later, out of context.
+- **Never stack them.** While one confirmation is up, further ones are refused
+  rather than queued, so an agent in a loop cannot build a wall of dialogs.
+- **Always answer.** A prompt nobody answers times out and refuses
+  recoverably, so the turn ends with an explanation instead of hanging.
 
-**2. Build the gate.** `DSHHostBridge` already refuses `Disabled` and
-`Unavailable` before the handler runs; per-call slots in beside that: present on
-the main queue, wait with a timeout, and on refusal *or* timeout answer
-`permission_denied` with `recoverable: true` so the model explains instead of
-hanging. Two things that will bite: the app may be in the background when the
-call arrives (fail fast with `unavailable`, do not queue a dialog nobody can
-see), and a burst of calls must not stack alerts — coalesce or refuse the
-extras.
+The alert names the effect, not the capability — "Add this reminder? “buy
+milk”, due Friday, in Home" — and validation happens *before* it, so a
+malformed call never costs the user a tap. Session grants were dropped: they
+could not be explained in one line, which is a bad sign for a consent
+mechanism.
 
-**3. First writers, in this order.**
-- **Clipboard** (`GET`/`POST /v1/clipboard`, `UIPasteboard`). Read first: it is
-  the smaller change and iOS already shows its own paste banner. Write next —
-  the first thing that touches state outside the app.
-- **Reminders write** (`POST /v1/reminders`, EventKit). The capability, the
-  permission and the read route all exist, so this is purely the write path and
-  the confirmation copy.
+On top of it: clipboard read/write, battery and thermal, location (single fix,
+never tracking), contacts (search only — there is deliberately no route that
+returns the address book), notifications (10 an hour), file import/export
+through the document picker, Shortcuts, and creating calendar events and
+reminders.
 
-Neither needs an entitlement, so this stays inside the current signing setup.
+Two of these carry a caveat worth repeating in any docs that describe them:
 
-**4. Tests.** A per-call route refused on timeout and on decline; a burst that
-does not stack alerts; a backgrounded call that fails fast; guest-side round
-trips for both writers in `tests/rootfs-test.sh`; an XCUITest that accepts one
-confirmation and declines the next. The existing switch XCUITest
-(`testCapabilitiesScreenTogglesACapability`) stays as-is.
+- **Shortcuts suspends the agent.** Opening the Shortcuts app backgrounds DSH,
+  which suspends the emulator, so the turn stops and there is no result to
+  read. The route says so in its own answer rather than reporting a clean
+  success. Getting a result back would need a custom URL scheme *and* a way to
+  resume a suspended turn — the second half is the hard part and belongs with
+  the backgrounding work below.
+- **Files never touch the fakefs.** Contents cross the bridge base64-encoded
+  and the guest writes them itself, which keeps the emulator's filesystem out
+  of the app entirely. The 8 MB ceiling is real: it is JSON in memory.
 
-**What this does not include.** The read capabilities in the matrix that need no
-new mechanism — location, notifications, contacts, photos, files, speech — are
-deliberately parked until the write gate exists, because each one added now is
-another thing to retrofit onto it later. `share` and `shortcut/run` are writes
-in disguise and belong after step 3, not beside it.
+## Next
+
+1. **Photos and the share sheet** — the last two entries in the capability
+   matrix that need no new mechanism. Photos goes through `PHPickerViewController`,
+   where the picker is the consent (like file import); the share sheet is a
+   per-call write.
+2. **A record of what the agent did.** Every confirmation and every capability
+   call is already logged to the server log, but it is mixed in with the
+   guest's own output. A dedicated view — what was asked, when, allowed or
+   refused — is the thing that makes the switches trustworthy over time, and it
+   is more useful than the next capability.
+3. **Revisit the read gates.** Nine capabilities in, the pattern "switch plus
+   system permission, refuse recoverably" has held up. What has not been tested
+   is what happens when a user turns something *off* mid-turn — the registry is
+   consulted per call, so it should be immediate, but there is no test that a
+   revocation lands between two calls of the same turn.
 
 ## Done: Apple Health (read-only)
 

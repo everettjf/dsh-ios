@@ -156,17 +156,29 @@ site/           项目主页（GitHub Pages → https://xnu.app/dsh-ios/）
 
 app 内运行一个 loopback HTTP 服务，guest 里的 dsh 工具通过它访问 iOS 能力。已落地：
 
-| 工具 | 读取内容 | 开关 |
+| 工具 | 作用 | 开关 |
 |---|---|---|
-| `device_info` | 型号、iOS 版本、地区、电量、温度状态 | 默认开启 |
-| `calendar_query` | 日历事件 | 开关 + iOS 授权 |
-| `reminders_query` | 提醒事项与到期时间 | 开关 + iOS 授权 |
-| `health_query` | 步数/距离/活动能量、心率、睡眠、运动记录 | 开关 + iOS 授权 |
+| `device_info`、`device_power` | 型号、iOS 版本、地区、电量、温度 | 默认开启 |
+| `clipboard_read` | 读取剪贴板（iOS 会自己弹粘贴提示条） | 开关 |
+| `calendar_query`、`reminders_query` | 日历事件、提醒事项 | 开关 + iOS 授权 |
+| `health_query` | 步数/距离/能量、心率、睡眠、运动记录 | 开关 + iOS 授权 |
+| `location_query` | 单次定位，附带精度——不做持续跟踪 | 开关 + iOS 授权 |
+| `contacts_search` | 按姓名查联系人（没有"列出全部"的接口） | 开关 + iOS 授权 |
+| `notify` | 长任务完成时发通知，每小时上限 10 条 | 开关 + iOS 授权 |
+| `file_import` | 你挑一个文件交给 agent | 文件选择器本身即确认 |
+| `clipboard_write` | 覆盖你的剪贴板 | **每次都问** |
+| `calendar_create_event`、`reminders_create` | 新建事件/提醒 | **每次都问** |
+| `file_export` | 从 DSH 导出文件 | **每次都问** |
+| `shortcut_run` | 运行你的某个快捷指令 | **每次都问** |
 
-剪贴板、位置、照片、分享、Shortcuts 已完成设计但尚未实现——每加一个能力 = app 侧一个
-路由 + guest 插件里一个 tool。
+照片和分享已完成设计但尚未实现——每加一个能力 = app 侧一个路由 + guest 插件里一个 tool。
 
-除 `device_info` 外**默认全部关闭**，在 **⋯ ▸ Capabilities** 里打开——打开时立刻弹出
+所有会**改变**东西的操作都会先问，而且弹窗里写的是具体后果（"添加提醒？'买牛奶'，
+周五到期，在'家庭'列表"），不是能力名称。没人应答的确认会被拒绝而不是一直挂着；
+DSH 在后台时到达的调用直接拒绝，而不是排队一个你看不见的弹窗；连续调用也不会把
+弹窗叠成一摞。
+
+除 `device_info`/`device_power` 外**默认全部关闭**，在 **⋯ ▸ Capabilities** 里打开——打开时立刻弹出
 iOS 的授权框（不用等 agent 先失败一次），开关本身对 agent 的下一次工具调用即刻生效
 （回合中途也算）。任一道门没开时
 调用会返回可恢复的 `permission_denied`，告诉模型需要用户做什么，而不是卡在系统弹窗上等。

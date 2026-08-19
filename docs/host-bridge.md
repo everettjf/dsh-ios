@@ -1,8 +1,9 @@
 # Host Bridge — giving the agent access to iOS capabilities
 
 **Status:** implemented — the bridge, the capability registry, the Capabilities
-settings screen, `device_info`, Calendar/Reminders (read) and Apple Health
-(read). Per-call confirmation and the write capabilities are still design only · **Tracking PR:** this one · **Author:** @everettjf
+settings screen, the per-call confirmation gate, and fifteen tools across
+device/power, clipboard, calendar, reminders, health, location, contacts,
+notifications, files and Shortcuts · **Tracking PR:** this one · **Author:** @everettjf
 
 DSH runs DeepSeek Harness inside an emulated Linux guest. The guest is a good
 sandbox but a poor citizen of the device: it cannot read Apple Health, take a
@@ -121,21 +122,23 @@ none of these need Apple's approval, unlike e.g. Font Enumeration).
 | Capability | Route | iOS API | Info.plist / entitlement | Explicit App ID? | Risk | Confirm |
 |---|---|---|---|---|---|---|
 | Device info ✅ | `/v1/device` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
-| Clipboard read | `/v1/clipboard` | `UIPasteboard` | — | no | medium | system paste banner |
-| Clipboard write | `/v1/clipboard` (POST) | `UIPasteboard` | — | no | medium | per call |
-| Battery / thermal | `/v1/device/power` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
+| Clipboard read ✅ | `/v1/clipboard` | `UIPasteboard` | — | no | medium | switch (iOS shows its paste banner) |
+| Clipboard write ✅ | `/v1/clipboard` (POST) | `UIPasteboard` | — | no | medium | per call |
+| Battery / thermal ✅ | `/v1/device/power` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
 | Share sheet | `/v1/share` | `UIActivityViewController` | — | no | medium | user picks target |
-| Notifications | `/v1/notify` | `UNUserNotificationCenter` | — | no | low | system prompt |
+| Notifications ✅ | `/v1/notify` | `UNUserNotificationCenter` | — | no | low | switch + system, 10/hour |
 | **Health (read)** ✅ | `/v1/health/*` | HealthKit | `NSHealthShareUsageDescription` + `com.apple.developer.healthkit` | **yes** | high | switch + system |
-| Location | `/v1/location` | CoreLocation | `NSLocationWhenInUseUsageDescription` | no | high | system prompt |
+| Location ✅ | `/v1/location` | CoreLocation | `NSLocationWhenInUseUsageDescription` | no | high | switch + system |
 | Calendar (read) ✅ | `/v1/calendar/events` | EventKit | `NSCalendarsFullAccessUsageDescription` (+ pre-17 key) | no | high | switch + system |
+| Calendar (write) ✅ | `/v1/calendar/events` (POST) | EventKit | as above | no | high | per call |
 | Reminders (read) ✅ | `/v1/reminders` | EventKit | `NSRemindersFullAccessUsageDescription` (+ pre-17 key) | no | high | switch + system |
-| Reminders (write) | `/v1/reminders` (POST) | EventKit | as above | no | high | per call |
-| Contacts | `/v1/contacts` | Contacts | `NSContactsUsageDescription` | no | high | system + app toggle |
+| Reminders (write) ✅ | `/v1/reminders` (POST) | EventKit | as above | no | high | per call |
+| Contacts ✅ | `/v1/contacts?q=` | Contacts | `NSContactsUsageDescription` | no | high | switch + system, search only |
 | Photos (read/pick) | `/v1/photos/*` | PhotosUI picker | `NSPhotoLibraryUsageDescription` | no | high | user picks items |
 | Camera / mic capture | `/v1/capture/*` | AVFoundation | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` | no | high | per call |
-| Shortcuts | `/v1/shortcut/run` | `x-callback-url` / App Intents | — | no | high | per call |
-| Files (import/export) | `/v1/files/*` | `UIDocumentPicker` | — | no | medium | user picks |
+| Shortcuts ✅ | `/v1/shortcut/run` | `x-callback-url` | — | no | high | per call (and DSH is suspended) |
+| Files (import) ✅ | `/v1/files/import` | `UIDocumentPicker` | — | no | medium | the picker is the consent |
+| Files (export) ✅ | `/v1/files/export` | `UIDocumentPicker` | — | no | medium | per call, then the picker |
 | Speech (TTS/STT) | `/v1/speech/*` | AVSpeechSynthesizer, Speech | `NSSpeechRecognitionUsageDescription` | no | medium | system prompt |
 
 Health is deliberately *not* first in implementation order — it is the one that
@@ -143,22 +146,48 @@ forces a provisioning change, so it lands once the plumbing is proven.
 
 ### Tool surface
 
-The plugin registers one tool per domain, not per route, so the model's tool
-list stays small:
+One tool per thing the agent can *do*, which is not the same as one per route —
+`health_query` covers four routes behind a `metric`, while the clipboard's read
+and write are separate tools because they are separately gated:
 
 ```
-device_info(fields?)                  → model, OS, locale, battery, thermal state
-clipboard(action: read|write, text?)  → the pasteboard
-health_query(metric, days?, limit?)   → steps | heart_rate | sleep | workouts | …
-location_query(accuracy?)             → one fix, or the last known one
-calendar_query(range, limit?)         → events / reminders
-photos_pick(count?)                   → user-picked images, written into the workspace
-share(path|text)                      → opens the share sheet
-notify(title, body)                   → local notification
+device_info()                              → model, OS, locale, battery, thermal state
+device_power()                             → battery, heat, and shouldDeferExpensiveWork
+clipboard_read() / clipboard_write(text)   → the pasteboard
+calendar_query(days?, limit?)              → events
+calendar_create_event(title, start, …)     → one event
+reminders_query(completed?, limit?)        → reminders
+reminders_create(title, due?, notes?)      → one reminder
+health_query(metric, days?, limit?)        → activity | heart_rate | sleep | workouts
+location_query()                           → one fix, with its accuracy
+contacts_search(query, limit?)             → matching people (search only, never a dump)
+notify(title, body?)                       → local notification, 10 an hour
+file_import() / file_export(name, base64)  → through the iOS document picker
+shortcut_run(name, input?)                 → runs one of the user's shortcuts
 ```
 
-Tools that produce files write them into `/root/workspace` inside the guest, so
-the agent can then read them with the tools it already has.
+Files cross the bridge as base64 in the JSON body and the guest writes them
+into `/root/workspace` itself, so the app never reaches into the emulator's
+fakefs.
+
+### Two capabilities cost more than a route each
+
+**Shortcuts leaves.** `shortcuts://x-callback-url/run-shortcut` opens the
+Shortcuts app, which backgrounds DSH, which suspends the emulator — so the
+agent's turn stops mid-call and there is no result to read. The route returns
+`started: true` with a note saying exactly that, rather than a success the
+model would reasonably read as "it ran and here is the outcome". Getting a
+result back needs a custom URL scheme *and* a way to resume a suspended turn;
+the second half is the same problem as backgrounding generally, so it is parked
+with it. The shortcut name is percent-encoded with `&`, `=`, `+`, `?` and `#`
+removed from the allowed set, so a name cannot smuggle in extra x-callback
+parameters — there is a test for that specifically.
+
+**Files never touch the fakefs.** The app does not write into the guest's
+filesystem; contents cross the bridge base64-encoded in the JSON body and the
+guest writes them itself with `fs`. That keeps the emulator's internals out of
+the app, at the price of a real 8 MB ceiling — it is JSON held in memory on
+both sides.
 
 ### Health is the one capability that cannot report its own permission
 
@@ -257,12 +286,15 @@ independently and in any order.
 
 ## 6. Open questions
 
-- **Per-call confirmation UX.** A modal per call is safe but hostile in a long
-  agent turn. Proposal: per-session grant for read capabilities (with a visible
-  badge in the DSH bar) and per-call for writes. Still open — the read
-  capabilities shipped so far are gated by the switch plus the system dialog,
-  and `DSHCapabilityGatePerCall` has no implementation behind it yet, so the
-  first write capability has to settle this.
+- **Per-call confirmation UX.** *Settled:* reads are gated by the switch plus
+  the framework's own dialog; everything that writes asks every time, and the
+  alert names the concrete effect ("Add this reminder? “buy milk”, due Friday,
+  in Home") rather than the capability. No session grants — they were the part
+  that could not be explained to a user in one line. `DSHCallConfirmation`
+  enforces the three rules that make blocking a bridge handler on a dialog
+  safe: never wait on a dialog nobody can see (background → refuse), never
+  stack them (a second prompt while one is up → refuse), and always answer
+  (timeout → refuse, recoverably).
 - **Backgrounding.** iOS suspends the app; a bridge call from a background agent
   turn will fail. Should the bridge queue the request and resume on foreground,
   or fail fast with `unavailable`? Fail fast is proposed for now.

@@ -8,7 +8,11 @@
 #import "DSHHostBridge.h"
 
 @interface DSHCapabilitiesViewController ()
-@property (nonatomic, copy) NSArray<DSHCapability *> *capabilities;
+/// Section 0 reads, section 1 writes — because "what can it see" and "what can
+/// it change" are different questions, and a flat list of a dozen switches
+/// makes them look alike.
+@property (nonatomic, copy) NSArray<DSHCapability *> *reading;
+@property (nonatomic, copy) NSArray<DSHCapability *> *writing;
 @end
 
 @implementation DSHCapabilitiesViewController
@@ -38,8 +42,17 @@
 }
 
 - (void)reload {
-    self.capabilities = DSHCapabilityRegistry.shared.capabilities;
+    NSMutableArray *reading = [NSMutableArray array], *writing = [NSMutableArray array];
+    for (DSHCapability *capability in DSHCapabilityRegistry.shared.capabilities)
+        [capability.gate == DSHCapabilityGatePerCall ? writing : reading addObject:capability];
+    self.reading = reading;
+    self.writing = writing;
     [self.tableView reloadData];
+}
+
+- (nullable DSHCapability *)capabilityAt:(NSIndexPath *)indexPath {
+    NSArray<DSHCapability *> *section = indexPath.section == 0 ? self.reading : self.writing;
+    return indexPath.row < (NSInteger) section.count ? section[indexPath.row] : nil;
 }
 
 - (void)done {
@@ -49,17 +62,21 @@
 #pragma mark Table
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 2;
+    return 3;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     // Capabilities register when the guest finishes booting, so the list can
     // legitimately be empty for the first few seconds after launch.
-    return section == 0 ? MAX(1, (NSInteger) self.capabilities.count) : 1;
+    if (section == 0) return MAX(1, (NSInteger) self.reading.count);
+    if (section == 1) return MAX(1, (NSInteger) self.writing.count);
+    return 1;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    return section == 0 ? @"Device access" : @"Bridge";
+    if (section == 0) return @"What the agent can read";
+    if (section == 1) return @"What the agent can change";
+    return @"Bridge";
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
@@ -67,6 +84,9 @@
         return @"Anything switched on here can be read by the agent running in DSH — including by a model answering over the network. "
                 "Switches take effect immediately, including in the middle of a turn. Items that say “Also needs iOS permission” ask iOS as soon "
                 "as you switch them on; that grant can be revoked later in Settings ▸ Privacy.";
+    if (section == 1)
+        return @"These change something outside DSH, so switching one on is not the last word: you are asked to confirm each individual action, "
+                "and the alert says exactly what it will do. Nothing happens while DSH is in the background.";
     return @"The bridge listens on this device only (127.0.0.1) and requires a token that changes every launch, so other apps cannot reach it.";
 }
 
@@ -75,7 +95,7 @@
     cell.detailTextLabel.numberOfLines = 0;
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
 
-    if (indexPath.section == 1) {
+    if (indexPath.section == 2) {
         DSHHostBridge *bridge = DSHHostBridge.shared;
         cell.textLabel.text = bridge.isRunning ? @"Running" : @"Not running";
         cell.detailTextLabel.text = bridge.isRunning
@@ -86,7 +106,8 @@
         return cell;
     }
 
-    if (self.capabilities.count == 0) {
+    DSHCapability *capability = [self capabilityAt:indexPath];
+    if (capability == nil) {
         cell.textLabel.text = @"Still starting…";
         cell.detailTextLabel.text = @"Capabilities appear once the guest has booted.";
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -94,7 +115,6 @@
         return cell;
     }
 
-    DSHCapability *capability = self.capabilities[indexPath.row];
     DSHCapabilityState state = [DSHCapabilityRegistry.shared stateForIdentifier:capability.identifier];
     cell.textLabel.text = capability.title;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -106,13 +126,14 @@
     else if (capability.gate == DSHCapabilityGateSystemPermission)
         [detail appendString:@"\nAlso needs iOS permission."];
     else if (capability.gate == DSHCapabilityGatePerCall)
-        [detail appendString:@"\nAsks you before every call."];
+        [detail appendString:@"\nAsks you before every action."];
     cell.detailTextLabel.text = detail;
 
     UISwitch *toggle = [UISwitch new];
     toggle.on = state != DSHCapabilityStateDisabled && state != DSHCapabilityStateUnavailable;
     toggle.enabled = capability.available;
-    toggle.tag = indexPath.row;
+    // Encodes both coordinates: the switch's action has no index path of its own.
+    toggle.tag = indexPath.section * 1000 + indexPath.row;
     toggle.accessibilityIdentifier = [NSString stringWithFormat:@"dsh.capability.switch.%@", capability.identifier];
     [toggle addTarget:self action:@selector(toggled:) forControlEvents:UIControlEventValueChanged];
     cell.accessoryView = toggle;
@@ -120,20 +141,22 @@
 }
 
 - (void)toggled:(UISwitch *)toggle {
-    if (toggle.tag < 0 || (NSUInteger) toggle.tag >= self.capabilities.count)
+    DSHCapability *capability = [self capabilityAt:[NSIndexPath indexPathForRow:toggle.tag % 1000
+                                                                     inSection:toggle.tag / 1000]];
+    if (capability == nil)
         return;
-    DSHCapability *capability = self.capabilities[toggle.tag];
     if (!toggle.isOn) {
         [DSHCapabilityRegistry.shared setEnabled:NO forIdentifier:capability.identifier];
         return;
     }
     // Turning something on is the consequential direction, so it is the one
     // that gets a confirmation naming what is being handed over.
+    NSString *consequence = capability.gate == DSHCapabilityGatePerCall
+        ? @"You will still be asked before each individual action — this switch only decides whether the agent may ask."
+        : @"The agent will be able to read this whenever it decides to, including when a remote model asks it to.";
     UIAlertController *alert = [UIAlertController
         alertControllerWithTitle:capability.title
-                         message:[NSString stringWithFormat:
-                                  @"%@\n\nThe agent will be able to read this whenever it decides to, including when a remote model asks it to.",
-                                  capability.details]
+                         message:[NSString stringWithFormat:@"%@\n\n%@", capability.details, consequence]
                   preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
         toggle.on = NO;

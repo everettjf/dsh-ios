@@ -12,10 +12,12 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface DSHDeviceCapability : NSObject
-/// Adds `GET /v1/device` to the bridge.
+/// Adds `GET /v1/device` and `GET /v1/device/power` to the bridge.
 + (void)installOn:(DSHHostBridge *)bridge;
-/// The payload that route returns (also used by tests).
+/// The payload `/v1/device` returns (also used by tests).
 + (NSDictionary *)snapshot;
+/// The smaller, faster-changing subset behind `/v1/device/power`.
++ (NSDictionary *)powerSnapshot;
 @end
 
 NS_ASSUME_NONNULL_END

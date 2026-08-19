@@ -7,10 +7,13 @@
 #import "DSHHostBridge.h"
 #import "DSHCapability.h"
 #import "DSHHarness.h"
+#import "DSHCallConfirmation.h"
 #import <EventKit/EventKit.h>
 
 NSString *const DSHCapabilityCalendarRead = @"calendar.read";
 NSString *const DSHCapabilityRemindersRead = @"reminders.read";
+NSString *const DSHCapabilityCalendarWrite = @"calendar.write";
+NSString *const DSHCapabilityRemindersWrite = @"reminders.write";
 
 /// Calendar data is easily thousands of items; every route caps what it returns
 /// and says so, because the model pays for each one.
@@ -84,6 +87,28 @@ static const NSInteger kMaxDays = 366;
                                       recoverable:YES];
 }
 
+/// Writing needs full access; `WriteOnly` is enough here, where it is not for
+/// reading.
++ (nullable DSHHostBridgeResponse *)writeRefusalFor:(EKEntityType)type name:(NSString *)name {
+    EKAuthorizationStatus status = [self statusFor:type];
+    BOOL allowed = status == EKAuthorizationStatusAuthorized;
+    if (@available(iOS 17.0, *))
+        allowed = allowed || status == EKAuthorizationStatusFullAccess || status == EKAuthorizationStatusWriteOnly;
+    if (allowed)
+        return nil;
+    if (status == EKAuthorizationStatusNotDetermined) {
+        [self requestAccessFor:type];
+        return [DSHHostBridgeResponse errorWithStatus:403 code:@"permission_denied"
+                                              message:[NSString stringWithFormat:
+                                                       @"iOS has just asked the user for %@ access. Tell them to allow it, then try again.", name]
+                                          recoverable:YES];
+    }
+    return [DSHHostBridgeResponse errorWithStatus:403 code:@"permission_denied"
+                                          message:[NSString stringWithFormat:
+                                                   @"%@ access is denied for DSH in iOS Settings ▸ Privacy; the user has to grant it there.", name]
+                                      recoverable:YES];
+}
+
 #pragma mark Data
 
 + (NSString *)isoString:(NSDate *)date {
@@ -91,6 +116,39 @@ static const NSInteger kMaxDays = 366;
     static dispatch_once_t once;
     dispatch_once(&once, ^{ formatter = [NSISO8601DateFormatter new]; });
     return date ? [formatter stringFromDate:date] : @"";
+}
+
++ (nullable NSDate *)dateFromString:(NSString *)string {
+    if (![string isKindOfClass:NSString.class] || string.length == 0)
+        return nil;
+    static NSISO8601DateFormatter *iso;
+    static NSDateFormatter *localMinutes, *localDay;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        iso = [NSISO8601DateFormatter new];
+        // A model writing "2026-08-20 14:00" means the user's wall clock, so
+        // these two parse in the device's own time zone rather than UTC.
+        localMinutes = [NSDateFormatter new];
+        localMinutes.dateFormat = @"yyyy-MM-dd HH:mm";
+        localMinutes.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        localDay = [NSDateFormatter new];
+        localDay.dateFormat = @"yyyy-MM-dd";
+        localDay.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    });
+    NSDate *date = [iso dateFromString:string];
+    if (date == nil)
+        date = [localMinutes dateFromString:string];
+    if (date == nil)
+        date = [localDay dateFromString:string];
+    return date;
+}
+
+/// How the confirmation alert and the log line describe a moment.
++ (NSString *)humanDate:(NSDate *)date allDay:(BOOL)allDay {
+    NSDateFormatter *formatter = [NSDateFormatter new];
+    formatter.dateStyle = NSDateFormatterMediumStyle;
+    formatter.timeStyle = allDay ? NSDateFormatterNoStyle : NSDateFormatterShortStyle;
+    return [formatter stringFromDate:date];
 }
 
 + (NSDictionary *)eventsWithinDays:(NSInteger)days limit:(NSInteger)limit {
@@ -204,6 +262,24 @@ static const NSInteger kMaxDays = 366;
         return [DSHHostBridgeResponse ok:[self eventsWithinDays:days limit:limit]];
     }];
 
+    DSHCapability *calendarWrite = [[DSHCapability alloc] initWithIdentifier:DSHCapabilityCalendarWrite
+                                                                       title:@"Calendar (create)"
+                                                                     details:@"Lets the agent add events to your calendar. Asks you every time."
+                                                                        gate:DSHCapabilityGatePerCall
+                                                            enabledByDefault:NO
+                                                                   available:YES];
+    calendarWrite.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeEvent]; };
+    [registry registerCapability:calendarWrite];
+
+    DSHCapability *remindersWrite = [[DSHCapability alloc] initWithIdentifier:DSHCapabilityRemindersWrite
+                                                                       title:@"Reminders (create)"
+                                                                     details:@"Lets the agent add reminders. Asks you every time."
+                                                                        gate:DSHCapabilityGatePerCall
+                                                            enabledByDefault:NO
+                                                                   available:YES];
+    remindersWrite.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeReminder]; };
+    [registry registerCapability:remindersWrite];
+
     [bridge registerRoute:@"GET" path:@"/v1/reminders" capability:DSHCapabilityRemindersRead
                   handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {
         DSHHostBridgeResponse *refusal = [self refusalFor:EKEntityTypeReminder name:@"reminders"];
@@ -212,6 +288,132 @@ static const NSInteger kMaxDays = 366;
         BOOL includeCompleted = [request.query[@"completed"] isEqualToString:@"true"];
         NSInteger limit = [request integerFor:@"limit" fallback:kDefaultLimit min:1 max:kMaxLimit];
         return [DSHHostBridgeResponse ok:[self remindersIncludingCompleted:includeCompleted limit:limit]];
+    }];
+
+    [bridge registerRoute:@"POST" path:@"/v1/calendar/events" capability:DSHCapabilityCalendarWrite
+                  handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {
+        NSString *title = request.json[@"title"];
+        if (![title isKindOfClass:NSString.class] || title.length == 0)
+            return [DSHHostBridgeResponse errorWithStatus:400 code:@"invalid_request"
+                                                  message:@"Send a JSON body with at least `title` and `start`."
+                                              recoverable:NO];
+        NSDate *start = [self dateFromString:request.json[@"start"]];
+        if (start == nil)
+            return [DSHHostBridgeResponse errorWithStatus:400 code:@"invalid_request"
+                                                  message:@"`start` must be ISO 8601, or \"YYYY-MM-DD HH:mm\" / \"YYYY-MM-DD\" in the device's time zone."
+                                              recoverable:NO];
+        BOOL allDay = [request.json[@"allDay"] boolValue];
+        NSDate *end = [self dateFromString:request.json[@"end"]];
+        if (end == nil)
+            end = [start dateByAddingTimeInterval:allDay ? 24 * 60 * 60 : 60 * 60];
+        if ([end compare:start] == NSOrderedAscending)
+            return [DSHHostBridgeResponse errorWithStatus:400 code:@"invalid_request"
+                                                  message:@"`end` is before `start`."
+                                              recoverable:NO];
+
+        DSHHostBridgeResponse *refusal = [self writeRefusalFor:EKEntityTypeEvent name:@"calendar"];
+        if (refusal)
+            return refusal;
+
+        EKEventStore *store = [self store];
+        EKCalendar *calendar = store.defaultCalendarForNewEvents;
+        if (calendar == nil)
+            return [DSHHostBridgeResponse errorWithStatus:409 code:@"unavailable"
+                                                  message:@"There is no calendar on this device that DSH may write to."
+                                              recoverable:NO];
+
+        NSString *location = [request.json[@"location"] isKindOfClass:NSString.class] ? request.json[@"location"] : nil;
+        NSMutableString *detail = [NSMutableString stringWithFormat:@"“%@”\n%@", title, [self humanDate:start allDay:allDay]];
+        if (!allDay) [detail appendFormat:@" – %@", [self humanDate:end allDay:NO]];
+        if (location.length) [detail appendFormat:@"\n%@", location];
+        [detail appendFormat:@"\n\nIn %@.", calendar.title];
+        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this to your calendar?" detail:detail];
+        DSHHostBridgeResponse *declined = [DSHCallConfirmation refusalFor:outcome
+                                                                  action:[NSString stringWithFormat:@"adding “%@” to the calendar", title]];
+        if (declined)
+            return declined;
+
+        EKEvent *event = [EKEvent eventWithEventStore:store];
+        event.title = title;
+        event.startDate = start;
+        event.endDate = end;
+        event.allDay = allDay;
+        event.calendar = calendar;
+        if (location.length) event.location = location;
+        if ([request.json[@"notes"] isKindOfClass:NSString.class]) event.notes = request.json[@"notes"];
+
+        NSError *error = nil;
+        if (![store saveEvent:event span:EKSpanThisEvent commit:YES error:&error])
+            return [DSHHostBridgeResponse errorWithStatus:500 code:@"internal"
+                                                  message:[NSString stringWithFormat:@"EventKit refused to save the event: %@", error.localizedDescription]
+                                              recoverable:NO];
+        [DSHHarness.shared.log append:[NSString stringWithFormat:@"[bridge] created calendar event “%@”", title]];
+        return [DSHHostBridgeResponse ok:@{
+            @"created": @YES,
+            @"title": title,
+            @"start": [self isoString:start],
+            @"end": [self isoString:end],
+            @"allDay": @(allDay),
+            @"calendar": calendar.title ?: @"",
+        }];
+    }];
+
+    [bridge registerRoute:@"POST" path:@"/v1/reminders" capability:DSHCapabilityRemindersWrite
+                  handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {
+        NSString *title = request.json[@"title"];
+        if (![title isKindOfClass:NSString.class] || title.length == 0)
+            return [DSHHostBridgeResponse errorWithStatus:400 code:@"invalid_request"
+                                                  message:@"Send a JSON body with at least `title`."
+                                              recoverable:NO];
+        NSString *dueString = request.json[@"due"];
+        NSDate *due = dueString ? [self dateFromString:dueString] : nil;
+        if (dueString != nil && due == nil)
+            return [DSHHostBridgeResponse errorWithStatus:400 code:@"invalid_request"
+                                                  message:@"`due` must be ISO 8601, or \"YYYY-MM-DD HH:mm\" / \"YYYY-MM-DD\" in the device's time zone."
+                                              recoverable:NO];
+
+        DSHHostBridgeResponse *refusal = [self writeRefusalFor:EKEntityTypeReminder name:@"reminders"];
+        if (refusal)
+            return refusal;
+
+        EKEventStore *store = [self store];
+        EKCalendar *list = store.defaultCalendarForNewReminders;
+        if (list == nil)
+            return [DSHHostBridgeResponse errorWithStatus:409 code:@"unavailable"
+                                                  message:@"There is no reminders list on this device that DSH may write to."
+                                              recoverable:NO];
+
+        NSMutableString *detail = [NSMutableString stringWithFormat:@"“%@”", title];
+        if (due) [detail appendFormat:@"\ndue %@", [self humanDate:due allDay:NO]];
+        [detail appendFormat:@"\n\nIn %@.", list.title];
+        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this reminder?" detail:detail];
+        DSHHostBridgeResponse *declined = [DSHCallConfirmation refusalFor:outcome
+                                                                  action:[NSString stringWithFormat:@"adding the reminder “%@”", title]];
+        if (declined)
+            return declined;
+
+        EKReminder *reminder = [EKReminder reminderWithEventStore:store];
+        reminder.title = title;
+        reminder.calendar = list;
+        if ([request.json[@"notes"] isKindOfClass:NSString.class]) reminder.notes = request.json[@"notes"];
+        if (due) {
+            NSCalendarUnit units = NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay |
+                                   NSCalendarUnitHour | NSCalendarUnitMinute;
+            reminder.dueDateComponents = [NSCalendar.currentCalendar components:units fromDate:due];
+            // A due date without an alarm is a date the user never sees, so
+            // add the alarm that Reminders itself would.
+            [reminder addAlarm:[EKAlarm alarmWithAbsoluteDate:due]];
+        }
+
+        NSError *error = nil;
+        if (![store saveReminder:reminder commit:YES error:&error])
+            return [DSHHostBridgeResponse errorWithStatus:500 code:@"internal"
+                                                  message:[NSString stringWithFormat:@"EventKit refused to save the reminder: %@", error.localizedDescription]
+                                              recoverable:NO];
+        [DSHHarness.shared.log append:[NSString stringWithFormat:@"[bridge] created reminder “%@”", title]];
+        NSMutableDictionary *body = [@{ @"created": @YES, @"title": title, @"list": list.title ?: @"" } mutableCopy];
+        if (due) body[@"due"] = [self isoString:due];
+        return [DSHHostBridgeResponse ok:body];
     }];
 }
 

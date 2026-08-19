@@ -110,11 +110,14 @@ static const NSTimeInterval kBootTimeout = 300;   // first launch imports the ro
     XCUIElement *table = self.app.tables[@"dsh.capabilities"];
     XCTAssertTrue([table waitForExistenceWithTimeout:10]);
     // The sensitive capabilities must at least be listed, or there is no way
-    // for a user to reach them.
+    // for a user to reach them — reads in one section, writes in the other.
     XCTAssertTrue([self.app.switches[@"dsh.capability.switch.health.read"] waitForExistenceWithTimeout:10],
                   @"Apple Health should be listed");
     XCTAssertTrue(self.app.switches[@"dsh.capability.switch.calendar.read"].exists,
                   @"Calendar should be listed");
+    XCTAssertTrue(self.app.staticTexts[@"What the agent can read"].exists,
+                  @"reads and writes should be separated");
+    XCTAssertTrue(self.app.staticTexts[@"What the agent can change"].exists);
     [self attachScreenshot:@"05-capabilities"];
 
     XCUIElement *device = self.app.switches[@"dsh.capability.switch.device.info"];

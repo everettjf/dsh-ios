@@ -115,6 +115,35 @@ for metric_case in "activity:9312 steps" "heart_rate:avg 71" "sleep:asleep" "wor
     check "health_query $metric reaches the bridge and renders" grep -q "$expected" "$WORK/tool-health-$metric.txt"
 done
 
+# Every remaining bridge tool, each driven through a real agent turn. The
+# arguments matter: the tools with required parameters must reach the route
+# with them, and the renderers must turn each answer into something readable.
+BRIDGE_TOOL_CASES=(
+    "device_power|{}|thermalState: fair"
+    "clipboard_read|{}|STUB-CLIPBOARD-42"
+    "clipboard_write|{\"text\":\"hello world\"}|Copied 11 characters"
+    "location_query|{}|±65 m"
+    "contacts_search|{\"query\":\"ada\"}|Ada Lovelace"
+    "notify|{\"title\":\"Done\"}|Notification sent"
+    "calendar_create_event|{\"title\":\"Standup\",\"start\":\"2026-08-20 09:00\"}|Added.*Standup.*to Work"
+    "reminders_create|{\"title\":\"Buy milk\"}|Added.*Buy milk.*to Home"
+    "file_import|{}|picked.*notes[.]txt"
+    "file_export|{\"name\":\"report.md\",\"base64\":\"aGVsbG8=\"}|Saved.*report[.]md"
+    "shortcut_run|{\"name\":\"Log Water\"}|Started the shortcut"
+)
+for bridge_case in "${BRIDGE_TOOL_CASES[@]}"; do
+    tool="${bridge_case%%|*}"; rest="${bridge_case#*|}"
+    args="${rest%%|*}"; expected="${rest#*|}"
+    kill $MOCK_PID 2>/dev/null
+    node "$HERE/mock-deepseek.mjs" "$MOCK_PORT" --tool "$tool" --tool-args "$args" > "$WORK/mock-$tool.log" 2>&1 &
+    MOCK_PID=$!
+    sleep 1
+    guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
+           DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=$BRIDGE_TOKEN; \
+           cd /root/workspace; node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile headless 'Please do it.'" > "$WORK/tool-$tool.txt"
+    check "$tool reaches the bridge and renders" grep -qE "$expected" "$WORK/tool-$tool.txt"
+done
+
 # A wrong token must fail loudly instead of silently returning nothing.
 guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
        DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=wrong-token; \
