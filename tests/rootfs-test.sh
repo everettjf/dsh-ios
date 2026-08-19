@@ -102,6 +102,19 @@ for tool in calendar_query reminders_query; do
     check "$tool reaches the bridge and renders a result" grep -qE 'Standup|Buy milk' "$WORK/tool-$tool.txt"
 done
 
+# health_query takes a required `metric`, and each one renders differently.
+for metric_case in "activity:9312 steps" "heart_rate:avg 71" "sleep:asleep" "workouts:Running"; do
+    metric="${metric_case%%:*}"; expected="${metric_case#*:}"
+    kill $MOCK_PID 2>/dev/null
+    node "$HERE/mock-deepseek.mjs" "$MOCK_PORT" --tool health_query --tool-args "{\"metric\":\"$metric\",\"days\":3}" > "$WORK/mock-health-$metric.log" 2>&1 &
+    MOCK_PID=$!
+    sleep 1
+    guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
+           DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=$BRIDGE_TOKEN; \
+           cd /root/workspace; node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile headless 'How active have I been?'" > "$WORK/tool-health-$metric.txt"
+    check "health_query $metric reaches the bridge and renders" grep -q "$expected" "$WORK/tool-health-$metric.txt"
+done
+
 # A wrong token must fail loudly instead of silently returning nothing.
 guest "export HOME=/root DEEPSEEK_API_KEY=test DEEPSEEK_BASE_URL=http://127.0.0.1:$MOCK_PORT \
        DSH_HOST_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT DSH_HOST_BRIDGE_TOKEN=wrong-token; \

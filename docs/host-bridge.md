@@ -1,7 +1,8 @@
 # Host Bridge — giving the agent access to iOS capabilities
 
-**Status:** implemented — the bridge, the capability registry, `device_info`,
-and Calendar/Reminders (read); Health and the settings UI still designed only · **Tracking PR:** this one · **Author:** @everettjf
+**Status:** implemented — the bridge, the capability registry, the Capabilities
+settings screen, `device_info`, Calendar/Reminders (read) and Apple Health
+(read). Per-call confirmation and the write capabilities are still design only · **Tracking PR:** this one · **Author:** @everettjf
 
 DSH runs DeepSeek Harness inside an emulated Linux guest. The guest is a good
 sandbox but a poor citizen of the device: it cannot read Apple Health, take a
@@ -125,7 +126,7 @@ none of these need Apple's approval, unlike e.g. Font Enumeration).
 | Battery / thermal | `/v1/device/power` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
 | Share sheet | `/v1/share` | `UIActivityViewController` | — | no | medium | user picks target |
 | Notifications | `/v1/notify` | `UNUserNotificationCenter` | — | no | low | system prompt |
-| **Health (read)** | `/v1/health/*` | HealthKit | `NSHealthShareUsageDescription` + `com.apple.developer.healthkit` | **yes** | high | system + app toggle |
+| **Health (read)** ✅ | `/v1/health/*` | HealthKit | `NSHealthShareUsageDescription` + `com.apple.developer.healthkit` | **yes** | high | switch + system |
 | Location | `/v1/location` | CoreLocation | `NSLocationWhenInUseUsageDescription` | no | high | system prompt |
 | Calendar (read) ✅ | `/v1/calendar/events` | EventKit | `NSCalendarsFullAccessUsageDescription` (+ pre-17 key) | no | high | switch + system |
 | Reminders (read) ✅ | `/v1/reminders` | EventKit | `NSRemindersFullAccessUsageDescription` (+ pre-17 key) | no | high | switch + system |
@@ -158,6 +159,30 @@ notify(title, body)                   → local notification
 
 Tools that produce files write them into `/root/workspace` inside the guest, so
 the agent can then read them with the tools it already has.
+
+### Health is the one capability that cannot report its own permission
+
+Every other framework here will tell the app whether access was granted.
+HealthKit deliberately will not: revealing that the user declined *heart rate*
+but allowed *steps* would itself leak health information. `authorizationStatus`
+answers only for **write** access, and a read query on a declined type returns
+an empty result — indistinguishable from a genuinely empty week.
+
+Two consequences, both load-bearing:
+
+1. The only signal the app can act on is
+   `getRequestStatusForAuthorizationToShareTypes:readTypes:`, which says whether
+   the sheet still has to be shown. `shouldRequest` triggers the sheet and
+   answers `permission_denied` / `recoverable`; anything else means "asked
+   already", so the query runs and the result speaks for itself.
+2. Every empty answer carries a `note` saying that an empty window may equally
+   mean the user declined that category, and the tool description tells the
+   model to relay it rather than conclude the user never sleeps. Without this
+   the failure mode is a confident model telling someone they took zero steps
+   this month.
+
+All read types are requested in a single sheet, so the user makes one decision
+with a full view of what is being asked for.
 
 ## 5. Delivery plan
 
@@ -229,7 +254,10 @@ independently and in any order.
 
 - **Per-call confirmation UX.** A modal per call is safe but hostile in a long
   agent turn. Proposal: per-session grant for read capabilities (with a visible
-  badge in the DSH bar) and per-call for writes. Needs a decision before Phase 1.
+  badge in the DSH bar) and per-call for writes. Still open — the read
+  capabilities shipped so far are gated by the switch plus the system dialog,
+  and `DSHCapabilityGatePerCall` has no implementation behind it yet, so the
+  first write capability has to settle this.
 - **Backgrounding.** iOS suspends the app; a bridge call from a background agent
   turn will fail. Should the bridge queue the request and resume on foreground,
   or fail fast with `unavailable`? Fail fast is proposed for now.

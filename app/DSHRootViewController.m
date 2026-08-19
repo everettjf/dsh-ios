@@ -7,6 +7,7 @@
 #import "DSHHarness.h"
 #import "DSHBootCoordinator.h"
 #import "DSHLogViewController.h"
+#import "DSHCapabilitiesViewController.h"
 #import "DSHStatusOverlayView.h"
 #import "TerminalViewController.h"
 #import "AppDelegate.h"
@@ -156,6 +157,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     __weak typeof(self) weakSelf = self;
     UIAction *reload = [UIAction actionWithTitle:@"Reload" image:[UIImage systemImageNamed:@"arrow.clockwise"] identifier:@"dsh.reload" handler:^(UIAction *a) { [weakSelf reloadWebView]; }];
     UIAction *terminal = [UIAction actionWithTitle:@"Terminal" image:[UIImage systemImageNamed:@"terminal"] identifier:@"dsh.terminal.menu" handler:^(UIAction *a) { [weakSelf presentTerminal]; }];
+    UIAction *capabilities = [UIAction actionWithTitle:@"Capabilities" image:[UIImage systemImageNamed:@"switch.2"] identifier:@"dsh.capabilities" handler:^(UIAction *a) { [weakSelf presentCapabilities]; }];
     UIAction *log = [UIAction actionWithTitle:@"Server Log" image:[UIImage systemImageNamed:@"doc.text.magnifyingglass"] identifier:@"dsh.log" handler:^(UIAction *a) { [weakSelf presentLog]; }];
     UIAction *restart = [UIAction actionWithTitle:@"Restart Harness" image:[UIImage systemImageNamed:@"arrow.triangle.2.circlepath"] identifier:@"dsh.restart" handler:^(UIAction *a) { [weakSelf confirmRestart]; }];
     restart.attributes = UIMenuElementAttributesDestructive;
@@ -164,7 +166,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
         if (url) [UIApplication.sharedApplication openURL:url options:@{} completionHandler:nil];
     }];
     UIAction *about = [UIAction actionWithTitle:@"About DSH" image:[UIImage systemImageNamed:@"info.circle"] identifier:@"dsh.about" handler:^(UIAction *a) { [weakSelf presentAbout]; }];
-    return [UIMenu menuWithChildren:@[reload, terminal, log, [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[safari, restart]], about]];
+    return [UIMenu menuWithChildren:@[reload, terminal, capabilities, log, [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[safari, restart]], about]];
 }
 
 - (void)buildOverlay {
@@ -315,6 +317,13 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
 
 - (void)presentLog {
     DSHLogViewController *vc = [[DSHLogViewController alloc] initWithLog:DSHHarness.shared.log];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    nav.modalPresentationStyle = UIModalPresentationPageSheet;
+    [self presentViewController:nav animated:YES completion:nil];
+}
+
+- (void)presentCapabilities {
+    DSHCapabilitiesViewController *vc = [DSHCapabilitiesViewController new];
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
     nav.modalPresentationStyle = UIModalPresentationPageSheet;
     [self presentViewController:nav animated:YES completion:nil];

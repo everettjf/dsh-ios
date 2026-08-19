@@ -37,7 +37,7 @@ DSH_ROOTFS_TARBALL = $(SRCROOT)/build/root.tar.gz
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DSH_APP=1
 HEADER_SEARCH_PATHS = $(ISH_SRC) $(ISH_SRC)/app $(ISH_SRC)/deps/libarchive/libarchive $(SRCROOT)/app
-OTHER_LDFLAGS = $(inherited) -framework WebKit -framework EventKit
+OTHER_LDFLAGS = $(inherited) -framework WebKit -framework EventKit -framework HealthKit
 
 // The AArch64 gadgets are host arm64 assembly: only Apple Silicon simulators
 // can run the emulator, so never build x86_64 slices.

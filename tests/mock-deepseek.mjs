@@ -9,8 +9,12 @@ const port = Number(process.argv[2] ?? 3199);
 const REPLY = 'MOCK-REPLY-7f3a: hello from the mock DeepSeek server';
 // With --tool <name>, the first completion asks for that tool and the second
 // reports what came back, so a whole tool round trip can be tested headlessly.
+// --tool-args '<json>' supplies its arguments (default '{}').
 const toolFlag = process.argv.indexOf('--tool');
 const TOOL = toolFlag > 0 ? process.argv[toolFlag + 1] : null;
+// Tools with required parameters (health_query's `metric`) need real arguments.
+const argsFlag = process.argv.indexOf('--tool-args');
+const TOOL_ARGS = argsFlag > 0 ? process.argv[argsFlag + 1] : '{}';
 
 
 const server = http.createServer((req, res) => {
@@ -45,7 +49,7 @@ const server = http.createServer((req, res) => {
       // Ask for the tool until its result comes back in the conversation, so
       // repeated runs against one mock process behave identically.
       if (!toolResult && offers) {
-        const call = { index: 0, id: 'call_mock_1', type: 'function', function: { name: TOOL, arguments: '{}' } };
+        const call = { index: 0, id: 'call_mock_1', type: 'function', function: { name: TOOL, arguments: TOOL_ARGS } };
         res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
         res.write(chunk({ role: 'assistant', content: '', tool_calls: [call] }));
         res.write(chunk({}, 'tool_calls'));

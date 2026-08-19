@@ -90,6 +90,40 @@ static const NSTimeInterval kBootTimeout = 300;   // first launch imports the ro
     [self.app.buttons[@"Done"] tap];
 }
 
+/// The capabilities screen is the only way a user can turn a bridge capability
+/// on, so the switch has to be reachable, honest about what it grants, and
+/// actually persisted.
+- (void)testCapabilitiesScreenTogglesHealth {
+    [self waitForHarnessReady];
+    XCUIElement *menu = self.app.buttons[@"dsh.menu"];
+    XCTAssertTrue([menu waitForExistenceWithTimeout:10]);
+    [menu tap];
+    XCUIElement *item = self.app.buttons[@"Capabilities"];
+    XCTAssertTrue([item waitForExistenceWithTimeout:5], @"menu should list Capabilities");
+    [item tap];
+
+    XCUIElement *table = self.app.tables[@"dsh.capabilities"];
+    XCTAssertTrue([table waitForExistenceWithTimeout:10]);
+    XCUIElement *health = self.app.switches[@"dsh.capability.switch.health.read"];
+    XCTAssertTrue([health waitForExistenceWithTimeout:10], @"Apple Health should be listed");
+    XCTAssertEqualObjects(health.value, @"0", @"capabilities ship off");
+    [self attachScreenshot:@"05-capabilities"];
+
+    [health tap];
+    // Turning one on names what is being handed over before it takes effect.
+    XCUIElement *allow = self.app.alerts.buttons[@"Allow"];
+    XCTAssertTrue([allow waitForExistenceWithTimeout:5], @"enabling should ask first");
+    [allow tap];
+    NSPredicate *on = [NSPredicate predicateWithFormat:@"value == '1'"];
+    [self waitForExpectations:@[[self expectationForPredicate:on evaluatedWithObject:health handler:nil]] timeout:10];
+
+    // And back off, so the suite leaves the device as it found it.
+    [health tap];
+    NSPredicate *off = [NSPredicate predicateWithFormat:@"value == '0'"];
+    [self waitForExpectations:@[[self expectationForPredicate:off evaluatedWithObject:health handler:nil]] timeout:10];
+    [self.app.buttons[@"Done"] tap];
+}
+
 - (void)testLandscapeKeepsWebViewAndBar {
     [self waitForHarnessReady];
     XCUIDevice.sharedDevice.orientation = UIDeviceOrientationLandscapeLeft;
