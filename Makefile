@@ -31,6 +31,10 @@ all: emulator rootfs project app
 # libapps and libarchive are vendored (they were submodules upstream), so there
 # is nothing to fetch — a fresh clone can build straight away.
 emulator:
+	@command -v ld.lld >/dev/null || { \
+	    echo "error: ld.lld not found — the guest VDSO needs LLVM's linker."; \
+	    echo "       brew install lld   (and make sure its bin directory is on PATH)"; \
+	    exit 1; }
 	cd $(ISH_SRC) && { [ -d build-arm64-release ] || meson setup build-arm64-release -Dguest_arch=arm64 --buildtype=release; }
 	ninja -C $(ISH_BUILD)
 
