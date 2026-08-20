@@ -35,6 +35,7 @@
 #import "DSHEventKitCapability.h"
 #import "DSHHealthCapability.h"
 #import "ISHShellExecutor.h"
+#import "DSHHarness.h"
 
 @interface DSHCapabilityReportTests : XCTestCase
 @property (nonatomic) DSHHostBridge *bridge;
@@ -92,6 +93,19 @@
 
 /// One line per route: what happened, in a form that says whether the
 /// capability really worked without saying what it saw.
+/// Blocks until the guest is up, the way DSHGuestIntegrationTests does.
+- (void)waitForHarnessReady {
+    DSHHarness *harness = DSHHarness.shared;
+    if (harness.state == DSHHarnessStateReady)
+        return;
+    XCTestExpectation *ready = [self expectationForNotification:DSHHarnessStateDidChangeNotification
+                                                         object:harness
+                                                        handler:^BOOL(NSNotification *note) {
+        return harness.state == DSHHarnessStateReady;
+    }];
+    [self waitForExpectations:@[ready] timeout:300];
+}
+
 - (void)report:(NSString *)path shape:(NSString *(^)(NSDictionary *))shape {
     NSInteger status = 0;
     NSDictionary *json = [self get:path status:&status];
@@ -226,6 +240,14 @@
 /// nodes even if they exist, because reading the pasteboard is what raises
 /// iOS's paste prompt and a test has no business doing that.
 - (void)testISHDeviceNodesDoNotBypassTheBridge {
+    // Running a guest command before the guest exists takes the whole test host
+    // down. On a device that has run DSH before, the image is already imported
+    // and the harness is up within a second, so this looks unnecessary — it is
+    // not: a fresh install spends its first launch importing the root
+    // filesystem, and this test crashed the run on an iPhone that had never
+    // seen the app.
+    [self waitForHarnessReady];
+
     XCTestExpectation *done = [self expectationWithDescription:@"guest"];
     NSMutableString *out = [NSMutableString string];
     [ISHShellExecutor executeCommand:@"ls /dev/clipboard /dev/location 2>&1 || true"
