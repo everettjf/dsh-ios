@@ -277,4 +277,15 @@ static NSString *const kHealthRead = @"health.read";
     XCTAssertTrue([types containsObject:HKObjectType.workoutType]);
 }
 
+/// App Store validation rejects the archive without both keys. Linking HealthKit is
+/// enough to require the write string, even though `toShare` is always nil — the check
+/// reads the framework's API surface, not ours, so nothing at build or run time catches it.
+- (void)testHealthUsageDescriptionsArePresent {
+    NSDictionary *info = NSBundle.mainBundle.infoDictionary;
+    for (NSString *key in @[@"NSHealthShareUsageDescription", @"NSHealthUpdateUsageDescription"]) {
+        NSString *purpose = info[key];
+        XCTAssertGreaterThan(purpose.length, 0, @"%@ is missing; the archive will be rejected", key);
+    }
+}
+
 @end

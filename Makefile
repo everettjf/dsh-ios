@@ -10,6 +10,7 @@
 #                        emulator tests, rootfs tests, XCTest unit+UI on the simulator
 #   make test-device   unit + UI tests on the connected device
 #   make archive       .xcarchive for distribution
+#   make release       bump the patch version, test, archive, upload to TestFlight
 #
 # Variables: TEAM (Apple developer team id), DEVICE (udid), SIM (simulator name)
 
@@ -24,7 +25,7 @@ BUNDLE_ID ?= com.xnuapp.dsh
 XCB        = xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Release DSH_DEVELOPMENT_TEAM=$(TEAM)
 DERIVED    = $(shell ls -dt ~/Library/Developer/Xcode/DerivedData/DSH-*/Build/Products 2>/dev/null | head -1)
 
-.PHONY: all emulator rootfs project app install run test test-emu test-rootfs test-sim test-device test-device-unit archive clean
+.PHONY: all emulator rootfs project app install run test test-emu test-rootfs test-sim test-device test-device-unit archive release clean
 
 all: emulator rootfs project app
 
@@ -80,6 +81,11 @@ test-device-unit: project
 
 archive: project
 	$(XCB) -destination 'generic/platform=iOS' -archivePath build/DSH.xcarchive archive
+
+# Needs APPLE_ID, APPLE_SPECIFIC_PASSWORD and APPLE_TEAM_ID in the environment.
+# Pass arguments through: make release ARGS=--dry-run
+release:
+	./scripts/release.sh $(ARGS)
 
 clean:
 	rm -rf build/rootfs-work build/rootfs-test build/emu-test build/*.xcresult

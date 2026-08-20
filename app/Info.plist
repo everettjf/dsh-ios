@@ -39,6 +39,8 @@
 	<string>DSH looks up contacts by name when you ask the agent about someone, and only after you switch Contacts on in DSH ▸ Capabilities.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>DSH can read your Health data — steps, heart rate, sleep and workouts — only after you switch Apple Health on in DSH ▸ Capabilities, and only to answer what you ask the agent.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>DSH never writes to Apple Health. It only reads, and only after you switch Apple Health on in DSH ▸ Capabilities. This description is required because the app links HealthKit.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>DSH runs a local web server inside the app and connects to it over loopback.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
