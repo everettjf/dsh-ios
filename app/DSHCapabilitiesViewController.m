@@ -5,6 +5,8 @@
 
 #import "DSHCapabilitiesViewController.h"
 #import "DSHCapability.h"
+#import "DSHActivityLog.h"
+#import "DSHActivityViewController.h"
 #import "DSHHostBridge.h"
 
 @interface DSHCapabilitiesViewController ()
@@ -70,7 +72,7 @@
     // legitimately be empty for the first few seconds after launch.
     if (section == 0) return MAX(1, (NSInteger) self.reading.count);
     if (section == 1) return MAX(1, (NSInteger) self.writing.count);
-    return 1;
+    return 2;   // bridge status, and the way into the activity record
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -96,6 +98,13 @@
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
 
     if (indexPath.section == 2) {
+        if (indexPath.row == 1) {
+            cell.textLabel.text = @"Activity";
+            cell.detailTextLabel.text = @"Everything the agent has done — the tools it ran and the capabilities it used.";
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            cell.accessibilityIdentifier = @"dsh.capability.activity";
+            return cell;
+        }
         DSHHostBridge *bridge = DSHHostBridge.shared;
         cell.textLabel.text = bridge.isRunning ? @"Running" : @"Not running";
         cell.detailTextLabel.text = bridge.isRunning
@@ -121,6 +130,14 @@
     cell.accessibilityIdentifier = [NSString stringWithFormat:@"dsh.capability.%@", capability.identifier];
 
     NSMutableString *detail = [capability.details mutableCopy];
+    // When a capability was last used is the difference between a switch that
+    // claims something and one the user can check.
+    NSDate *lastUse = [DSHActivityLog.shared lastUseOf:capability.identifier];
+    if (lastUse) {
+        NSRelativeDateTimeFormatter *formatter = [NSRelativeDateTimeFormatter new];
+        formatter.unitsStyle = NSRelativeDateTimeFormatterUnitsStyleFull;
+        [detail appendFormat:@"\nLast used %@.", [formatter localizedStringForDate:lastUse relativeToDate:NSDate.date]];
+    }
     if (!capability.available)
         [detail appendString:@"\nNot available on this device."];
     else if (capability.gate == DSHCapabilityGateSystemPermission)
@@ -138,6 +155,13 @@
     [toggle addTarget:self action:@selector(toggled:) forControlEvents:UIControlEventValueChanged];
     cell.accessoryView = toggle;
     return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    if (indexPath.section != 2 || indexPath.row != 1)
+        return;
+    [self.navigationController pushViewController:[DSHActivityViewController new] animated:YES];
 }
 
 - (void)toggled:(UISwitch *)toggle {

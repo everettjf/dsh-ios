@@ -122,8 +122,7 @@ none of these need Apple's approval, unlike e.g. Font Enumeration).
 | Capability | Route | iOS API | Info.plist / entitlement | Explicit App ID? | Risk | Confirm |
 |---|---|---|---|---|---|---|
 | Device info ✅ | `/v1/device` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
-| Clipboard read ❌ | — | `UIPasteboard` | — | no | medium | *removed: iOS prompts on every read* |
-| Clipboard write ✅ | `/v1/clipboard` (POST) | `UIPasteboard` | — | no | medium | per call |
+| Clipboard ❌ | — | `UIPasteboard` | — | no | medium | *not offered — see below* |
 | Battery / thermal ✅ | `/v1/device/power` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
 | Share sheet | `/v1/share` | `UIActivityViewController` | — | no | medium | user picks target |
 | Notifications ✅ | `/v1/notify` | `UNUserNotificationCenter` | — | no | low | switch + system, 10/hour |
@@ -153,7 +152,6 @@ and write are separate tools because they are separately gated:
 ```
 device_info()                              → model, OS, locale, battery, thermal state
 device_power()                             → battery, heat, and shouldDeferExpensiveWork
-clipboard_write(text)                      → the pasteboard (write only, see below)
 calendar_query(days?, limit?)              → events
 calendar_create_event(title, start, …)     → one event
 reminders_query(completed?, limit?)        → reminders
@@ -169,6 +167,70 @@ shortcut_run(name, input?)                 → runs one of the user's shortcuts
 Files cross the bridge as base64 in the JSON body and the guest writes them
 into `/root/workspace` itself, so the app never reaches into the emulator's
 fakefs.
+
+### dsh's own approval does not cover these tools
+
+Worth stating plainly, because it is load-bearing and not obvious: the image
+ships `defaultPreset: guest-ask`, so dsh asks the user before risky tool calls
+— and that has nothing to do with the bridge's capabilities.
+
+dsh runs every tool through a `tools/pre-execute` waterfall whose default is
+`{kind: "allow"}`; it only prompts when some plugin returns `{kind: "ask"}`.
+The packages that do are `dsh-sandbox`, `dsh-tool-bash`, `dsh-tool-fs` and
+`dsh-pwsh-sandbox` — the sandboxed execution tools. A plugin tool like
+`reminders_create` matches none of them, so dsh allows it silently.
+
+Two consequences:
+
+1. **`DSHCallConfirmation` is the only gate on a write.** Remove it and the
+   agent creates calendar events, runs shortcuts and saves files out of DSH
+   with nothing asked, in a build whose settings screen says otherwise.
+2. **There is no double prompt.** A user does not confirm the same action twice
+   — dsh's approval covers what happens *inside* the guest, the app's covers
+   what leaves it.
+
+And even if dsh's approval did cover these, it could not replace this one: its
+configuration lives in the guest filesystem, where the agent runs as root and
+can rewrite it. A gate the agent can switch off is not a gate. That is the same
+reason the bridge's token is described as keeping *other apps* out rather than
+the agent.
+
+### The record
+
+A switch the user cannot audit is a promise, not a control. Every capability
+call and every confirmation was being logged from the start — into the same
+buffer as the guest's stdout, where nobody would ever find it. `DSHActivityLog`
+is the version that can be read: one timeline, persisted across launches,
+covering both sides of the boundary.
+
+The guest half is the part that needed a new idea. The app can see every bridge
+call by construction, but not what the agent does *inside* the guest — the bash
+it runs, the files it edits, the searches it makes — and that is most of what an
+agent actually does. dsh publishes each of those as a session event, so the
+bridge plugin subscribes to `session/event` (globally), matches `tool/call` to
+`tool/result` by id, and posts batches to `POST /v1/activity`. That route is
+deliberately *not* a capability: it carries nothing off the device, and a
+switch that could silently make the record incomplete would be worse than no
+record.
+
+**What is recorded is asymmetric on purpose.** Names, times, durations and
+outcomes always. Arguments only as a one-line summary — the shell command,
+the path, the query — because that is what distinguishes two calls. The
+*contents* a read returned, never: `contacts_search → 3 contacts`, not the
+names. A log of the user's address book would be a worse leak than the
+capability it is supposed to make auditable.
+
+Three things consume it, and they are the reason it is worth having rather than
+just correct:
+
+- **"Last used" on each switch**, which turns a claim into a checkable fact.
+- **An indicator in the DSH bar** when a capability has just been used, tapping
+  through to the record. It copies iOS's own privacy indicator on purpose:
+  users already know what a light that means "something was just used" is for.
+- **Repeat context in confirmations.** A single prompt in a runaway loop looks
+  exactly like a single prompt; from the fourth call in ten minutes the alert
+  says which one it is. This is the only moment a user gets to notice an agent
+  that has gone wrong, and one dialog on its own cannot show it.
 
 ### The bridge was not the only way out
 
@@ -231,17 +293,20 @@ with it. The shortcut name is percent-encoded with `&`, `=`, `+`, `?` and `#`
 removed from the allowed set, so a name cannot smuggle in extra x-callback
 parameters — there is a test for that specifically.
 
-**The clipboard is write-only.** Reading it was built, shipped in a branch and
-removed after ten minutes on a device: iOS confirms *every* programmatic read of
-a pasteboard that originated in another app, so the capability's real behaviour
-was to interrupt the user each time the agent looked. `detectPatterns` can say
-whether text is present without prompting, but not what it is, which is not
-enough to be worth a tool. Writing raises no system prompt and stays.
+**There is no clipboard capability.** Reading was built and removed first: iOS
+confirms *every* programmatic read of a pasteboard that came from another app,
+and no API avoids it (`detectPatterns` reports that text exists, not what it
+is), so the capability's real behaviour was to interrupt the user each time the
+agent looked. Writing survived that round — it raises no system prompt — and
+was then removed too, on the same judgement applied to the whole domain rather
+than to one direction of it: the clipboard is a small convenience next to
+"the agent can silently replace what you are about to paste", and the tool it
+justified was not worth that sentence being true.
 
-The read did leave something behind: it was blocking the bridge handler on
-`dispatch_sync` to the main queue, so while iOS waited for a tap the whole call
-hung until the caller gave up. Bounded waits are now the rule for anything that
-can sit behind a system dialog.
+The read left something behind that outlived it: it blocked the bridge handler
+on `dispatch_sync` to the main queue, so while iOS waited for a tap the whole
+call hung until the caller gave up. Bounded waits are now the rule for anything
+that can sit behind a system dialog — that lesson is the durable part.
 
 **Files never touch the fakefs.** The app does not write into the guest's
 filesystem; contents cross the bridge base64-encoded in the JSON body and the

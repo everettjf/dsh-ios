@@ -60,7 +60,8 @@ NSString *const DSHCapabilityShortcutsRun = @"shortcuts.run";
         NSString *detail = input.length
             ? [NSString stringWithFormat:@"DSH wants to run your shortcut “%@” with this input:\n\n%@\n\nDSH will close while it runs.", name, input.length > 200 ? [[input substringToIndex:200] stringByAppendingString:@"…"] : input]
             : [NSString stringWithFormat:@"DSH wants to run your shortcut “%@”. DSH will close while it runs.", name];
-        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Run a shortcut?" detail:detail];
+        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Run a shortcut?" detail:detail
+                                                                capability:DSHCapabilityShortcutsRun];
         DSHHostBridgeResponse *refusal = [DSHCallConfirmation refusalFor:outcome
                                                                  action:[NSString stringWithFormat:@"running the shortcut “%@”", name]];
         if (refusal)

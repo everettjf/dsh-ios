@@ -16,6 +16,7 @@
 #import <UIKit/UIKit.h>
 #import "DSHCallConfirmation.h"
 #import "DSHHostBridge.h"
+#import "DSHActivityLog.h"
 
 @interface DSHCallConfirmationTests : XCTestCase
 @end
@@ -26,6 +27,26 @@
     DSHCallConfirmation.automaticallyApproveForTesting = NO;
     DSHCallConfirmation.automaticallyDeclineForTesting = NO;
     [super tearDown];
+}
+
+/// Even a decision made without a dialog is a decision, and the record is the
+/// only place a user can see that one was made.
+- (void)testEveryOutcomeReachesTheActivityRecord {
+    [DSHActivityLog.shared resetForTesting];
+    DSHCallConfirmation.automaticallyDeclineForTesting = YES;
+    [DSHCallConfirmation confirmTitle:@"DSH self-test" detail:@"Not a real request."];
+    DSHCallConfirmation.automaticallyDeclineForTesting = NO;
+
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+    DSHActivityEntry *entry = nil;
+    while (entry == nil && [deadline timeIntervalSinceNow] > 0) {
+        entry = DSHActivityLog.shared.entries.firstObject;
+        if (entry == nil)
+            [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+    }
+    XCTAssertNotNil(entry, @"a decision that skipped the dialog still has to be recorded");
+    XCTAssertEqual(entry.outcome, DSHActivityOutcomeDeclined);
+    [DSHActivityLog.shared resetForTesting];
 }
 
 - (void)testTestHooksShortCircuitWithoutShowingAnything {

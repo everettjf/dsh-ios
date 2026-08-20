@@ -10,12 +10,12 @@
 #import "DSHDeviceCapability.h"
 #import "DSHEventKitCapability.h"
 #import "DSHHealthCapability.h"
-#import "DSHClipboardCapability.h"
 #import "DSHLocationCapability.h"
 #import "DSHContactsCapability.h"
 #import "DSHNotificationCapability.h"
 #import "DSHFilesCapability.h"
 #import "DSHShortcutsCapability.h"
+#import "DSHActivityCapability.h"
 #import "AppDelegate.h"
 #import <UIKit/UIKit.h>
 
@@ -124,12 +124,12 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     [DSHDeviceCapability installOn:bridge];
     [DSHEventKitCapability installOn:bridge];
     [DSHHealthCapability installOn:bridge];
-    [DSHClipboardCapability installOn:bridge];
     [DSHLocationCapability installOn:bridge];
     [DSHContactsCapability installOn:bridge];
     [DSHNotificationCapability installOn:bridge];
     [DSHFilesCapability installOn:bridge];
     [DSHShortcutsCapability installOn:bridge];
+    [DSHActivityCapability installOn:bridge];
     if ([bridge start]) {
         NSMutableDictionary *env = [DSHHarness.shared.extraEnvironment mutableCopy];
         [env addEntriesFromDictionary:bridge.guestEnvironment];

@@ -2,9 +2,8 @@
 //  DSHCapabilityRoutesTests.m
 //  DSHTests
 //
-//  The capabilities added alongside the write gate: clipboard, power,
-//  location, contacts, notifications, files, shortcuts, and the EventKit
-//  write routes.
+//  The capabilities added alongside the write gate: power, location, contacts,
+//  notifications, files, shortcuts, and the EventKit write routes.
 //
 //  None of these may depend on the tester's own data, permissions or taps, so
 //  what is asserted is the contract: off by default, refused before the
@@ -13,13 +12,11 @@
 //
 
 #import <XCTest/XCTest.h>
-#import <UIKit/UIKit.h>
 #import <netinet/in.h>
 #import <sys/socket.h>
 #import "DSHHostBridge.h"
 #import "DSHCapability.h"
 #import "DSHCallConfirmation.h"
-#import "DSHClipboardCapability.h"
 #import "DSHDeviceCapability.h"
 #import "DSHLocationCapability.h"
 #import "DSHContactsCapability.h"
@@ -40,7 +37,6 @@
     self.bridge = [DSHHostBridge new];
     XCTAssertTrue([self.bridge start]);
     [DSHDeviceCapability installOn:self.bridge];
-    [DSHClipboardCapability installOn:self.bridge];
     [DSHLocationCapability installOn:self.bridge];
     [DSHContactsCapability installOn:self.bridge];
     [DSHNotificationCapability installOn:self.bridge];
@@ -53,7 +49,7 @@
     [self.bridge stop];
     DSHCallConfirmation.automaticallyApproveForTesting = NO;
     DSHCallConfirmation.automaticallyDeclineForTesting = NO;
-    for (NSString *identifier in @[@"clipboard.write", @"location.read", @"contacts.read",
+    for (NSString *identifier in @[@"location.read", @"contacts.read",
                                    @"notifications.post", @"files.import", @"files.export", @"shortcuts.run",
                                    @"calendar.write", @"reminders.write"])
         [DSHCapabilityRegistry.shared setEnabled:NO forIdentifier:identifier];
@@ -93,7 +89,7 @@
 #pragma mark Defaults
 
 - (void)testEveryNewCapabilityShipsOff {
-    for (NSString *identifier in @[@"clipboard.write", @"location.read", @"contacts.read",
+    for (NSString *identifier in @[@"location.read", @"contacts.read",
                                    @"notifications.post", @"files.import", @"files.export", @"shortcuts.run",
                                    @"calendar.write", @"reminders.write"]) {
         DSHCapability *capability = [DSHCapabilityRegistry.shared capabilityWithIdentifier:identifier];
@@ -105,7 +101,7 @@
 /// Everything that changes something outside the app has to be per-call, or
 /// the confirmation gate is decoration.
 - (void)testEverythingThatWritesIsGatedPerCall {
-    for (NSString *identifier in @[@"clipboard.write", @"files.export", @"shortcuts.run",
+    for (NSString *identifier in @[@"files.export", @"shortcuts.run",
                                    @"calendar.write", @"reminders.write"])
         XCTAssertEqual([DSHCapabilityRegistry.shared capabilityWithIdentifier:identifier].gate,
                        DSHCapabilityGatePerCall, @"%@ must ask every time", identifier);
@@ -115,7 +111,7 @@
 }
 
 - (void)testDisabledCapabilitiesAreRefusedBeforeAnythingHappens {
-    NSArray *calls = @[@[@"POST", @"/v1/clipboard"], @[@"GET", @"/v1/location"],
+    NSArray *calls = @[@[@"GET", @"/v1/location"],
                        @[@"GET", @"/v1/contacts?q=x"], @[@"POST", @"/v1/notify"],
                        @[@"POST", @"/v1/files/import"], @[@"POST", @"/v1/shortcut/run"]];
     for (NSArray *call in calls) {
@@ -174,65 +170,6 @@
     NSDictionary *after = [self send:@"GET" path:@"/v1/device/power" body:nil status:&status];
     XCTAssertEqual(status, 200);
     XCTAssertNotNil(after[@"thermalState"]);
-}
-
-#pragma mark Clipboard
-
-/// There is no read route by design (iOS prompts on every cross-app read), so
-/// a GET must 404 rather than silently doing something else.
-- (void)testThereIsNoClipboardReadRoute {
-    [self enable:@"clipboard.write"];
-    NSInteger status = 0;
-    [self send:@"GET" path:@"/v1/clipboard" body:nil status:&status];
-    XCTAssertEqual(status, 404, @"reading the clipboard was removed, not hidden");
-}
-
-- (void)testClipboardWriteRejectsABadBodyWithoutAsking {
-    [self enable:@"clipboard.write"];
-    NSUInteger before = DSHCallConfirmation.presentedCount;
-    NSInteger status = 0;
-    NSDictionary *json = [self send:@"POST" path:@"/v1/clipboard" body:@{ @"text": @42 } status:&status];
-    XCTAssertEqual(status, 400);
-    XCTAssertEqualObjects(json[@"error"][@"code"], @"invalid_request");
-    XCTAssertEqual(DSHCallConfirmation.presentedCount, before, @"a malformed call must not prompt the user");
-}
-
-- (void)testClipboardWriteIsRefusedWhenTheUserDeclines {
-    [self enable:@"clipboard.write"];
-    DSHCallConfirmation.automaticallyDeclineForTesting = YES;
-    NSInteger status = 0;
-    NSDictionary *json = [self send:@"POST" path:@"/v1/clipboard" body:@{ @"text": @"hello" } status:&status];
-    XCTAssertEqual(status, 403);
-    XCTAssertEqualObjects(json[@"error"][@"recoverable"], @NO);
-}
-
-/// Note what this does *not* do: read the clipboard before writing, to put the
-/// old contents back afterwards. Reading a pasteboard that came from another
-/// app is precisely what makes iOS interrupt the user with "Allow Paste" — the
-/// behaviour that got the read capability removed — so a test that tried to be
-/// polite about the clipboard raised a system prompt on every single run.
-/// Reading back what this app just wrote is same-origin and silent.
-///
-/// The cost is that running the suite leaves a marker on the device's
-/// clipboard. That is cheaper than a prompt, and it is cleared at the end.
-- (void)testClipboardWriteWritesWhenAllowed {
-    [self enable:@"clipboard.write"];
-    DSHCallConfirmation.automaticallyApproveForTesting = YES;
-    NSString *marker = [@"dsh-test-" stringByAppendingString:NSUUID.UUID.UUIDString];
-    NSInteger status = 0;
-    NSDictionary *json = [self send:@"POST" path:@"/v1/clipboard" body:@{ @"text": marker } status:&status];
-    XCTAssertEqual(status, 200);
-    XCTAssertEqualObjects(json[@"written"], @YES);
-    XCTAssertEqualObjects(UIPasteboard.generalPasteboard.string, marker,
-                          @"the route should have replaced the pasteboard");
-    UIPasteboard.generalPasteboard.string = @"";
-}
-
-- (void)testClipboardPreviewStaysShortAndOnOneLine {
-    NSString *long1 = [@"" stringByPaddingToLength:400 withString:@"abc\n" startingAtIndex:0];
-    NSString *preview = [DSHClipboardCapability previewOf:long1];
-    XCTAssertLessThanOrEqual(preview.length, 121u);
-    XCTAssertFalse([preview containsString:@"\n"], @"a multi-line preview would break the alert layout");
 }
 
 #pragma mark Power

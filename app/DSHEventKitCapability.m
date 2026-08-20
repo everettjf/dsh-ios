@@ -327,7 +327,8 @@ static const NSInteger kMaxDays = 366;
         if (!allDay) [detail appendFormat:@" – %@", [self humanDate:end allDay:NO]];
         if (location.length) [detail appendFormat:@"\n%@", location];
         [detail appendFormat:@"\n\nIn %@.", calendar.title];
-        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this to your calendar?" detail:detail];
+        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this to your calendar?" detail:detail
+                                                                capability:DSHCapabilityCalendarWrite];
         DSHHostBridgeResponse *declined = [DSHCallConfirmation refusalFor:outcome
                                                                   action:[NSString stringWithFormat:@"adding “%@” to the calendar", title]];
         if (declined)
@@ -386,7 +387,8 @@ static const NSInteger kMaxDays = 366;
         NSMutableString *detail = [NSMutableString stringWithFormat:@"“%@”", title];
         if (due) [detail appendFormat:@"\ndue %@", [self humanDate:due allDay:NO]];
         [detail appendFormat:@"\n\nIn %@.", list.title];
-        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this reminder?" detail:detail];
+        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this reminder?" detail:detail
+                                                                capability:DSHCapabilityRemindersWrite];
         DSHHostBridgeResponse *declined = [DSHCallConfirmation refusalFor:outcome
                                                                   action:[NSString stringWithFormat:@"adding the reminder “%@”", title]];
         if (declined)

@@ -11,7 +11,7 @@
 //
 //  This one enables each read capability, calls its route, and prints what came
 //  back: status, and the shape of the answer. Counts and lengths only, never
-//  values — the contents are the tester's contacts, clipboard and location, and
+//  values — the contents are the tester's contacts, calendar and location, and
 //  they have no business in a build log.
 //
 //  First run on a device triggers the system prompts and reports refusals;
@@ -27,7 +27,6 @@
 #import "DSHCapability.h"
 #import "DSHCallConfirmation.h"
 #import "DSHDeviceCapability.h"
-#import "DSHClipboardCapability.h"
 #import "DSHLocationCapability.h"
 #import "DSHContactsCapability.h"
 #import "DSHNotificationCapability.h"
@@ -50,7 +49,6 @@
     self.bridge = [DSHHostBridge new];
     XCTAssertTrue([self.bridge start]);
     [DSHDeviceCapability installOn:self.bridge];
-    [DSHClipboardCapability installOn:self.bridge];
     [DSHLocationCapability installOn:self.bridge];
     [DSHContactsCapability installOn:self.bridge];
     [DSHNotificationCapability installOn:self.bridge];
@@ -213,8 +211,10 @@
 /// mknods them world-readable at boot. DSH links that code, so until this was
 /// found, any process in the guest could `cat /dev/clipboard` and get the
 /// user's clipboard with no switch, no confirmation and no log entry —
-/// bypassing everything this app does to gate capabilities, for the two
-/// capabilities where it matters most. DSH now skips that registration.
+/// bypassing everything this app does to gate capabilities. DSH now skips that
+/// registration, and since the clipboard is no longer offered as a capability
+/// at all, this node is the *only* way the guest could still reach the
+/// pasteboard: the assertion matters more now, not less.
 ///
 /// Skipping the mknod was not enough on its own: the node is a real file in
 /// the guest's filesystem and survives reboots, so every install that had ever

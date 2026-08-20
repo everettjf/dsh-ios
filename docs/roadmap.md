@@ -17,11 +17,12 @@ which this plan references rather than repeats.
 | Apple Health (read): activity, heart rate, sleep, workouts | done |
 | Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
 | Per-call confirmation for everything that writes | done |
-| Clipboard write, power, location, contacts, notifications, files, Shortcuts | done |
+| Power, location, contacts, notifications, files, Shortcuts | done |
 | iSH's own `/dev/clipboard` and `/dev/location` removed (they bypassed everything) | done |
+| Activity record: every capability call and every guest tool call, with a viewer | done |
 | Calendar and Reminders: creating, not just reading | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 32, app 81 (device + simulator), UI 5 | done |
+| Tests: emulator 3, rootfs 31, app 87 (device + simulator), UI 5 | done |
 | Distribution: build-it-yourself only | open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
@@ -58,27 +59,23 @@ know about? Known places to start: `iosfs` (it mounts filesystems named in
 **Cost:** a day of reading, plus tests for anything found. Cheap relative to
 being wrong.
 
-### 2. A record of what the agent actually did
+### 2. A record of what the agent actually did — *done*
 
-**Why second:** the switches are only as trustworthy as the user's ability to
-check them. Right now every capability call and every confirmation *is* logged
-— into the same buffer as the guest's stdout, where nobody will find it. A user
-who grants Contacts has no way to answer "what did it look up, and when?"
+Shipped as `DSHActivityLog`, the Activity screen, and `POST /v1/activity` for
+the guest's own tool calls; the design and the recording policy are in
+[host-bridge.md §4](host-bridge.md#the-record). The question that was open —
+whether arguments get recorded — settled as: effects for writes (the user
+already saw them in the confirmation), one-line summaries of arguments for
+everything else, and never the contents a read returned.
 
-This also pays for itself immediately: it is the debugging tool for everything
-below it. Every problem in this document is easier to diagnose with a timeline
-of capability calls.
+Three consumers landed with it: "last used" under each switch, an indicator in
+the DSH bar copying iOS's privacy light, and repeat context in confirmations
+("this is the fifth time in ten minutes") — the last being the only moment a
+user gets to notice an agent in a loop.
 
-**What it is:** a persisted, filterable list — capability, route, timestamp,
-outcome (allowed / refused / declined / timed out), and for writes the effect
-that was confirmed. Reachable from the Capabilities screen, so the switch and
-its history sit together. Bounded in size; cleared with one tap.
-
-**The design question to settle:** whether arguments are recorded. "Created
-event 'dentist' on Friday" is exactly what makes the record useful, and it is
-also the user's calendar sitting in a log file. Proposal: record effects for
-writes (the user already saw them in the confirmation), record only shapes for
-reads (`contacts_search → 3 matches`), never values.
+Two things it does *not* do yet, both deliberately deferred: grouping a
+timeline by turn, and using it for injection forensics (what did the agent read
+just before it did that). Both want the threat model below to exist first.
 
 ### 3. Write down the prompt-injection threat model — and check the copy against it
 
@@ -147,6 +144,25 @@ pass that a Linux emulator running arbitrary code may not survive. The
 realistic options are: keep building from source (today), sideload through
 AltStore-style tooling, or take the App Store question seriously and find out.
 Worth deciding deliberately rather than drifting.
+
+### Later, but worth writing down: run the model on the device
+
+iOS 26 added `FoundationModels.framework`, an on-device LLM, and it is present
+in the SDK this app already builds against. dsh speaks an OpenAI-compatible
+protocol, and the bridge is already an HTTP server — so this is one more route,
+`POST /v1/chat/completions`, backed by the system model, with
+`DEEPSEEK_BASE_URL` pointed at it. No API key, no network, and nothing leaves
+the device.
+
+That last part is the real argument. The uncomfortable shape of the app right
+now is that a user switches on Health, Calendar and Contacts, and that data is
+then sent to a remote model to be reasoned about. An on-device model makes
+"an agent on your phone, reading your phone" coherent rather than ironic.
+
+The honest caveats: the system model is small, its tool-calling is likely to be
+much weaker than DeepSeek's, and the work is not trivial (SSE translation, tool
+call format mapping). The way to find out is a half-day prototype that gets one
+turn through end to end, then a decision — not a commitment up front.
 
 ### Not on this list, deliberately
 

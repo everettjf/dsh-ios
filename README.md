@@ -162,7 +162,7 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 | `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; the confirmation gate (background → refuse, no stacking, always answers); every capability route (off by default, refused before the framework is touched, validated before the user is asked, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout, the Capabilities screen's switches | simulator / device |
 
-Status: all suites green (`make test`: 3 + 32 + 81 + 5 checks; the same 81
+Status: all suites green (`make test`: 3 + 31 + 87 + 5 checks; the same 87
 unit + guest-integration tests also run on the iPad Air, where a report test
 prints what each capability actually returned — counts and shapes, never values). Everything runs locally — the build
 needs an Apple Silicon Mac with Xcode, an emulator toolchain and (for the
@@ -202,16 +202,16 @@ reach iOS capabilities. Shipping today:
 | `contacts_search` | look up a person by name (no way to list everyone) | switch + iOS permission |
 | `notify` | a notification when a long task finishes, 10/hour | switch + iOS permission |
 | `file_import` | you pick a file and hand it to the agent | the picker is the consent |
-| `clipboard_write` | puts text on your clipboard | **asks every time** |
 | `calendar_create_event`, `reminders_create` | adds an event or reminder | **asks every time** |
 | `file_export` | saves a file out of DSH | **asks every time** |
 | `shortcut_run` | runs one of your shortcuts | **asks every time** |
 
 Photos and the share sheet are designed but not built — each is one route in the
-app plus one tool in the guest plugin. There is deliberately no clipboard *read*:
-iOS asks the user to confirm every programmatic read of a pasteboard that came
-from another app, and no API avoids it, so the capability existed only to
-interrupt. It was tried on a device and removed.
+app plus one tool in the guest plugin. There is deliberately **no clipboard
+capability at all**: reading one that came from another app makes iOS interrupt
+the user every single time, and writing was dropped with it rather than leave a
+tool whose worst case is "the agent silently replaced what you were about to
+paste".
 
 Anything that changes something asks first, and the alert names the actual
 effect ("Add this reminder? “buy milk”, due Friday, in Home") rather than the
@@ -229,6 +229,13 @@ Apple Health has a wrinkle worth knowing: iOS never tells an app whether *read*
 access was declined, so an empty result and a declined category look identical.
 Health answers therefore carry a note saying so, and the tool is told to relay
 it instead of concluding you took no steps this month.
+
+Everything the agent does is recorded — every capability call, every
+confirmation you answered, and every tool it ran inside the guest, including
+the ones that never touch iOS. **⋯ ▸ Activity** shows the timeline; each switch
+says when it was last used; and the bar lights up when something on the device
+has just been read. Arguments appear as one-line summaries and the contents a
+read returned are never recorded, so the record is safe to keep and to share.
 
 DSH also removes two devices iSH itself gives the guest — `/dev/clipboard` and
 `/dev/location` — because they reach the pasteboard and CoreLocation without

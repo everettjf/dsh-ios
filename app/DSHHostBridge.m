@@ -5,6 +5,7 @@
 
 #import "DSHHostBridge.h"
 #import "DSHCapability.h"
+#import "DSHActivityLog.h"
 #import "DSHHarness.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -316,11 +317,17 @@ static const NSTimeInterval kSocketTimeout = 15;
         DSHCapabilityState state = [DSHCapabilityRegistry.shared stateForIdentifier:capability];
         if (state == DSHCapabilityStateUnavailable) {
             [self log:method target:path outcome:@"unavailable"];
+            [DSHActivityLog.shared recordSource:DSHActivitySourceCapability name:capability
+                                         detail:path result:@"not available on this device"
+                                        outcome:DSHActivityOutcomeRefused duration:0];
             return [DSHHostBridgeResponse errorWithStatus:501 code:@"unavailable"
                                                   message:[NSString stringWithFormat:@"%@ is not available on this device", capability] recoverable:NO];
         }
         if (state == DSHCapabilityStateDisabled) {
             [self log:method target:path outcome:@"denied (capability off)"];
+            [DSHActivityLog.shared recordSource:DSHActivitySourceCapability name:capability
+                                         detail:path result:@"switched off"
+                                        outcome:DSHActivityOutcomeRefused duration:0];
             return [DSHHostBridgeResponse errorWithStatus:403 code:@"permission_denied"
                                                   message:[NSString stringWithFormat:@"%@ is switched off in DSH's settings; ask the user to enable it", capability] recoverable:YES];
         }
@@ -343,13 +350,62 @@ static const NSTimeInterval kSocketTimeout = 15;
 
     DSHHostBridgeHandler handler = route[@"handler"];
     DSHHostBridgeResponse *response;
+    NSDate *started = NSDate.date;
     @try {
         response = handler(request);
     } @catch (NSException *exception) {
         response = [DSHHostBridgeResponse errorWithStatus:500 code:@"internal" message:exception.reason ?: @"handler failed" recoverable:NO];
     }
     [self log:method target:path outcome:[NSString stringWithFormat:@"%ld", (long) response.status]];
+    if (capability)
+        [DSHActivityLog.shared recordSource:DSHActivitySourceCapability
+                                       name:capability
+                                     detail:[self describeRequest:request]
+                                     result:[self describeResponse:response]
+                                    outcome:[self outcomeForStatus:response.status]
+                                   duration:-started.timeIntervalSinceNow];
     return response;
+}
+
+#pragma mark Describing a call for the activity log
+
+/// The query, or for a body the keys it carried — enough to tell two calls
+/// apart, without copying what was sent.
+- (nullable NSString *)describeRequest:(DSHHostBridgeRequest *)request {
+    if (request.query.count) {
+        NSMutableArray *pairs = [NSMutableArray array];
+        for (NSString *key in [request.query.allKeys sortedArrayUsingSelector:@selector(compare:)])
+            [pairs addObject:[NSString stringWithFormat:@"%@=%@", key, request.query[key]]];
+        return [pairs componentsJoinedByString:@" "];
+    }
+    if (request.json.count) {
+        NSArray *keys = [request.json.allKeys sortedArrayUsingSelector:@selector(compare:)];
+        return [NSString stringWithFormat:@"{%@}", [keys componentsJoinedByString:@", "]];
+    }
+    return nil;
+}
+
+/// The shape of the answer, never its contents: the point of the log is that
+/// it can be read without leaking what the capability returned.
+- (nullable NSString *)describeResponse:(DSHHostBridgeResponse *)response {
+    if (response.status >= 400)
+        return response.body[@"error"][@"message"];
+    NSMutableArray *parts = [NSMutableArray array];
+    for (NSString *key in [response.body.allKeys sortedArrayUsingSelector:@selector(compare:)]) {
+        id value = response.body[key];
+        if ([value isKindOfClass:NSArray.class])
+            [parts addObject:[NSString stringWithFormat:@"%lu %@", (unsigned long) [value count], key]];
+        else if ([value isKindOfClass:NSNumber.class] || [key isEqualToString:@"metric"])
+            [parts addObject:[NSString stringWithFormat:@"%@ %@", key, value]];
+    }
+    return parts.count ? [parts componentsJoinedByString:@", "] : @"ok";
+}
+
+- (DSHActivityOutcome)outcomeForStatus:(NSInteger)status {
+    if (status < 400) return DSHActivityOutcomeOK;
+    if (status == 408) return DSHActivityOutcomeTimedOut;
+    if (status == 403 || status == 409 || status == 429) return DSHActivityOutcomeRefused;
+    return DSHActivityOutcomeError;
 }
 
 /// Constant-time comparison so a wrong token cannot be found byte by byte.
