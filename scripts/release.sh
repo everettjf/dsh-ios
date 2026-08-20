@@ -197,7 +197,10 @@ trap - ERR INT TERM
 # --- record ---------------------------------------------------------------
 
 step "Recording the release"
-git add "$XCCONFIG" DSH.xcodeproj/project.pbxproj
+# The whole generated project, not just the pbxproj: gen-xcode-project.rb rewrites
+# the scheme's blueprint identifiers on every run, and a leftover dirty file would
+# block the next release at the clean-tree check.
+git add "$XCCONFIG" DSH.xcodeproj
 git commit -m "Release ${version} (${next_build})"
 git tag "v${version}"
 echo "  committed and tagged v${version} — 'git push && git push --tags' when ready"
