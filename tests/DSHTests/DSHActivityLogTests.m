@@ -150,6 +150,60 @@
     XCTAssertEqual(entry.source, DSHActivitySourceGuestTool);
 }
 
+/// A tool reports twice — once when it starts, once when it finishes — and the
+/// screen must show one row, not two. The start row exists so a long command is
+/// visible while it runs; leaving it behind afterwards turned the log into
+/// pairs of near-identical lines, which is what an iPhone screenshot showed.
+- (void)testAToolThatStartsAndFinishesLeavesOneRow {
+    NSInteger status = 0;
+    [self send:@"POST" path:@"/v1/activity" body:@{ @"events": @[
+        @{ @"id": @"call-1", @"name": @"bash", @"detail": @"sleep 3", @"outcome": @"started" },
+    ] } status:&status];
+    DSHActivityEntry *started = [self waitForEntryNamed:@"bash"];
+    XCTAssertEqual(started.outcome, DSHActivityOutcomeStarted, @"an in-flight call should be visible");
+    NSDate *startedAt = started.date;
+
+    [self send:@"POST" path:@"/v1/activity" body:@{ @"events": @[
+        @{ @"id": @"call-1", @"name": @"bash", @"outcome": @"ok", @"duration": @3.1 },
+    ] } status:&status];
+
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+    while ([deadline timeIntervalSinceNow] > 0 &&
+           DSHActivityLog.shared.entries.firstObject.outcome == DSHActivityOutcomeStarted)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+
+    NSUInteger bashRows = 0;
+    for (DSHActivityEntry *entry in DSHActivityLog.shared.entries)
+        if ([entry.name isEqualToString:@"bash"])
+            bashRows += 1;
+    XCTAssertEqual(bashRows, 1u, @"the result should replace the start, not stack on it");
+
+    DSHActivityEntry *finished = DSHActivityLog.shared.entries.firstObject;
+    XCTAssertEqual(finished.outcome, DSHActivityOutcomeOK);
+    XCTAssertEqualWithAccuracy(finished.duration, 3.1, 0.01);
+    XCTAssertEqualObjects(finished.detail, @"sleep 3", @"the arguments from the start row are kept");
+    XCTAssertEqualWithAccuracy(finished.date.timeIntervalSince1970, startedAt.timeIntervalSince1970, 0.001,
+                               @"when it began is the useful timestamp");
+}
+
+/// An id that never gets a result must not capture a later call's.
+- (void)testAnAbandonedStartDoesNotSwallowALaterCall {
+    NSInteger status = 0;
+    [self send:@"POST" path:@"/v1/activity" body:@{ @"events": @[
+        @{ @"id": @"orphan", @"name": @"web_search", @"outcome": @"started" },
+        @{ @"id": @"other", @"name": @"web_search", @"outcome": @"ok", @"duration": @0.2 },
+    ] } status:&status];
+
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:5];
+    while ([deadline timeIntervalSinceNow] > 0 && DSHActivityLog.shared.entries.count < 2)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+    NSUInteger rows = 0;
+    for (DSHActivityEntry *entry in DSHActivityLog.shared.entries)
+        if ([entry.name isEqualToString:@"web_search"])
+            rows += 1;
+    XCTAssertEqual(rows, 2u, @"different ids are different calls");
+}
+
 - (void)testMalformedReportsAreIgnoredRatherThanRejected {
     NSInteger status = 0;
     NSDictionary *json = [self send:@"POST" path:@"/v1/activity" body:@{ @"events": @[

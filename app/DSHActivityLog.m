@@ -60,6 +60,8 @@ static DSHActivityOutcome OutcomeFromName(NSString *name) {
 @property (nonatomic, readwrite, copy, nullable) NSString *detail;
 @property (nonatomic, readwrite, copy, nullable) NSString *result;
 @property (nonatomic, readwrite) NSTimeInterval duration;
+/// Not persisted: it only matters while a call is in flight.
+@property (nonatomic, copy, nullable) NSString *correlationID;
 @end
 
 @implementation DSHActivityEntry
@@ -129,6 +131,17 @@ static DSHActivityOutcome OutcomeFromName(NSString *name) {
               result:(NSString *)result
              outcome:(DSHActivityOutcome)outcome
             duration:(NSTimeInterval)duration {
+    [self recordSource:source name:name detail:detail result:result
+               outcome:outcome duration:duration correlationID:nil];
+}
+
+- (void)recordSource:(DSHActivitySource)source
+                name:(NSString *)name
+              detail:(NSString *)detail
+              result:(NSString *)result
+             outcome:(DSHActivityOutcome)outcome
+            duration:(NSTimeInterval)duration
+       correlationID:(NSString *)correlationID {
     if (name.length == 0)
         return;
     DSHActivityEntry *entry = [DSHActivityEntry new];
@@ -139,8 +152,22 @@ static DSHActivityOutcome OutcomeFromName(NSString *name) {
     entry.result = [self summarise:result];
     entry.outcome = outcome;
     entry.duration = duration;
+    entry.correlationID = correlationID;
 
     dispatch_async(self.queue, ^{
+        // A finished call replaces the row its start put there, keeping the
+        // original timestamp — when it began is the useful moment.
+        NSUInteger existing = correlationID ? [self indexOfCorrelation:correlationID] : NSNotFound;
+        if (existing != NSNotFound) {
+            DSHActivityEntry *started = self.storage[existing];
+            entry.date = started.date;
+            if (entry.detail == nil)
+                entry.detail = started.detail;
+            [self.storage replaceObjectAtIndex:existing withObject:entry];
+            [self scheduleSave];
+            [self scheduleNotify];
+            return;
+        }
         [self.storage addObject:entry];
         if (self.storage.count > kCapacity)
             [self.storage removeObjectsInRange:NSMakeRange(0, self.storage.count - kCapacity)];
@@ -162,6 +189,21 @@ static DSHActivityOutcome OutcomeFromName(NSString *name) {
     if (flat.length > kMaxDetailCharacters)
         flat = [[flat substringToIndex:kMaxDetailCharacters] stringByAppendingString:@"…"];
     return flat.length ? flat : nil;
+}
+
+/// Only in-flight rows are candidates, and only recent ones: a correlation id
+/// from the guest is unique per call, but a crashed turn can leave a start
+/// behind forever and it should not capture a later call's result.
+- (NSUInteger)indexOfCorrelation:(NSString *)correlationID {
+    NSDate *cutoff = [NSDate dateWithTimeIntervalSinceNow:-600];
+    for (NSInteger i = (NSInteger) self.storage.count - 1; i >= 0; i--) {
+        DSHActivityEntry *entry = self.storage[i];
+        if ([entry.date compare:cutoff] == NSOrderedAscending)
+            break;
+        if (entry.outcome == DSHActivityOutcomeStarted && [entry.correlationID isEqualToString:correlationID])
+            return (NSUInteger) i;
+    }
+    return NSNotFound;
 }
 
 #pragma mark Reading

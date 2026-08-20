@@ -76,6 +76,18 @@ extern NSNotificationName const DSHActivityLogDidChangeNotification;
              outcome:(DSHActivityOutcome)outcome
             duration:(NSTimeInterval)duration;
 
+/// Same, but keyed: a later record with the same `correlationID` replaces the
+/// earlier one in place. This is what lets a tool appear the moment it starts
+/// — useful while a long command runs — without leaving a second row behind
+/// when it finishes.
+- (void)recordSource:(DSHActivitySource)source
+                name:(NSString *)name
+              detail:(nullable NSString *)detail
+              result:(nullable NSString *)result
+             outcome:(DSHActivityOutcome)outcome
+            duration:(NSTimeInterval)duration
+       correlationID:(nullable NSString *)correlationID;
+
 /// When a capability was last used at all, for the Capabilities screen.
 - (nullable NSDate *)lastUseOf:(NSString *)name;
 /// How many times `name` was used in the last `seconds` — the number that lets

@@ -32,6 +32,18 @@ typedef NS_ENUM(NSInteger, DSHActivityFilter) {
     return self;
 }
 
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    // A table header view does not get an automatic width from constraints.
+    UIView *header = self.tableView.tableHeaderView;
+    if (header && header.frame.size.width != self.tableView.bounds.size.width) {
+        CGRect frame = header.frame;
+        frame.size.width = self.tableView.bounds.size.width;
+        header.frame = frame;
+        self.tableView.tableHeaderView = header;
+    }
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.tableView.accessibilityIdentifier = @"dsh.activity";
@@ -41,7 +53,17 @@ typedef NS_ENUM(NSInteger, DSHActivityFilter) {
     self.filterControl = [[UISegmentedControl alloc] initWithItems:@[@"All", @"Device", @"Problems"]];
     self.filterControl.selectedSegmentIndex = 0;
     [self.filterControl addTarget:self action:@selector(filterChanged:) forControlEvents:UIControlEventValueChanged];
-    self.navigationItem.titleView = self.filterControl;
+    // In the title view this competes with four buttons, and on a phone the
+    // segments truncate to "Probl…". A header gets the full width on both.
+    UIView *header = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 48)];
+    self.filterControl.translatesAutoresizingMaskIntoConstraints = NO;
+    [header addSubview:self.filterControl];
+    [NSLayoutConstraint activateConstraints:@[
+        [self.filterControl.leadingAnchor constraintEqualToAnchor:header.layoutMarginsGuide.leadingAnchor],
+        [self.filterControl.trailingAnchor constraintEqualToAnchor:header.layoutMarginsGuide.trailingAnchor],
+        [self.filterControl.centerYAnchor constraintEqualToAnchor:header.centerYAnchor],
+    ]];
+    self.tableView.tableHeaderView = header;
 
     self.navigationItem.rightBarButtonItems = @[
         [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)],

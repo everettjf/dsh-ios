@@ -125,13 +125,16 @@ function installActivityReporter(ctx) {
         const { id, name, arguments: args } = event.data ?? {};
         if (!name) return;
         open.set(id, { name, at: Date.now() });
-        push({ name, detail: describe(name, args), outcome: "started" });
+        // The id travels with both halves so the app can turn the start row
+        // into the result row instead of stacking two rows per call.
+        push({ id: String(id), name, detail: describe(name, args), outcome: "started" });
       } else if (event?.type === "tool/result") {
         const { id, isError } = event.data ?? {};
         const started = open.get(id);
         open.delete(id);
         if (!started) return;
         push({
+          id: String(id),
           name: started.name,
           outcome: isError ? "error" : "ok",
           duration: (Date.now() - started.at) / 1000,

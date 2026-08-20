@@ -42,7 +42,8 @@ static const NSUInteger kMaxBatch = 50;
                                          detail:[event[@"detail"] isKindOfClass:NSString.class] ? event[@"detail"] : nil
                                          result:[event[@"result"] isKindOfClass:NSString.class] ? event[@"result"] : nil
                                         outcome:outcome
-                                       duration:[event[@"duration"] doubleValue]];
+                                       duration:[event[@"duration"] doubleValue]
+                                  correlationID:[event[@"id"] isKindOfClass:NSString.class] ? event[@"id"] : nil];
             accepted += 1;
         }
         return [DSHHostBridgeResponse ok:@{ @"accepted": @(accepted) }];

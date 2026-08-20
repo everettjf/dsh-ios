@@ -22,7 +22,7 @@ which this plan references rather than repeats.
 | Activity record: every capability call and every guest tool call, with a viewer | done |
 | Calendar and Reminders: creating, not just reading | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 31, app 87 (device + simulator), UI 5 | done |
+| Tests: emulator 3, rootfs 31, app 89 (device + simulator), UI 6 | done |
 | Distribution: build-it-yourself only | open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).

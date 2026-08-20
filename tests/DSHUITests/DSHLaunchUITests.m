@@ -155,6 +155,36 @@ static const NSTimeInterval kBootTimeout = 300;   // first launch imports the ro
     [self.app.buttons[@"Done"] tap];
 }
 
+/// The Activity screen is where a user checks what the agent has been doing,
+/// so it has to be reachable and readable — including on a phone, where its
+/// monospaced rows and multi-line details have the least room.
+- (void)testActivityScreenIsReachableAndReadable {
+    [self waitForHarnessReady];
+    XCUIElement *menu = self.app.buttons[@"dsh.menu"];
+    XCTAssertTrue([menu waitForExistenceWithTimeout:10]);
+    [menu tap];
+    XCUIElement *item = self.app.buttons[@"Activity"];
+    XCTAssertTrue([item waitForExistenceWithTimeout:5], @"menu should list Activity");
+    [item tap];
+
+    XCUIElement *table = self.app.tables[@"dsh.activity"];
+    XCTAssertTrue([table waitForExistenceWithTimeout:10]);
+    [self attachScreenshot:@"06-activity"];
+
+    // Either there are rows or the empty state explains itself; a blank screen
+    // with neither is the failure worth catching.
+    BOOL hasRows = table.cells.count > 0;
+    XCTAssertTrue(hasRows, @"the table should show rows or an empty-state row");
+
+    // The filters are the point of the screen for anyone looking for trouble.
+    XCTAssertTrue(self.app.buttons[@"Problems"].exists, @"filters should be reachable");
+    [self.app.buttons[@"Problems"] tap];
+    XCTAssertTrue([table waitForExistenceWithTimeout:5]);
+    [self attachScreenshot:@"07-activity-problems"];
+
+    [self.app.buttons[@"Done"] tap];
+}
+
 - (void)testLandscapeKeepsWebViewAndBar {
     [self waitForHarnessReady];
     XCUIDevice.sharedDevice.orientation = UIDeviceOrientationLandscapeLeft;

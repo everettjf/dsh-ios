@@ -130,20 +130,21 @@
     cell.accessibilityIdentifier = [NSString stringWithFormat:@"dsh.capability.%@", capability.identifier];
 
     NSMutableString *detail = [capability.details mutableCopy];
-    // When a capability was last used is the difference between a switch that
-    // claims something and one the user can check.
-    NSDate *lastUse = [DSHActivityLog.shared lastUseOf:capability.identifier];
-    if (lastUse) {
-        NSRelativeDateTimeFormatter *formatter = [NSRelativeDateTimeFormatter new];
-        formatter.unitsStyle = NSRelativeDateTimeFormatterUnitsStyleFull;
-        [detail appendFormat:@"\nLast used %@.", [formatter localizedStringForDate:lastUse relativeToDate:NSDate.date]];
-    }
     if (!capability.available)
         [detail appendString:@"\nNot available on this device."];
     else if (capability.gate == DSHCapabilityGateSystemPermission)
         [detail appendString:@"\nAlso needs iOS permission."];
     else if (capability.gate == DSHCapabilityGatePerCall)
         [detail appendString:@"\nAsks you before every action."];
+
+    // Last: what a capability *requires* outranks when it last ran, and on a
+    // phone every line pushes the next one further down.
+    NSDate *lastUse = [DSHActivityLog.shared lastUseOf:capability.identifier];
+    if (lastUse) {
+        NSRelativeDateTimeFormatter *formatter = [NSRelativeDateTimeFormatter new];
+        formatter.unitsStyle = NSRelativeDateTimeFormatterUnitsStyleFull;
+        [detail appendFormat:@"\nLast used %@.", [formatter localizedStringForDate:lastUse relativeToDate:NSDate.date]];
+    }
     cell.detailTextLabel.text = detail;
 
     UISwitch *toggle = [UISwitch new];
