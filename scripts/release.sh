@@ -100,8 +100,10 @@ restore_version() {
     sed -i '' "s/^CURRENT_PROJECT_VERSION = .*/CURRENT_PROJECT_VERSION = ${build}/" "$XCCONFIG"
     echo "  version restored to ${current} (${build})"
 }
-# Anything below this point that fails leaves the tree as it was found.
+# Anything below this point that fails — including a ^C or a kill, which is how a
+# hung device build ends — leaves the tree as it was found.
 trap 'restore_version' ERR
+trap 'restore_version; exit 130' INT TERM
 
 # --- build ----------------------------------------------------------------
 
@@ -120,6 +122,12 @@ else
     elif device=$(xcrun devicectl list devices 2>/dev/null | grep 'connected' \
                     | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}' | head -1) && [ -n "$device" ]; then
         echo "  no iOS simulator runtime installed; using the connected device $device"
+        # A locked device does not fail the build, it stalls it: xcodebuild sits in
+        # "Waiting for the destination to become ready" until someone picks the phone up.
+        if xcrun devicectl device info lockState --device "$device" 2>/dev/null \
+             | grep -q 'passcodeRequired: true'; then
+            die "device $device is locked — unlock it and run again (xcodebuild would wait indefinitely)"
+        fi
         make test-emu test-rootfs
         make test-device DEVICE="$device"
     else
@@ -173,7 +181,7 @@ xcrun altool --validate-app -f "$ipa" -t ios \
     -u "$APPLE_ID" -p "$APPLE_SPECIFIC_PASSWORD"
 
 if $dry_run; then
-    trap - ERR
+    trap - ERR INT TERM
     step "Dry run: stopping before upload"
     restore_version
     echo "  the validated build is at $ipa"
@@ -184,7 +192,7 @@ step "Uploading to App Store Connect"
 xcrun altool --upload-app -f "$ipa" -t ios \
     -u "$APPLE_ID" -p "$APPLE_SPECIFIC_PASSWORD"
 
-trap - ERR
+trap - ERR INT TERM
 
 # --- record ---------------------------------------------------------------
 
