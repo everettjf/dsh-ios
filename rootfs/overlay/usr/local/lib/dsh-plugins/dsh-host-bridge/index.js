@@ -56,11 +56,109 @@ async function call(path, { method = "GET", body } = {}) {
   return payload;
 }
 
+
+/**
+ * Reports what the agent does back to the app, so the Activity screen can show
+ * a complete record rather than only the calls that happened to touch iOS.
+ *
+ * dsh publishes every tool call as a session event, which is the only place
+ * the bash the agent ran, the files it edited and the searches it made are
+ * visible at all — none of that comes through the bridge. Events are batched
+ * and posted; failures are swallowed, because a logging path must never be the
+ * reason a turn breaks.
+ */
+function installActivityReporter(ctx) {
+  const pending = [];
+  let flushing = false;
+  let timer = null;
+  // Tool calls are matched to their results by id so a row can carry both what
+  // was asked and how it ended.
+  const open = new Map();
+
+  const flush = async () => {
+    timer = null;
+    if (flushing || pending.length === 0) return;
+    flushing = true;
+    const batch = pending.splice(0, 50);
+    try {
+      await call("/v1/activity", { method: "POST", body: { events: batch } });
+    } catch {
+      // The app may be gone, backgrounded, or simply not listening. Dropping
+      // the batch is correct: the alternative is retrying forever in a loop
+      // that competes with the work the user actually asked for.
+    } finally {
+      flushing = false;
+      if (pending.length) schedule();
+    }
+  };
+
+  const schedule = () => {
+    if (timer !== null) return;
+    timer = setTimeout(flush, 400);
+    timer.unref?.();
+  };
+
+  const push = (event) => {
+    // Bounded: a runaway loop must not turn into unbounded memory.
+    if (pending.length >= 200) pending.shift();
+    pending.push(event);
+    schedule();
+  };
+
+  /** One line describing a call, never the whole argument object. */
+  const describe = (name, args) => {
+    if (!args || typeof args !== "object") return undefined;
+    // The command is the whole point of logging a shell tool.
+    for (const key of ["command", "cmd", "script"]) {
+      if (typeof args[key] === "string") return args[key];
+    }
+    for (const key of ["path", "file_path", "filePath", "url", "pattern", "query"]) {
+      if (typeof args[key] === "string") return `${key}: ${args[key]}`;
+    }
+    const keys = Object.keys(args);
+    return keys.length ? `{${keys.join(", ")}}` : undefined;
+  };
+
+  ctx.on("session/event", (_session, event) => {
+    try {
+      if (event?.type === "tool/call") {
+        const { id, name, arguments: args } = event.data ?? {};
+        if (!name) return;
+        open.set(id, { name, at: Date.now() });
+        push({ name, detail: describe(name, args), outcome: "started" });
+      } else if (event?.type === "tool/result") {
+        const { id, isError } = event.data ?? {};
+        const started = open.get(id);
+        open.delete(id);
+        if (!started) return;
+        push({
+          name: started.name,
+          outcome: isError ? "error" : "ok",
+          duration: (Date.now() - started.at) / 1000,
+        });
+      } else if (event?.type === "approval/decided") {
+        // dsh's own permission prompts, which are a different gate from the
+        // app's — worth seeing in the same timeline.
+        const { decision, toolName } = event.data ?? {};
+        push({
+          name: toolName ? `approval: ${toolName}` : "approval",
+          detail: typeof decision === "string" ? decision : undefined,
+          outcome: decision === "deny" || decision === "denied" ? "declined" : "ok",
+        });
+      }
+    } catch {
+      // Never let reporting break a turn.
+    }
+  }, { global: true });
+}
+
 export function apply(ctx) {
   if (!BASE || !TOKEN) {
     // Same image runs outside the app (CLI emulator, tests): register nothing.
     return;
   }
+
+  installActivityReporter(ctx);
 
   // Tools are registered synchronously — Cordis tracks registrations as
   // reversible effects of this plugin, and an async registration would both
@@ -402,30 +500,6 @@ export function apply(ctx) {
     },
     execute: () => call("/v1/device/power"),
     presentCall: () => ({ card: "generic", title: "Check battery and thermal state", kind: "other" }),
-  }));
-
-  ctx.tools.register(defineTool({
-    name: "clipboard_write",
-    description:
-      "Put text on the user's clipboard, replacing what was there. Only do it when they asked for something to be copied. " +
-      "There is no way to read the clipboard back — iOS interrupts the user for every read, so DSH does not offer one. " +
-      "The user is asked to confirm every call and can decline; if they do, do not try again with the same text.",
-    parameters: {
-      text: { type: "string", description: "The text to put on the clipboard. Required." },
-    },
-    output: {
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: { written: { type: "boolean" }, characters: { type: "number" } },
-      },
-      render: (_args, value) => [{ type: "text", text: `Copied ${value.characters} characters to the clipboard.` }],
-    },
-    execute: ({ text }) => {
-      if (typeof text !== "string") throw new Error("text is required");
-      return call("/v1/clipboard", { method: "POST", body: { text } });
-    },
-    presentCall: () => ({ card: "generic", title: "Copy text to the clipboard", kind: "other" }),
   }));
 
   ctx.tools.register(defineTool({

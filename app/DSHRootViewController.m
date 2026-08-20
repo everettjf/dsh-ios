@@ -8,6 +8,8 @@
 #import "DSHBootCoordinator.h"
 #import "DSHLogViewController.h"
 #import "DSHCapabilitiesViewController.h"
+#import "DSHActivityViewController.h"
+#import "DSHActivityLog.h"
 #import "DSHStatusOverlayView.h"
 #import "TerminalViewController.h"
 #import "AppDelegate.h"
@@ -23,6 +25,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
 @property (nonatomic) UILabel *titleLabel;
 @property (nonatomic) UIView *statusDot;
 @property (nonatomic) UIButton *menuButton;
+@property (nonatomic) UIButton *activityIndicatorButton;
 @property (nonatomic) UIButton *terminalButton;
 @property (nonatomic, nullable) TerminalViewController *terminalVC;
 @property (nonatomic) uint16_t loadedPort;
@@ -45,6 +48,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     [nc addObserver:self selector:@selector(harnessStateChanged:) name:DSHHarnessStateDidChangeNotification object:nil];
     [nc addObserver:self selector:@selector(logChanged:) name:DSHLogBufferDidChangeNotification object:nil];
     [nc addObserver:self selector:@selector(bootStateChanged:) name:DSHBootStateDidChangeNotification object:nil];
+    [self observeActivity];
     [self applyHarnessState];
 }
 
@@ -103,6 +107,16 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     title.accessibilityIdentifier = @"dsh.title";
     self.titleLabel = title;
 
+    // Mirrors iOS's own privacy indicator: something on the device was just
+    // used, here is where to look. Hidden until it has something to say.
+    UIButton *activity = [self barButtonWithSymbol:@"antenna.radiowaves.left.and.right"
+                                            action:@selector(presentActivity)
+                                        identifier:@"dsh.activityindicator"];
+    activity.accessibilityLabel = @"Recent capability use";
+    activity.tintColor = UIColor.systemOrangeColor;
+    activity.hidden = YES;
+    self.activityIndicatorButton = activity;
+
     UIButton *terminal = [self barButtonWithSymbol:@"terminal" action:@selector(presentTerminal) identifier:@"dsh.terminal"];
     terminal.accessibilityLabel = @"Terminal";
     self.terminalButton = terminal;
@@ -113,7 +127,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     menu.menu = [self buildMenu];
     self.menuButton = menu;
 
-    UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[dot, title, [UIView new], terminal, menu]];
+    UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[dot, title, [UIView new], activity, terminal, menu]];
     stack.translatesAutoresizingMaskIntoConstraints = NO;
     stack.axis = UILayoutConstraintAxisHorizontal;
     stack.alignment = UIStackViewAlignmentCenter;
@@ -158,6 +172,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     UIAction *reload = [UIAction actionWithTitle:@"Reload" image:[UIImage systemImageNamed:@"arrow.clockwise"] identifier:@"dsh.reload" handler:^(UIAction *a) { [weakSelf reloadWebView]; }];
     UIAction *terminal = [UIAction actionWithTitle:@"Terminal" image:[UIImage systemImageNamed:@"terminal"] identifier:@"dsh.terminal.menu" handler:^(UIAction *a) { [weakSelf presentTerminal]; }];
     UIAction *capabilities = [UIAction actionWithTitle:@"Capabilities" image:[UIImage systemImageNamed:@"switch.2"] identifier:@"dsh.capabilities" handler:^(UIAction *a) { [weakSelf presentCapabilities]; }];
+    UIAction *activity = [UIAction actionWithTitle:@"Activity" image:[UIImage systemImageNamed:@"list.bullet.rectangle"] identifier:@"dsh.activity" handler:^(UIAction *a) { [weakSelf presentActivity]; }];
     UIAction *log = [UIAction actionWithTitle:@"Server Log" image:[UIImage systemImageNamed:@"doc.text.magnifyingglass"] identifier:@"dsh.log" handler:^(UIAction *a) { [weakSelf presentLog]; }];
     UIAction *restart = [UIAction actionWithTitle:@"Restart Harness" image:[UIImage systemImageNamed:@"arrow.triangle.2.circlepath"] identifier:@"dsh.restart" handler:^(UIAction *a) { [weakSelf confirmRestart]; }];
     restart.attributes = UIMenuElementAttributesDestructive;
@@ -166,7 +181,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
         if (url) [UIApplication.sharedApplication openURL:url options:@{} completionHandler:nil];
     }];
     UIAction *about = [UIAction actionWithTitle:@"About DSH" image:[UIImage systemImageNamed:@"info.circle"] identifier:@"dsh.about" handler:^(UIAction *a) { [weakSelf presentAbout]; }];
-    return [UIMenu menuWithChildren:@[reload, terminal, capabilities, log, [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[safari, restart]], about]];
+    return [UIMenu menuWithChildren:@[reload, terminal, capabilities, activity, log, [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[safari, restart]], about]];
 }
 
 - (void)buildOverlay {
@@ -329,6 +344,13 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     [self presentViewController:nav animated:YES completion:nil];
 }
 
+- (void)presentActivity {
+    DSHActivityViewController *vc = [DSHActivityViewController new];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    nav.modalPresentationStyle = UIModalPresentationPageSheet;
+    [self presentViewController:nav animated:YES completion:nil];
+}
+
 - (void)presentAbout {
     DSHHarness *h = DSHHarness.shared;
     NSString *version = [NSString stringWithFormat:@"%@ (%@)",
@@ -340,6 +362,50 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"About DSH" message:message preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
+}
+
+#pragma mark - Capability activity indicator
+
+/// Long enough to notice out of the corner of an eye, short enough that it
+/// means "just now" rather than "at some point today".
+static const NSTimeInterval kActivityIndicatorVisible = 6;
+
+- (void)observeActivity {
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(activityChanged)
+                                               name:DSHActivityLogDidChangeNotification object:nil];
+}
+
+- (void)activityChanged {
+    DSHActivityEntry *latest = DSHActivityLog.shared.entries.firstObject;
+    // Only device capabilities light it up. A shell command in the guest is
+    // recorded, but it is not the thing the user needs to be told about.
+    if (latest.source != DSHActivitySourceCapability || -latest.date.timeIntervalSinceNow > kActivityIndicatorVisible)
+        return;
+    [self showActivityIndicatorFor:latest];
+}
+
+- (void)showActivityIndicatorFor:(DSHActivityEntry *)entry {
+    self.activityIndicatorButton.tintColor = entry.outcome == DSHActivityOutcomeOK
+        ? UIColor.systemOrangeColor : UIColor.systemGrayColor;
+    self.activityIndicatorButton.accessibilityLabel =
+        [NSString stringWithFormat:@"%@ used %@", entry.name, DSHActivityOutcomeName(entry.outcome)];
+    if (self.activityIndicatorButton.isHidden) {
+        self.activityIndicatorButton.hidden = NO;
+        self.activityIndicatorButton.alpha = 0;
+        [UIView animateWithDuration:0.2 animations:^{ self.activityIndicatorButton.alpha = 1; }];
+    }
+    // Each new call restarts the clock, so a busy stretch stays lit throughout
+    // rather than flickering once per call.
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(hideActivityIndicator) object:nil];
+    [self performSelector:@selector(hideActivityIndicator) withObject:nil afterDelay:kActivityIndicatorVisible];
+}
+
+- (void)hideActivityIndicator {
+    [UIView animateWithDuration:0.3 animations:^{
+        self.activityIndicatorButton.alpha = 0;
+    } completion:^(BOOL finished) {
+        self.activityIndicatorButton.hidden = YES;
+    }];
 }
 
 #pragma mark - Keyboard shortcuts

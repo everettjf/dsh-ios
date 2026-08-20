@@ -6,6 +6,7 @@
 #import "DSHCallConfirmation.h"
 #import "DSHHostBridge.h"
 #import "DSHHarness.h"
+#import "DSHActivityLog.h"
 #import <UIKit/UIKit.h>
 
 /// Long enough for someone to read the alert and decide, short enough that an
@@ -38,11 +39,22 @@ static NSLock *sLock = nil;
 
 + (DSHConfirmationOutcome)confirmTitle:(NSString *)title
                                 detail:(NSString *)detail
+                            capability:(NSString *)capability {
+    NSUInteger recent = capability ? [DSHActivityLog.shared countOf:capability within:600] : 0;
+    NSString *full = recent >= 3
+        ? [detail stringByAppendingFormat:@"\n\nThis is the %lu%@ time in ten minutes.",
+           (unsigned long) (recent + 1), (recent + 1) % 10 == 1 && (recent + 1) != 11 ? @"st" : (recent + 1) % 10 == 2 && (recent + 1) != 12 ? @"nd" : (recent + 1) % 10 == 3 && (recent + 1) != 13 ? @"rd" : @"th"]
+        : detail;
+    return [self confirmTitle:title detail:full timeout:kDefaultTimeout];
+}
+
++ (DSHConfirmationOutcome)confirmTitle:(NSString *)title
+                                detail:(NSString *)detail
                                timeout:(NSTimeInterval)timeout {
     if (sAutoApprove)
-        return DSHConfirmationGranted;
+        return [self finish:DSHConfirmationGranted title:title detail:detail];
     if (sAutoDecline)
-        return DSHConfirmationDeclined;
+        return [self finish:DSHConfirmationDeclined title:title detail:detail];
 
     [sLock lock];
     if (sPromptUp) {
@@ -50,7 +62,7 @@ static NSLock *sLock = nil;
         // is refused rather than queued: stacked dialogs are how an agent turns
         // one careless loop into a wall of prompts.
         [sLock unlock];
-        return DSHConfirmationUnavailable;
+        return [self finish:DSHConfirmationUnavailable title:title detail:detail];
     }
     sPromptUp = YES;
     [sLock unlock];
@@ -98,11 +110,32 @@ static NSLock *sLock = nil;
     [sLock lock];
     sPromptUp = NO;
     [sLock unlock];
+    return [self finish:outcome title:title detail:detail];
+}
 
+/// Every exit goes through here. Recording used to sit on the tail of the one
+/// path that presents an alert, which meant the shortcuts above — and, more to
+/// the point, any future early return — silently produced a decision that
+/// never reached the record.
++ (DSHConfirmationOutcome)finish:(DSHConfirmationOutcome)outcome
+                           title:(NSString *)title
+                          detail:(NSString *)detail {
     [DSHHarness.shared.log append:[NSString stringWithFormat:@"[bridge] confirmation “%@”: %@", title,
                                    outcome == DSHConfirmationGranted ? @"allowed"
                                    : outcome == DSHConfirmationDeclined ? @"declined"
                                    : outcome == DSHConfirmationTimedOut ? @"timed out" : @"could not ask"]];
+    // The detail is what the user was shown, so recording it leaks nothing
+    // they have not already seen — and it is the only way the log can answer
+    // "what exactly did I agree to".
+    [DSHActivityLog.shared recordSource:DSHActivitySourceConfirmation
+                                   name:title
+                                 detail:detail
+                                 result:nil
+                                outcome:outcome == DSHConfirmationGranted ? DSHActivityOutcomeOK
+                                        : outcome == DSHConfirmationDeclined ? DSHActivityOutcomeDeclined
+                                        : outcome == DSHConfirmationTimedOut ? DSHActivityOutcomeTimedOut
+                                        : DSHActivityOutcomeRefused
+                               duration:0];
     return outcome;
 }
 

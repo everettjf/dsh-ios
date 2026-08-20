@@ -5,9 +5,9 @@
 //  The gate for bridge calls that change something.
 //
 //  A capability switch is consent to a *kind* of access, granted once and
-//  possibly long ago. It is not consent to a particular action now — putting
-//  this string on the clipboard, creating that reminder, opening that shortcut.
-//  iOS has no dialog to lend us for actions inside our own app, so this is it.
+//  possibly long ago. It is not consent to a particular action now — creating
+//  that reminder, saving that file, opening that shortcut. iOS has no dialog to
+//  lend us for actions inside our own app, so this is it.
 //
 //  Handlers call `confirm…` from the bridge's background queue and block on the
 //  answer. Three rules make that safe:
@@ -38,6 +38,13 @@ typedef NS_ENUM(NSInteger, DSHConfirmationOutcome) {
 /// words ("Create a reminder"); `detail` is what exactly will happen
 /// ("“buy milk”, due Friday, in Home"). Blocks the calling (background) queue.
 + (DSHConfirmationOutcome)confirmTitle:(NSString *)title detail:(NSString *)detail;
+
+/// As above, plus the recent-use context for `capability`: when the same thing
+/// has already happened several times in the last few minutes, the alert says
+/// so. One prompt in a runaway loop looks exactly like one prompt.
++ (DSHConfirmationOutcome)confirmTitle:(NSString *)title
+                                detail:(NSString *)detail
+                            capability:(nullable NSString *)capability;
 
 /// Same, with an explicit timeout — used by tests.
 + (DSHConfirmationOutcome)confirmTitle:(NSString *)title
