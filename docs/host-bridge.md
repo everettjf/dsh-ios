@@ -170,6 +170,29 @@ Files cross the bridge as base64 in the JSON body and the guest writes them
 into `/root/workspace` itself, so the app never reaches into the emulator's
 fakefs.
 
+### The bridge was not the only way out
+
+iSH registers character devices for the pasteboard and for CoreLocation in its
+app delegate and mknods them world-readable at boot. DSH links that code, so
+for the whole of this work any process in the guest could have run
+`cat /dev/clipboard` and read the user's clipboard with no switch, no
+confirmation, and no line in the log — bypassing the entire capability system,
+for two of the capabilities it exists to protect. `/dev/location` was the same.
+
+DSH no longer registers either device. Skipping the registration turned out not
+to be enough: `mknod` writes a real node into the guest's filesystem, which
+survives every later boot, so any install that had ever run an earlier build
+kept its backdoor. The nodes are unlinked at boot as well, and
+`DSHCapabilityReportTests.testISHDeviceNodesDoNotBypassTheBridge` asserts they
+are gone — it failed on the first attempt, which is how the difference between
+"not created" and "not there" was found.
+
+The lesson generalises past these two devices: the capability system only means
+what it says as long as nothing *else* in the app hands the guest a way around
+it, and this app is built on someone else's emulator that was designed to be
+generous with exactly these things. Anything added to the vendored iSH sources
+needs reading with that question in mind.
+
 ### What only a real device with real data showed
 
 Every capability had contract tests passing on both the simulator and the iPad

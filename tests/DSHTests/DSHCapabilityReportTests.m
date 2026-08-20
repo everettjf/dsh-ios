@@ -35,6 +35,7 @@
 #import "DSHShortcutsCapability.h"
 #import "DSHEventKitCapability.h"
 #import "DSHHealthCapability.h"
+#import "ISHShellExecutor.h"
 
 @interface DSHCapabilityReportTests : XCTestCase
 @property (nonatomic) DSHHostBridge *bridge;
@@ -204,6 +205,45 @@
     NSLog(@"[dsh-report] /v1/notify → %ld %@", (long) status,
           status == 200 ? @"delivered — check the device" : (json[@"error"][@"message"] ?: @""));
     [DSHNotificationCapability resetRateLimitForTesting];
+}
+
+/// The bridge must be the *only* way out of the guest.
+///
+/// iSH registers character devices for the pasteboard and for CoreLocation and
+/// mknods them world-readable at boot. DSH links that code, so until this was
+/// found, any process in the guest could `cat /dev/clipboard` and get the
+/// user's clipboard with no switch, no confirmation and no log entry —
+/// bypassing everything this app does to gate capabilities, for the two
+/// capabilities where it matters most. DSH now skips that registration.
+///
+/// Skipping the mknod was not enough on its own: the node is a real file in
+/// the guest's filesystem and survives reboots, so every install that had ever
+/// run an earlier build kept its backdoor. DSH now unlinks both at boot, and
+/// this is the test that caught the difference.
+///
+/// It asserts rather than reports — a backdoor reopening should fail the suite,
+/// not print a line somebody has to notice — and deliberately does not read the
+/// nodes even if they exist, because reading the pasteboard is what raises
+/// iOS's paste prompt and a test has no business doing that.
+- (void)testISHDeviceNodesDoNotBypassTheBridge {
+    XCTestExpectation *done = [self expectationWithDescription:@"guest"];
+    NSMutableString *out = [NSMutableString string];
+    [ISHShellExecutor executeCommand:@"ls /dev/clipboard /dev/location 2>&1 || true"
+                        lineCallback:^(NSString *line, BOOL isStdErr) {
+        [out appendFormat:@"%@\n", line];
+    } completion:^(ISHShellExecutionResult *result) {
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:120];
+    NSLog(@"[dsh-report] iSH device nodes in the guest: %@",
+          [out stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet]);
+
+    // `ls` prints a path only when it exists, so any bare path here is a node
+    // that is still reachable from the guest.
+    XCTAssertFalse([out containsString:@"/dev/clipboard"] && ![out containsString:@"clipboard: No such"],
+                   @"/dev/clipboard is still there, and it bypasses every capability gate:\n%@", out);
+    XCTAssertFalse([out containsString:@"/dev/location"] && ![out containsString:@"location: No such"],
+                   @"/dev/location is still there, and it bypasses every capability gate:\n%@", out);
 }
 
 @end

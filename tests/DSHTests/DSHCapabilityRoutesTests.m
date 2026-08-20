@@ -206,18 +206,26 @@
     XCTAssertEqualObjects(json[@"error"][@"recoverable"], @NO);
 }
 
+/// Note what this does *not* do: read the clipboard before writing, to put the
+/// old contents back afterwards. Reading a pasteboard that came from another
+/// app is precisely what makes iOS interrupt the user with "Allow Paste" — the
+/// behaviour that got the read capability removed — so a test that tried to be
+/// polite about the clipboard raised a system prompt on every single run.
+/// Reading back what this app just wrote is same-origin and silent.
+///
+/// The cost is that running the suite leaves a marker on the device's
+/// clipboard. That is cheaper than a prompt, and it is cleared at the end.
 - (void)testClipboardWriteWritesWhenAllowed {
     [self enable:@"clipboard.write"];
     DSHCallConfirmation.automaticallyApproveForTesting = YES;
     NSString *marker = [@"dsh-test-" stringByAppendingString:NSUUID.UUID.UUIDString];
-    NSString *before = UIPasteboard.generalPasteboard.string;
     NSInteger status = 0;
     NSDictionary *json = [self send:@"POST" path:@"/v1/clipboard" body:@{ @"text": marker } status:&status];
     XCTAssertEqual(status, 200);
     XCTAssertEqualObjects(json[@"written"], @YES);
-    XCTAssertEqualObjects(UIPasteboard.generalPasteboard.string, marker);
-    // Give the tester their clipboard back rather than leaving test junk in it.
-    UIPasteboard.generalPasteboard.string = before ?: @"";
+    XCTAssertEqualObjects(UIPasteboard.generalPasteboard.string, marker,
+                          @"the route should have replaced the pasteboard");
+    UIPasteboard.generalPasteboard.string = @"";
 }
 
 - (void)testClipboardPreviewStaysShortAndOnOneLine {
