@@ -405,40 +405,10 @@ export function apply(ctx) {
   }));
 
   ctx.tools.register(defineTool({
-    name: "clipboard_read",
-    description:
-      "Read what the user last copied. iOS shows its own paste banner every time, so the user always knows. " +
-      "Long text is truncated and says so.",
-    parameters: {},
-    output: {
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          text: { type: "string" },
-          hasText: { type: "boolean" },
-          hasImage: { type: "boolean", description: "An image is on the clipboard; this tool cannot read it." },
-          hasURL: { type: "boolean" },
-          characters: { type: "number" },
-          truncated: { type: "boolean" },
-        },
-      },
-      render: (_args, value) => [{
-        type: "text",
-        text: value.hasText
-          ? `Clipboard (${value.characters} characters${value.truncated ? ", truncated" : ""}):\n${value.text}`
-          : value.hasImage ? "The clipboard holds an image, which this tool cannot read."
-          : "The clipboard is empty.",
-      }],
-    },
-    execute: () => call("/v1/clipboard"),
-    presentCall: () => ({ card: "generic", title: "Read the clipboard", kind: "other" }),
-  }));
-
-  ctx.tools.register(defineTool({
     name: "clipboard_write",
     description:
-      "Replace what the user has copied. This overwrites their clipboard, so only do it when they asked for something to be copied. " +
+      "Put text on the user's clipboard, replacing what was there. Only do it when they asked for something to be copied. " +
+      "There is no way to read the clipboard back — iOS interrupts the user for every read, so DSH does not offer one. " +
       "The user is asked to confirm every call and can decline; if they do, do not try again with the same text.",
     parameters: {
       text: { type: "string", description: "The text to put on the clipboard. Required." },

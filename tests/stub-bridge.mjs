@@ -32,7 +32,6 @@ const server = http.createServer((req, res) => {
       { id: 'calendar.read', title: 'Calendar (read)', details: '…', state: 'granted', gate: 'system-permission' },
       { id: 'reminders.read', title: 'Reminders (read)', details: '…', state: 'granted', gate: 'system-permission' },
       { id: 'health.read', title: 'Apple Health (read)', details: '…', state: 'granted', gate: 'system-permission' },
-      { id: 'clipboard.read', title: 'Clipboard (read)', details: '…', state: 'granted', gate: 'enabled-only' },
       { id: 'clipboard.write', title: 'Clipboard (write)', details: '…', state: 'prompt', gate: 'per-call' },
       { id: 'location.read', title: 'Location', details: '…', state: 'granted', gate: 'system-permission' },
       { id: 'contacts.read', title: 'Contacts (read)', details: '…', state: 'granted', gate: 'system-permission' },
@@ -83,9 +82,6 @@ const server = http.createServer((req, res) => {
   } else if (path === '/v1/device/power') {
     send(200, { batteryLevel: 68, batteryState: 'unplugged', thermalState: 'fair',
                 lowPowerMode: false, shouldDeferExpensiveWork: false });
-  } else if (path === '/v1/clipboard' && req.method === 'GET') {
-    send(200, { text: 'STUB-CLIPBOARD-42', hasText: true, hasImage: false, hasURL: false,
-                characters: 17, truncated: false });
   } else if (path === '/v1/clipboard' && req.method === 'POST') {
     send(200, { written: true, characters: 11 });
   } else if (path === '/v1/location') {

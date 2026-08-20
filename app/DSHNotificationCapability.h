@@ -11,6 +11,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <UserNotifications/UserNotifications.h>
 @class DSHHostBridge;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -24,6 +25,10 @@ extern NSString *const DSHCapabilityNotify;
 /// Takes one slot from the hourly budget; NO when it is exhausted. Exposed so
 /// the limit can be tested without sending ten real notifications.
 + (BOOL)takeRateLimitSlot:(nullable NSUInteger *)remaining;
+/// Whether iOS has been asked, and what it said. Blocks briefly.
++ (UNAuthorizationStatus)authorizationStatus;
+/// Raises iOS's own notification prompt (no-op once it has been answered).
++ (void)requestAuthorization;
 @end
 
 NS_ASSUME_NONNULL_END

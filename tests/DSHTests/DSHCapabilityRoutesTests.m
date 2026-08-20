@@ -13,6 +13,7 @@
 //
 
 #import <XCTest/XCTest.h>
+#import <UIKit/UIKit.h>
 #import <netinet/in.h>
 #import <sys/socket.h>
 #import "DSHHostBridge.h"
@@ -22,6 +23,7 @@
 #import "DSHDeviceCapability.h"
 #import "DSHLocationCapability.h"
 #import "DSHContactsCapability.h"
+#import <Contacts/Contacts.h>
 #import "DSHNotificationCapability.h"
 #import "DSHFilesCapability.h"
 #import "DSHShortcutsCapability.h"
@@ -51,7 +53,7 @@
     [self.bridge stop];
     DSHCallConfirmation.automaticallyApproveForTesting = NO;
     DSHCallConfirmation.automaticallyDeclineForTesting = NO;
-    for (NSString *identifier in @[@"clipboard.read", @"clipboard.write", @"location.read", @"contacts.read",
+    for (NSString *identifier in @[@"clipboard.write", @"location.read", @"contacts.read",
                                    @"notifications.post", @"files.import", @"files.export", @"shortcuts.run",
                                    @"calendar.write", @"reminders.write"])
         [DSHCapabilityRegistry.shared setEnabled:NO forIdentifier:identifier];
@@ -91,7 +93,7 @@
 #pragma mark Defaults
 
 - (void)testEveryNewCapabilityShipsOff {
-    for (NSString *identifier in @[@"clipboard.read", @"clipboard.write", @"location.read", @"contacts.read",
+    for (NSString *identifier in @[@"clipboard.write", @"location.read", @"contacts.read",
                                    @"notifications.post", @"files.import", @"files.export", @"shortcuts.run",
                                    @"calendar.write", @"reminders.write"]) {
         DSHCapability *capability = [DSHCapabilityRegistry.shared capabilityWithIdentifier:identifier];
@@ -113,7 +115,7 @@
 }
 
 - (void)testDisabledCapabilitiesAreRefusedBeforeAnythingHappens {
-    NSArray *calls = @[@[@"GET", @"/v1/clipboard"], @[@"GET", @"/v1/location"],
+    NSArray *calls = @[@[@"POST", @"/v1/clipboard"], @[@"GET", @"/v1/location"],
                        @[@"GET", @"/v1/contacts?q=x"], @[@"POST", @"/v1/notify"],
                        @[@"POST", @"/v1/files/import"], @[@"POST", @"/v1/shortcut/run"]];
     for (NSArray *call in calls) {
@@ -176,17 +178,15 @@
 
 #pragma mark Clipboard
 
-- (void)testClipboardReadReportsWhatIsThere {
-    [self enable:@"clipboard.read"];
+/// There is no read route by design (iOS prompts on every cross-app read), so
+/// a GET must 404 rather than silently doing something else.
+- (void)testThereIsNoClipboardReadRoute {
+    [self enable:@"clipboard.write"];
     NSInteger status = 0;
-    NSDictionary *json = [self send:@"GET" path:@"/v1/clipboard" body:nil status:&status];
-    XCTAssertEqual(status, 200);
-    XCTAssertNotNil(json[@"hasText"]);
-    XCTAssertNotNil(json[@"characters"]);
+    [self send:@"GET" path:@"/v1/clipboard" body:nil status:&status];
+    XCTAssertEqual(status, 404, @"reading the clipboard was removed, not hidden");
 }
 
-/// The write route must validate before it asks: a bad body should never cost
-/// the user a dialog.
 - (void)testClipboardWriteRejectsABadBodyWithoutAsking {
     [self enable:@"clipboard.write"];
     NSUInteger before = DSHCallConfirmation.presentedCount;
@@ -208,16 +208,16 @@
 
 - (void)testClipboardWriteWritesWhenAllowed {
     [self enable:@"clipboard.write"];
-    [self enable:@"clipboard.read"];
     DSHCallConfirmation.automaticallyApproveForTesting = YES;
     NSString *marker = [@"dsh-test-" stringByAppendingString:NSUUID.UUID.UUIDString];
+    NSString *before = UIPasteboard.generalPasteboard.string;
     NSInteger status = 0;
     NSDictionary *json = [self send:@"POST" path:@"/v1/clipboard" body:@{ @"text": marker } status:&status];
     XCTAssertEqual(status, 200);
     XCTAssertEqualObjects(json[@"written"], @YES);
-
-    NSDictionary *readBack = [self send:@"GET" path:@"/v1/clipboard" body:nil status:&status];
-    XCTAssertEqualObjects(readBack[@"text"], marker, @"the write should be visible to the read route");
+    XCTAssertEqualObjects(UIPasteboard.generalPasteboard.string, marker);
+    // Give the tester their clipboard back rather than leaving test junk in it.
+    UIPasteboard.generalPasteboard.string = before ?: @"";
 }
 
 - (void)testClipboardPreviewStaysShortAndOnOneLine {
@@ -254,6 +254,20 @@
     XCTAssertEqual(status, 400);
     XCTAssertTrue([json[@"error"][@"message"] containsString:@"every contact"],
                   @"the message should say why: %@", json[@"error"][@"message"]);
+}
+
+/// A search that matches nobody exercises none of the formatting, so this is
+/// asserted directly: without the formatter's own descriptor, the first real
+/// match raises "a property was not requested" and the route 500s. It did,
+/// on a device with contacts, after every contract test had passed.
+- (void)testContactKeysIncludeTheFormattersOwnRequirements {
+    NSArray<id<CNKeyDescriptor>> *keys = [DSHContactsCapability keysToFetch];
+    id<CNKeyDescriptor> formatterKeys = [CNContactFormatter descriptorForRequiredKeysForStyle:CNContactFormatterStyleFullName];
+    XCTAssertTrue([keys containsObject:formatterKeys],
+                  @"the formatter's keys must be fetched, or formatting a match raises");
+    for (NSString *key in @[CNContactPhoneNumbersKey, CNContactEmailAddressesKey,
+                            CNContactPostalAddressesKey, CNContactBirthdayKey])
+        XCTAssertTrue([keys containsObject:key], @"%@ is returned by the route but not fetched", key);
 }
 
 - (void)testContactsSearchAnswersOrRefusesRecoverably {
