@@ -17,10 +17,10 @@ which this plan references rather than repeats.
 | Apple Health (read): activity, heart rate, sleep, workouts | done |
 | Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
 | Per-call confirmation for everything that writes | done |
-| Clipboard, power, location, contacts, notifications, files, Shortcuts | done |
+| Clipboard write, power, location, contacts, notifications, files, Shortcuts | done |
 | Calendar and Reminders: creating, not just reading | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 33, app 77 (device + simulator), UI 5 | done |
+| Tests: emulator 3, rootfs 32, app 80 (device + simulator), UI 5 | done |
 | Distribution: build-it-yourself only | open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
@@ -45,11 +45,14 @@ malformed call never costs the user a tap. Session grants were dropped: they
 could not be explained in one line, which is a bad sign for a consent
 mechanism.
 
-On top of it: clipboard read/write, battery and thermal, location (single fix,
-never tracking), contacts (search only — there is deliberately no route that
-returns the address book), notifications (10 an hour), file import/export
-through the document picker, Shortcuts, and creating calendar events and
-reminders.
+On top of it: clipboard write, battery and thermal, location (single fix, never
+tracking), contacts (search only — there is deliberately no route that returns
+the address book), notifications (10 an hour), file import/export through the
+document picker, Shortcuts, and creating calendar events and reminders.
+
+Clipboard *read* was built and then removed: iOS confirms every programmatic
+read of a pasteboard that came from another app, so it interrupted the user on
+every use. Ten minutes with it on a device settled it.
 
 Two of these carry a caveat worth repeating in any docs that describe them:
 

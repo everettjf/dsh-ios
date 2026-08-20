@@ -6,6 +6,11 @@
 //  that make blocking a bridge handler on a dialog safe: never wait on a
 //  dialog nobody can see, never stack them, and always answer.
 //
+//  Two of them put a real alert on screen on purpose — that is the only way to
+//  prove an unanswered prompt times out rather than hanging. Their titles say
+//  "DSH self-test" so that anyone watching a device during a test run can see
+//  what it is instead of meeting an unexplained "Allow".
+//
 
 #import <XCTest/XCTest.h>
 #import <UIKit/UIKit.h>
@@ -26,10 +31,10 @@
 - (void)testTestHooksShortCircuitWithoutShowingAnything {
     NSUInteger before = DSHCallConfirmation.presentedCount;
     DSHCallConfirmation.automaticallyApproveForTesting = YES;
-    XCTAssertEqual([DSHCallConfirmation confirmTitle:@"t" detail:@"d"], DSHConfirmationGranted);
+    XCTAssertEqual([DSHCallConfirmation confirmTitle:@"DSH self-test" detail:@"Not a real request."], DSHConfirmationGranted);
     DSHCallConfirmation.automaticallyApproveForTesting = NO;
     DSHCallConfirmation.automaticallyDeclineForTesting = YES;
-    XCTAssertEqual([DSHCallConfirmation confirmTitle:@"t" detail:@"d"], DSHConfirmationDeclined);
+    XCTAssertEqual([DSHCallConfirmation confirmTitle:@"DSH self-test" detail:@"Not a real request."], DSHConfirmationDeclined);
     XCTAssertEqual(DSHCallConfirmation.presentedCount, before,
                    @"the test hooks must not put a real alert on screen");
 }
@@ -42,7 +47,7 @@
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         // No foreground UI in a unit-test host, so this must come back
         // Unavailable rather than hang.
-        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Background" detail:@"d" timeout:3];
+        DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"DSH self-test (background)" detail:@"Not a real request — this dismisses itself." timeout:3];
         XCTAssertNotEqual(outcome, DSHConfirmationGranted);
         [done fulfill];
     });
@@ -81,7 +86,7 @@
     NSMutableArray<NSNumber *> *outcomes = [NSMutableArray array];
     for (int i = 0; i < 5; i++) {
         dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-            DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Burst" detail:@"d" timeout:2];
+            DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"DSH self-test (burst)" detail:@"Not a real request — this dismisses itself." timeout:2];
             [lock lock];
             [outcomes addObject:@(outcome)];
             [lock unlock];

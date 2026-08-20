@@ -122,7 +122,7 @@ none of these need Apple's approval, unlike e.g. Font Enumeration).
 | Capability | Route | iOS API | Info.plist / entitlement | Explicit App ID? | Risk | Confirm |
 |---|---|---|---|---|---|---|
 | Device info ✅ | `/v1/device` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
-| Clipboard read ✅ | `/v1/clipboard` | `UIPasteboard` | — | no | medium | switch (iOS shows its paste banner) |
+| Clipboard read ❌ | — | `UIPasteboard` | — | no | medium | *removed: iOS prompts on every read* |
 | Clipboard write ✅ | `/v1/clipboard` (POST) | `UIPasteboard` | — | no | medium | per call |
 | Battery / thermal ✅ | `/v1/device/power` | `UIDevice`, `NSProcessInfo` | — | no | low | no |
 | Share sheet | `/v1/share` | `UIActivityViewController` | — | no | medium | user picks target |
@@ -153,7 +153,7 @@ and write are separate tools because they are separately gated:
 ```
 device_info()                              → model, OS, locale, battery, thermal state
 device_power()                             → battery, heat, and shouldDeferExpensiveWork
-clipboard_read() / clipboard_write(text)   → the pasteboard
+clipboard_write(text)                      → the pasteboard (write only, see below)
 calendar_query(days?, limit?)              → events
 calendar_create_event(title, start, …)     → one event
 reminders_query(completed?, limit?)        → reminders
@@ -170,6 +170,31 @@ Files cross the bridge as base64 in the JSON body and the guest writes them
 into `/root/workspace` itself, so the app never reaches into the emulator's
 fakefs.
 
+### What only a real device with real data showed
+
+Every capability had contract tests passing on both the simulator and the iPad
+before any of it had touched real data. Two bugs survived all of them, and both
+are worth remembering when adding the next capability:
+
+- **Contacts 500'd on the first real match.** `CNContactFormatter` requires its
+  own key descriptor, and asking it to format a contact fetched without those
+  keys raises rather than returning nil. Searches that matched *nobody* — which
+  is every search on a test device — never reached the formatter, so the bug sat
+  behind a green suite. The regression test now asserts the descriptor is in
+  `keysToFetch`, because "search returns something" cannot be tested portably.
+- **The clipboard read hung the handler.** It called `UIPasteboard` with
+  `dispatch_sync` to the main queue while iOS was waiting for the user to
+  confirm a cross-app paste, so the call blocked until the caller gave up. This
+  is the same lesson as the confirmation gate, arriving from a direction nobody
+  was watching: *anything that can end up behind a system dialog needs a bounded
+  wait*, not just the dialogs we raise ourselves.
+
+The general shape: contract tests prove a capability refuses correctly, which is
+most of the safety surface but none of the "does it work" surface. A report that
+prints what each route actually returned on a real device — counts and shapes,
+never values — is what closes that gap, and
+`DSHCapabilityReportTests` exists for exactly that.
+
 ### Two capabilities cost more than a route each
 
 **Shortcuts leaves.** `shortcuts://x-callback-url/run-shortcut` opens the
@@ -182,6 +207,18 @@ the second half is the same problem as backgrounding generally, so it is parked
 with it. The shortcut name is percent-encoded with `&`, `=`, `+`, `?` and `#`
 removed from the allowed set, so a name cannot smuggle in extra x-callback
 parameters — there is a test for that specifically.
+
+**The clipboard is write-only.** Reading it was built, shipped in a branch and
+removed after ten minutes on a device: iOS confirms *every* programmatic read of
+a pasteboard that originated in another app, so the capability's real behaviour
+was to interrupt the user each time the agent looked. `detectPatterns` can say
+whether text is present without prompting, but not what it is, which is not
+enough to be worth a tool. Writing raises no system prompt and stays.
+
+The read did leave something behind: it was blocking the bridge handler on
+`dispatch_sync` to the main queue, so while iOS waited for a tap the whole call
+hung until the caller gave up. Bounded waits are now the rule for anything that
+can sit behind a system dialog.
 
 **Files never touch the fakefs.** The app does not write into the guest's
 filesystem; contents cross the bridge base64-encoded in the JSON body and the

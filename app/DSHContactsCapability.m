@@ -48,11 +48,20 @@ static const NSInteger kMaxLimit = 25;
                                       recoverable:YES];
 }
 
++ (NSArray<id<CNKeyDescriptor>> *)keysToFetch {
+    return @[CNContactGivenNameKey, CNContactFamilyNameKey,
+             CNContactOrganizationNameKey, CNContactNicknameKey,
+             CNContactPhoneNumbersKey, CNContactEmailAddressesKey,
+             CNContactPostalAddressesKey, CNContactBirthdayKey,
+             // CNContactFormatter needs its own set, and asking it for a name
+             // it was not given keys for raises rather than returning nil. This
+             // only bites when a search actually matches somebody, which is why
+             // it survived every test that ran against an empty address book.
+             [CNContactFormatter descriptorForRequiredKeysForStyle:CNContactFormatterStyleFullName]];
+}
+
 + (NSArray<NSDictionary *> *)matching:(NSString *)query limit:(NSInteger)limit truncated:(BOOL *)truncated {
-    NSArray<id<CNKeyDescriptor>> *keys = @[CNContactGivenNameKey, CNContactFamilyNameKey,
-                                           CNContactOrganizationNameKey, CNContactNicknameKey,
-                                           CNContactPhoneNumbersKey, CNContactEmailAddressesKey,
-                                           CNContactPostalAddressesKey, CNContactBirthdayKey];
+    NSArray<id<CNKeyDescriptor>> *keys = [self keysToFetch];
     NSPredicate *predicate = [CNContact predicateForContactsMatchingName:query];
     NSError *error = nil;
     NSArray<CNContact *> *found = [[self store] unifiedContactsMatchingPredicate:predicate

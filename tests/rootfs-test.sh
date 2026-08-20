@@ -120,7 +120,6 @@ done
 # with them, and the renderers must turn each answer into something readable.
 BRIDGE_TOOL_CASES=(
     "device_power|{}|thermalState: fair"
-    "clipboard_read|{}|STUB-CLIPBOARD-42"
     "clipboard_write|{\"text\":\"hello world\"}|Copied 11 characters"
     "location_query|{}|±65 m"
     "contacts_search|{\"query\":\"ada\"}|Ada Lovelace"

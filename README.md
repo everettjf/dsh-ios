@@ -162,8 +162,9 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 | `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; the confirmation gate (background → refuse, no stacking, always answers); every capability route (off by default, refused before the framework is touched, validated before the user is asked, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout, the Capabilities screen's switches | simulator / device |
 
-Status: all suites green (`make test`: 3 + 33 + 77 + 5 checks; the same 77
-unit + guest-integration tests also run on the iPad Air). Everything runs locally — the build
+Status: all suites green (`make test`: 3 + 32 + 80 + 5 checks; the same 80
+unit + guest-integration tests also run on the iPad Air, where a report test
+prints what each capability actually returned — counts and shapes, never values). Everything runs locally — the build
 needs an Apple Silicon Mac with Xcode, an emulator toolchain and (for the
 device suites) a connected iPhone or iPad, so there is no hosted CI.
 
@@ -195,20 +196,22 @@ reach iOS capabilities. Shipping today:
 | Tool | What it does | Gate |
 |---|---|---|
 | `device_info`, `device_power` | model, iOS version, locale, battery, heat | on by default |
-| `clipboard_read` | what you last copied | switch (iOS shows its paste banner) |
 | `calendar_query`, `reminders_query` | your events and reminders | switch + iOS permission |
 | `health_query` | steps/distance/energy, heart rate, sleep, workouts | switch + iOS permission |
 | `location_query` | one fix, with its accuracy — never tracking | switch + iOS permission |
 | `contacts_search` | look up a person by name (no way to list everyone) | switch + iOS permission |
 | `notify` | a notification when a long task finishes, 10/hour | switch + iOS permission |
 | `file_import` | you pick a file and hand it to the agent | the picker is the consent |
-| `clipboard_write` | replaces your clipboard | **asks every time** |
+| `clipboard_write` | puts text on your clipboard | **asks every time** |
 | `calendar_create_event`, `reminders_create` | adds an event or reminder | **asks every time** |
 | `file_export` | saves a file out of DSH | **asks every time** |
 | `shortcut_run` | runs one of your shortcuts | **asks every time** |
 
 Photos and the share sheet are designed but not built — each is one route in the
-app plus one tool in the guest plugin.
+app plus one tool in the guest plugin. There is deliberately no clipboard *read*:
+iOS asks the user to confirm every programmatic read of a pasteboard that came
+from another app, and no API avoids it, so the capability existed only to
+interrupt. It was tried on a device and removed.
 
 Anything that changes something asks first, and the alert names the actual
 effect ("Add this reminder? “buy milk”, due Friday, in Home") rather than the

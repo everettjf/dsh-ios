@@ -11,6 +11,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <Contacts/Contacts.h>
 @class DSHHostBridge;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -19,6 +20,9 @@ extern NSString *const DSHCapabilityContactsRead;
 
 @interface DSHContactsCapability : NSObject
 + (void)installOn:(DSHHostBridge *)bridge;
+/// Everything a match is fetched with — including the formatter's own required
+/// keys, without which formatting a matched contact raises.
++ (NSArray<id<CNKeyDescriptor>> *)keysToFetch;
 @end
 
 NS_ASSUME_NONNULL_END
