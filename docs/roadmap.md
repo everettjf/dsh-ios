@@ -18,9 +18,10 @@ which this plan references rather than repeats.
 | Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
 | Per-call confirmation for everything that writes | done |
 | Clipboard write, power, location, contacts, notifications, files, Shortcuts | done |
+| iSH's own `/dev/clipboard` and `/dev/location` removed (they bypassed everything) | done |
 | Calendar and Reminders: creating, not just reading | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 32, app 80 (device + simulator), UI 5 | done |
+| Tests: emulator 3, rootfs 32, app 81 (device + simulator), UI 5 | done |
 | Distribution: build-it-yourself only | open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
@@ -65,6 +66,15 @@ Two of these carry a caveat worth repeating in any docs that describe them:
 - **Files never touch the fakefs.** Contents cross the bridge base64-encoded
   and the guest writes them itself, which keeps the emulator's filesystem out
   of the app entirely. The 8 MB ceiling is real: it is JSON in memory.
+
+## Audit the rest of the emulator's own surface
+
+Closing `/dev/clipboard` and `/dev/location` (see
+[host-bridge.md §4](host-bridge.md#the-bridge-was-not-the-only-way-out)) raised
+the obvious follow-up: what *else* does the vendored iSH hand the guest that
+this app's capability system knows nothing about? That is a read of
+`ish-arm64/app/` and `ish-arm64/fs/` with one question in mind, and it should
+happen before more capabilities are added, not after.
 
 ## Next
 

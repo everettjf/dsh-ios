@@ -127,6 +127,7 @@ static NSString *const kSkipStartupMessage = @"Skip Startup Message";
     // Permissions on / have been broken for a while, let's fix them
     generic_setattrat(AT_PWD, "/", (struct attr) {.type = attr_mode, .mode = 0755}, false);
     
+#ifndef DSH_APP
     // Register clipboard device driver and create device node for it
     err = dyn_dev_register(&clipboard_dev, DEV_CHAR, DYN_DEV_MAJOR, DEV_CLIPBOARD_MINOR);
     if (err != 0) {
@@ -138,6 +139,31 @@ static NSString *const kSkipStartupMessage = @"Skip Startup Message";
     if (err != 0)
         return err;
     generic_mknodat(AT_PWD, "/dev/location", S_IFCHR|0666, dev_make(DYN_DEV_MAJOR, DEV_LOCATION_MINOR));
+#else
+    // DSH does not create these.
+    //
+    // iSH hands the guest the pasteboard and CoreLocation as world-readable
+    // character devices, which predates and bypasses everything this app does
+    // to gate capabilities: no switch, no confirmation, no record in the log.
+    // Any process in the guest could read the clipboard with `cat`, which made
+    // "the app decides, per capability" untrue for exactly the two capabilities
+    // where it matters most. Reading /dev/clipboard also blocks on iOS's paste
+    // prompt, so it could hang a process indefinitely.
+    //
+    // The gated equivalents are POST /v1/clipboard and GET /v1/location on the
+    // host bridge (docs/host-bridge.md). Deliberately not offered: reading the
+    // clipboard, because iOS interrupts the user on every such read.
+    //
+    // Not creating them is not enough: mknod writes a real node into the
+    // guest's filesystem, which survives every later boot. Any install that
+    // ever ran a build with these devices still has them, so they are removed
+    // here rather than merely skipped. Unlinking a node that is not there
+    // fails harmlessly.
+    (void) clipboard_dev;
+    (void) location_dev;
+    generic_unlinkat(AT_PWD, "/dev/clipboard");
+    generic_unlinkat(AT_PWD, "/dev/location");
+#endif
 
     do_mount(&procfs, "proc", "/proc", "", 0);
     do_mount(&devptsfs, "devpts", "/dev/pts", "", 0);
