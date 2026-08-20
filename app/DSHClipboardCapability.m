@@ -27,7 +27,7 @@ static const NSUInteger kMaxWriteCharacters = 100000;
     [DSHCapabilityRegistry.shared registerCapability:
         [[DSHCapability alloc] initWithIdentifier:DSHCapabilityClipboardWrite
                                             title:@"Clipboard (write)"
-                                          details:@"Lets the agent put text on your clipboard. Asks you every time."
+                                          details:@"Lets the agent put text on your clipboard."
                                              gate:DSHCapabilityGatePerCall
                                  enabledByDefault:NO
                                         available:YES]];

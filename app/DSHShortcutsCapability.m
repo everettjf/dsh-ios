@@ -33,7 +33,7 @@ NSString *const DSHCapabilityShortcutsRun = @"shortcuts.run";
     [DSHCapabilityRegistry.shared registerCapability:
         [[DSHCapability alloc] initWithIdentifier:DSHCapabilityShortcutsRun
                                             title:@"Shortcuts"
-                                          details:@"Runs one of your shortcuts by name. A shortcut can do anything you built it to do, so DSH asks every time — and leaves DSH to do it."
+                                          details:@"Runs one of your shortcuts by name. A shortcut can do anything you built it to do, and running one leaves DSH."
                                              gate:DSHCapabilityGatePerCall
                                  enabledByDefault:NO
                                         available:YES]];

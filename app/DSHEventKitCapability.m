@@ -264,7 +264,7 @@ static const NSInteger kMaxDays = 366;
 
     DSHCapability *calendarWrite = [[DSHCapability alloc] initWithIdentifier:DSHCapabilityCalendarWrite
                                                                        title:@"Calendar (create)"
-                                                                     details:@"Lets the agent add events to your calendar. Asks you every time."
+                                                                     details:@"Lets the agent add events to your calendar."
                                                                         gate:DSHCapabilityGatePerCall
                                                             enabledByDefault:NO
                                                                    available:YES];
@@ -273,7 +273,7 @@ static const NSInteger kMaxDays = 366;
 
     DSHCapability *remindersWrite = [[DSHCapability alloc] initWithIdentifier:DSHCapabilityRemindersWrite
                                                                        title:@"Reminders (create)"
-                                                                     details:@"Lets the agent add reminders. Asks you every time."
+                                                                     details:@"Lets the agent add reminders."
                                                                         gate:DSHCapabilityGatePerCall
                                                             enabledByDefault:NO
                                                                    available:YES];

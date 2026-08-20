@@ -87,7 +87,7 @@ static const NSTimeInterval kPickerTimeout = 120;
                                                                 available:YES]];
     [registry registerCapability:[[DSHCapability alloc] initWithIdentifier:DSHCapabilityFilesExport
                                                                     title:@"Files (export)"
-                                                                  details:@"Lets the agent save a file out of DSH. Asks you every time."
+                                                                  details:@"Lets the agent save a file out of DSH; you choose where it goes."
                                                                      gate:DSHCapabilityGatePerCall
                                                          enabledByDefault:NO
                                                                 available:YES]];
