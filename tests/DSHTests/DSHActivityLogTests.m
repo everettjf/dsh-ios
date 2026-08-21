@@ -31,6 +31,10 @@
     [DSHDeviceCapability installOn:self.bridge];
     [DSHContactsCapability installOn:self.bridge];
     [DSHActivityCapability installOn:self.bridge];
+    // Capabilities ship on now; these suites assert what happens when one is off,
+    // with device.info left on as the route that is expected to work.
+    [DSHCapabilityRegistry.shared disableAllForTesting];
+    [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:@"device.info"];
 }
 
 - (void)tearDown {
@@ -93,7 +97,7 @@
 - (void)testARefusedCallIsRecordedAsRefused {
     NSInteger status = 0;
     [self send:@"GET" path:@"/v1/contacts?q=x" body:nil status:&status];
-    XCTAssertEqual(status, 403, @"contacts is off by default");
+    XCTAssertEqual(status, 403, @"setUp switched contacts off");
 
     DSHActivityEntry *entry = [self waitForEntryNamed:@"contacts.read"];
     XCTAssertNotNil(entry);

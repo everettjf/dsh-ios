@@ -3,6 +3,7 @@
 //  DSH
 //
 
+#import "DSHCapability.h"
 #import "DSHDeviceCapability.h"
 #import "DSHHostBridge.h"
 #import <UIKit/UIKit.h>
@@ -80,10 +81,7 @@
         }
         device.batteryMonitoringEnabled = wasMonitoring;
     };
-    if (NSThread.isMainThread)
-        collect();
-    else
-        dispatch_sync(dispatch_get_main_queue(), collect);
+    DSHRunOnMainSync(collect);
 
     NSProcessInfo *process = NSProcessInfo.processInfo;
     NSMutableDictionary *out = [@{

@@ -22,6 +22,10 @@
     self.bridge = [DSHHostBridge new];   // a private instance, not the shared one
     XCTAssertTrue([self.bridge start], @"bridge should bind a loopback port");
     [DSHDeviceCapability installOn:self.bridge];
+    // Capabilities ship on now; these suites assert what happens when one is off,
+    // with device.info left on as the route that is expected to work.
+    [DSHCapabilityRegistry.shared disableAllForTesting];
+    [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:@"device.info"];
 }
 
 - (void)tearDown {

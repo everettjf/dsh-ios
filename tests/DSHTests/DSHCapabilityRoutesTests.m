@@ -43,6 +43,10 @@
     [DSHFilesCapability installOn:self.bridge];
     [DSHShortcutsCapability installOn:self.bridge];
     [DSHEventKitCapability installOn:self.bridge];
+    // Capabilities ship on now; these suites assert what happens when one is off,
+    // with device.info left on as the route that is expected to work.
+    [DSHCapabilityRegistry.shared disableAllForTesting];
+    [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:@"device.info"];
 }
 
 - (void)tearDown {
@@ -88,14 +92,53 @@
 
 #pragma mark Defaults
 
-- (void)testEveryNewCapabilityShipsOff {
-    for (NSString *identifier in @[@"location.read", @"contacts.read",
-                                   @"notifications.post", @"files.import", @"files.export", @"shortcuts.run",
-                                   @"calendar.write", @"reminders.write"]) {
-        DSHCapability *capability = [DSHCapabilityRegistry.shared capabilityWithIdentifier:identifier];
-        XCTAssertNotNil(capability, @"%@ is not registered", identifier);
-        XCTAssertFalse(capability.enabledByDefault, @"%@ must not ship on", identifier);
+/// Capabilities ship on, so every one of them has to carry a real gate underneath:
+/// a switch on its own protects nothing once the switch starts out closed.
+- (void)testEveryCapabilityThatShipsOnHasAGateUnderTheSwitch {
+    // device.info returns no user data. files.import cannot return anything at all
+    // until the user picks a file in the system document picker, so the interaction
+    // is the gate even though the enum has no name for it.
+    NSArray *gatedByTheirOwnInteraction = @[@"device.info", @"files.import"];
+    for (DSHCapability *capability in DSHCapabilityRegistry.shared.capabilities) {
+        if (!capability.enabledByDefault) continue;
+        if ([gatedByTheirOwnInteraction containsObject:capability.identifier]) continue;
+        XCTAssertNotEqual(capability.gate, DSHCapabilityGateEnabledOnly,
+                          @"%@ ships on with nothing but the switch in front of it",
+                          capability.identifier);
     }
+}
+
+/// The switch is the only control the user has over a capability that ships on,
+/// so switching one off has to actually stop it — for every capability, not just
+/// the ones with a suite of their own.
+- (void)testSwitchingAnyCapabilityOffRefusesIt {
+    DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
+    for (DSHCapability *capability in registry.capabilities) {
+        if (!capability.available) continue;
+        [registry setEnabled:YES forIdentifier:capability.identifier];
+        XCTAssertNotEqual([registry stateForIdentifier:capability.identifier],
+                          DSHCapabilityStateDisabled,
+                          @"%@ stayed disabled after being switched on", capability.identifier);
+
+        [registry setEnabled:NO forIdentifier:capability.identifier];
+        XCTAssertFalse([registry isEnabled:capability.identifier],
+                       @"%@ ignored being switched off", capability.identifier);
+        XCTAssertEqual([registry stateForIdentifier:capability.identifier],
+                       DSHCapabilityStateDisabled,
+                       @"%@ still reports usable after being switched off", capability.identifier);
+    }
+}
+
+/// ...and the refusal has to happen at the route, before the framework is touched.
+- (void)testARouteWhoseCapabilityIsOffIsRefused {
+    DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
+    [registry setEnabled:NO forIdentifier:@"device.info"];
+    NSInteger status = 0;
+    [self send:@"GET" path:@"/v1/device" body:nil status:&status];
+    XCTAssertEqual(status, 403, @"a switched-off capability must refuse at the route");
+    [registry setEnabled:YES forIdentifier:@"device.info"];
+    [self send:@"GET" path:@"/v1/device" body:nil status:&status];
+    XCTAssertEqual(status, 200, @"switching it back on must restore it");
 }
 
 /// Everything that changes something outside the app has to be per-call, or

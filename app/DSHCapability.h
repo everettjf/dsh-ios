@@ -31,6 +31,12 @@ typedef NS_ENUM(NSInteger, DSHCapabilityState) {
 
 NSString *DSHCapabilityStateName(DSHCapabilityState state);
 
+/// Runs `block` on the main thread and waits for it. Capability code is reached
+/// both from bridge handlers (a background queue) and from the settings switches
+/// (the main thread), so a bare dispatch_sync to the main queue deadlocks half
+/// the callers. Runs inline when already on the main thread.
+void DSHRunOnMainSync(dispatch_block_t block);
+
 @interface DSHCapability : NSObject
 @property (nonatomic, readonly, copy) NSString *identifier;   // e.g. "device.info"
 @property (nonatomic, readonly, copy) NSString *title;        // shown in settings
@@ -75,6 +81,10 @@ extern NSNotificationName const DSHCapabilityRegistryDidChangeNotification;
 - (void)registerCapability:(DSHCapability *)capability;
 /// Test hook: forget every registered capability and stored preference.
 - (void)resetForTesting;
+
+/// Turns every registered capability off. Capabilities ship on, so the suites
+/// that assert the refusal path have to switch them off to have one.
+- (void)disableAllForTesting;
 
 @end
 

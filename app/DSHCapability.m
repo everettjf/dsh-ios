@@ -9,6 +9,13 @@
 NSNotificationName const DSHCapabilityRegistryDidChangeNotification = @"DSHCapabilityRegistryDidChangeNotification";
 static NSString *const kEnabledPrefix = @"DSHCapabilityEnabled.";
 
+void DSHRunOnMainSync(dispatch_block_t block) {
+    if (NSThread.isMainThread)
+        block();
+    else
+        dispatch_sync(dispatch_get_main_queue(), block);
+}
+
 NSString *DSHCapabilityStateName(DSHCapabilityState state) {
     switch (state) {
         case DSHCapabilityStateGranted: return @"granted";
@@ -134,6 +141,11 @@ NSString *DSHCapabilityStateName(DSHCapabilityState state) {
         }];
     }
     return out;
+}
+
+- (void)disableAllForTesting {
+    for (DSHCapability *capability in self.capabilities)
+        [self setEnabled:NO forIdentifier:capability.identifier];
 }
 
 - (void)resetForTesting {

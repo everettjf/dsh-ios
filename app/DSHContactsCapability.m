@@ -120,7 +120,7 @@ static const NSInteger kMaxLimit = 25;
                                             title:@"Contacts (read)"
                                           details:@"Look up a person by name. The agent has to name who it wants; it cannot list everyone."
                                              gate:DSHCapabilityGateSystemPermission
-                                 enabledByDefault:NO
+                                 enabledByDefault:YES
                                         available:YES];
     capability.requestSystemPermission = ^{ [self requestAccess]; };
     [DSHCapabilityRegistry.shared registerCapability:capability];

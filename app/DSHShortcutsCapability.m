@@ -35,7 +35,7 @@ NSString *const DSHCapabilityShortcutsRun = @"shortcuts.run";
                                             title:@"Shortcuts"
                                           details:@"Runs one of your shortcuts by name. A shortcut can do anything you built it to do, and running one leaves DSH."
                                              gate:DSHCapabilityGatePerCall
-                                 enabledByDefault:NO
+                                 enabledByDefault:YES
                                         available:YES]];
 
     [bridge registerRoute:@"POST" path:@"/v1/shortcut/run" capability:DSHCapabilityShortcutsRun

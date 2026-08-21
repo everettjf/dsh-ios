@@ -159,7 +159,7 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 |---|---|---|
 | `tests/emu-test.sh` | the new NEON gadgets and the FMOV fix (C test compiled with gcc *inside* the guest), the `waitpid` regression, the fetch polyfill (host node, 11 checks) | macOS |
 | `tests/rootfs-test.sh` | imports `root.tar.gz` like the app does, guest self test (node-pty/koffi/ripgrep/sharp), profile patch, **headless LLM round trip through a mock DeepSeek SSE server**, every bridge tool driven through a real agent turn against a stub bridge, `dsh-serve` reachable over loopback | macOS |
-| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; the confirmation gate (background → refuse, no stacking, always answers); every capability route (off by default, refused before the framework is touched, validated before the user is asked, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
+| `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; the confirmation gate (background → refuse, no stacking, always answers); every capability route (refused when switched off, refused before the framework is touched, validated before the user is asked, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout, the Capabilities screen's switches | simulator / device |
 
 Status: all suites green (`make test`: 3 + 31 + 89 + 6 checks; the same 89
@@ -195,7 +195,7 @@ reach iOS capabilities. Shipping today:
 
 | Tool | What it does | Gate |
 |---|---|---|
-| `device_info`, `device_power` | model, iOS version, locale, battery, heat | on by default |
+| `device_info`, `device_power` | model, iOS version, locale, battery, heat | no further gate |
 | `calendar_query`, `reminders_query` | your events and reminders | switch + iOS permission |
 | `health_query` | steps/distance/energy, heart rate, sleep, workouts | switch + iOS permission |
 | `location_query` | one fix, with its accuracy — never tracking | switch + iOS permission |
@@ -219,11 +219,13 @@ capability. A confirmation that nobody answers is refused rather than left
 hanging, a call that arrives while DSH is in the background is refused instead
 of queueing a dialog you cannot see, and a burst of calls cannot stack alerts.
 
-Everything except `device_info`/`device_power` ships **off**. Turn it on in **⋯ ▸
-Capabilities** — enabling one asks iOS for its permission right there, and the
-switch takes effect on the agent's next tool call, including mid-turn. A call made before
-either gate is open comes back as a recoverable `permission_denied` telling the
-model what the user has to do, rather than hanging the turn on a dialog.
+Everything ships **on**, and any of it can be switched off in **⋯ ▸
+Capabilities**. The switch being on does not mean data flows: a read still waits
+on iOS's own permission dialog, raised the first time the agent asks, and a write
+still asks every single time. The switch takes effect on the agent's next tool
+call, including mid-turn. A call made before either gate is open comes back as a
+recoverable `permission_denied` telling the model what the user has to do, rather
+than hanging the turn on a dialog.
 
 Apple Health has a wrinkle worth knowing: iOS never tells an app whether *read*
 access was declined, so an empty result and a declined category look identical.

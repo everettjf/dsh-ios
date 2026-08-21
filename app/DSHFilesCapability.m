@@ -83,13 +83,13 @@ static const NSTimeInterval kPickerTimeout = 120;
                                                                     title:@"Files (import)"
                                                                   details:@"Opens the file picker so you can hand a file to the agent. You choose the file."
                                                                      gate:DSHCapabilityGateEnabledOnly
-                                                         enabledByDefault:NO
+                                                         enabledByDefault:YES
                                                                 available:YES]];
     [registry registerCapability:[[DSHCapability alloc] initWithIdentifier:DSHCapabilityFilesExport
                                                                     title:@"Files (export)"
                                                                   details:@"Lets the agent save a file out of DSH; you choose where it goes."
                                                                      gate:DSHCapabilityGatePerCall
-                                                         enabledByDefault:NO
+                                                         enabledByDefault:YES
                                                                 available:YES]];
 
     // Import: the picker *is* the confirmation, so there is no extra prompt.
@@ -97,7 +97,7 @@ static const NSTimeInterval kPickerTimeout = 120;
                   handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {
         DSHDocumentPicker *picker = [DSHDocumentPicker new];
         __block BOOL presented = NO;
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        DSHRunOnMainSync(^{
             UIViewController *top = [self topViewController];
             if (top == nil)
                 return;
@@ -182,7 +182,7 @@ static const NSTimeInterval kPickerTimeout = 120;
 
         DSHDocumentPicker *picker = [DSHDocumentPicker new];
         __block BOOL presented = NO;
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        DSHRunOnMainSync(^{
             UIViewController *top = [self topViewController];
             if (top == nil)
                 return;

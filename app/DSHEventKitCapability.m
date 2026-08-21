@@ -238,7 +238,7 @@ static const NSInteger kMaxDays = 366;
                                                                   title:@"Calendar (read)"
                                                                 details:@"Events from your calendars, so the agent can answer questions about your schedule."
                                                                    gate:DSHCapabilityGateSystemPermission
-                                                       enabledByDefault:NO
+                                                       enabledByDefault:YES
                                                               available:YES];
     calendar.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeEvent]; };
     [registry registerCapability:calendar];
@@ -247,7 +247,7 @@ static const NSInteger kMaxDays = 366;
                                                                   title:@"Reminders (read)"
                                                                 details:@"Your reminders and their due dates."
                                                                    gate:DSHCapabilityGateSystemPermission
-                                                       enabledByDefault:NO
+                                                       enabledByDefault:YES
                                                               available:YES];
     reminders.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeReminder]; };
     [registry registerCapability:reminders];
@@ -266,7 +266,7 @@ static const NSInteger kMaxDays = 366;
                                                                        title:@"Calendar (create)"
                                                                      details:@"Lets the agent add events to your calendar."
                                                                         gate:DSHCapabilityGatePerCall
-                                                            enabledByDefault:NO
+                                                            enabledByDefault:YES
                                                                    available:YES];
     calendarWrite.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeEvent]; };
     [registry registerCapability:calendarWrite];
@@ -275,7 +275,7 @@ static const NSInteger kMaxDays = 366;
                                                                        title:@"Reminders (create)"
                                                                      details:@"Lets the agent add reminders."
                                                                         gate:DSHCapabilityGatePerCall
-                                                            enabledByDefault:NO
+                                                            enabledByDefault:YES
                                                                    available:YES];
     remindersWrite.requestSystemPermission = ^{ [self requestAccessFor:EKEntityTypeReminder]; };
     [registry registerCapability:remindersWrite];

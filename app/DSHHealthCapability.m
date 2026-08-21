@@ -453,7 +453,7 @@ static const int64_t kQueryTimeoutSeconds = 5;
                                                                 title:@"Apple Health (read)"
                                                               details:@"Steps, distance, energy, heart rate, sleep and workouts from Health."
                                                                  gate:DSHCapabilityGateSystemPermission
-                                                     enabledByDefault:NO
+                                                     enabledByDefault:YES
                                                             available:HKHealthStore.isHealthDataAvailable];
     health.requestSystemPermission = ^{ [self requestAuthorization]; };
     [DSHCapabilityRegistry.shared registerCapability:health];

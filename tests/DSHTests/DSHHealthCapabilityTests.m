@@ -31,6 +31,10 @@ static NSString *const kHealthRead = @"health.read";
     self.bridge = [DSHHostBridge new];
     XCTAssertTrue([self.bridge start]);
     [DSHHealthCapability installOn:self.bridge];
+    // Capabilities ship on now; these suites assert what happens when one is off,
+    // with device.info left on as the route that is expected to work.
+    [DSHCapabilityRegistry.shared disableAllForTesting];
+    [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:@"device.info"];
     // The switch is persisted in NSUserDefaults and this bundle runs inside the
     // real app, so a previous run (or a curious tester) could have left it on.
     // Start from the shipped state; that the *shipped* state is off is asserted
@@ -65,11 +69,11 @@ static NSString *const kHealthRead = @"health.read";
 
 #pragma mark Gating
 
-- (void)testHealthIsOffByDefault {
+- (void)testHealthShipsOnButTheSwitchStillGates {
     DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
-    XCTAssertFalse([registry capabilityWithIdentifier:kHealthRead].enabledByDefault,
-                   @"health must never ship on");
-    XCTAssertFalse([registry isEnabled:kHealthRead]);
+    XCTAssertTrue([registry capabilityWithIdentifier:kHealthRead].enabledByDefault,
+                  @"health ships on; HealthKit's own dialog is the gate that matters");
+    XCTAssertFalse([registry isEnabled:kHealthRead], @"setUp switched everything off");
     DSHCapabilityState state = [registry stateForIdentifier:kHealthRead];
     // Unavailable on a build or device without HealthKit; Disabled otherwise.
     XCTAssertTrue(state == DSHCapabilityStateDisabled || state == DSHCapabilityStateUnavailable,
@@ -131,7 +135,7 @@ static NSString *const kHealthRead = @"health.read";
     XCTAssertNotNil(capability);
     XCTAssertEqual(capability.available, HKHealthStore.isHealthDataAvailable);
     XCTAssertEqual(capability.gate, DSHCapabilityGateSystemPermission);
-    XCTAssertFalse(capability.enabledByDefault);
+    XCTAssertTrue(capability.enabledByDefault);
 }
 
 - (void)testEveryHealthRouteIsRefusedWhileTheCapabilityIsOff {

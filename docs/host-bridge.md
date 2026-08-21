@@ -91,9 +91,11 @@ No secret placed inside the guest can prevent that. Therefore:
 
 Concretely:
 
-1. **Capabilities are off by default** and switched on by the user in DSH's
-   settings (a new screen). A route whose capability is off returns
-   `permission_denied` regardless of the token.
+1. **Capabilities ship on and the user can switch any of them off** in DSH's
+   settings. A route whose capability is off returns `permission_denied`
+   regardless of the token. The switch is the coarse control; what actually
+   stands between the agent and your data is the gate below it — iOS's own
+   permission dialog for reads, a per-call confirmation for writes.
 2. **Sensitive capabilities require a per-session (or per-call) confirmation in
    the app**, on top of the system permission dialog. The tool call shows up in
    the UI like any other; the confirmation is native and cannot be forged from

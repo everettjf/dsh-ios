@@ -31,6 +31,10 @@ static NSString *const kRemindersRead = @"reminders.read";
     self.bridge = [DSHHostBridge new];
     XCTAssertTrue([self.bridge start]);
     [DSHEventKitCapability installOn:self.bridge];
+    // Capabilities ship on now; these suites assert what happens when one is off,
+    // with device.info left on as the route that is expected to work.
+    [DSHCapabilityRegistry.shared disableAllForTesting];
+    [DSHCapabilityRegistry.shared setEnabled:YES forIdentifier:@"device.info"];
 }
 
 - (void)tearDown {
@@ -59,13 +63,18 @@ static NSString *const kRemindersRead = @"reminders.read";
     return json;
 }
 
-- (void)testBothCapabilitiesAreOffByDefault {
+- (void)testBothCapabilitiesShipOnAndTheSwitchStillGates {
     DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
-    // Sensitive capabilities must never be on without the user saying so.
-    XCTAssertFalse([registry isEnabled:kCalendarRead]);
-    XCTAssertFalse([registry isEnabled:kRemindersRead]);
-    XCTAssertEqual([registry stateForIdentifier:kCalendarRead], DSHCapabilityStateDisabled);
-    XCTAssertEqual([registry stateForIdentifier:kRemindersRead], DSHCapabilityStateDisabled);
+    // The switch is on out of the box — iOS's own permission dialog is what
+    // actually stands between the agent and the data — but it still has to work.
+    for (NSString *identifier in @[kCalendarRead, kRemindersRead]) {
+        XCTAssertTrue([registry capabilityWithIdentifier:identifier].enabledByDefault);
+        XCTAssertEqual([registry stateForIdentifier:identifier], DSHCapabilityStateDisabled,
+                       @"setUp switched everything off");
+        [registry setEnabled:YES forIdentifier:identifier];
+        XCTAssertNotEqual([registry stateForIdentifier:identifier], DSHCapabilityStateDisabled);
+        [registry setEnabled:NO forIdentifier:identifier];
+    }
 }
 
 - (void)testCapabilitiesAreAdvertisedWithTheSystemPermissionGate {

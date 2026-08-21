@@ -15,6 +15,8 @@ NSString *const DSHCapabilityLocationRead = @"location.read";
 static const NSTimeInterval kFixTimeout = 12;
 
 @interface DSHLocationFix : NSObject <CLLocationManagerDelegate>
+/// Asks iOS for access and keeps itself alive until the user answers.
++ (void)prompt;
 @end
 
 @implementation DSHLocationFix {
@@ -27,9 +29,9 @@ static const NSTimeInterval kFixTimeout = 12;
 - (instancetype)init {
     if (self = [super init]) {
         _done = dispatch_semaphore_create(0);
-        // CLLocationManager wants a run loop; the bridge handler is on a
-        // background queue, so it is created and driven on the main one.
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        // CLLocationManager wants a run loop, so it is created and driven on the
+        // main thread — which is also where the settings switch calls in from.
+        DSHRunOnMainSync(^{
             self->_manager = [CLLocationManager new];
             self->_manager.delegate = self;
             self->_manager.desiredAccuracy = kCLLocationAccuracyHundredMeters;
@@ -40,12 +42,8 @@ static const NSTimeInterval kFixTimeout = 12;
 
 - (CLAuthorizationStatus)status {
     __block CLAuthorizationStatus status;
-    dispatch_sync(dispatch_get_main_queue(), ^{ status = self->_manager.authorizationStatus; });
+    DSHRunOnMainSync(^{ status = self->_manager.authorizationStatus; });
     return status;
-}
-
-- (void)requestAuthorization {
-    dispatch_async(dispatch_get_main_queue(), ^{ [self->_manager requestWhenInUseAuthorization]; });
 }
 
 /// Blocks until a fix, an error or the timeout. Returns nil on failure.
@@ -66,6 +64,23 @@ static const NSTimeInterval kFixTimeout = 12;
     dispatch_semaphore_signal(_done);
 }
 
+/// The dialog outlives the call that raised it, and a CLLocationManager whose
+/// owner has been deallocated is a delegate call into freed memory. One static
+/// reference holds the asking object until iOS reports an answer.
+static DSHLocationFix *sPrompt;
+
++ (void)prompt {
+    DSHRunOnMainSync(^{
+        sPrompt = [DSHLocationFix new];
+        [sPrompt->_manager requestWhenInUseAuthorization];
+    });
+}
+
+- (void)locationManagerDidChangeAuthorization:(CLLocationManager *)manager {
+    if (manager.authorizationStatus != kCLAuthorizationStatusNotDetermined && self == sPrompt)
+        sPrompt = nil;
+}
+
 @end
 
 @implementation DSHLocationCapability
@@ -76,13 +91,10 @@ static const NSTimeInterval kFixTimeout = 12;
                                             title:@"Location"
                                           details:@"One fix at a time, when the agent asks. DSH never tracks you in the background."
                                              gate:DSHCapabilityGateSystemPermission
-                                 enabledByDefault:NO
+                                 enabledByDefault:YES
                                         available:CLLocationManager.locationServicesEnabled];
     capability.requestSystemPermission = ^{
-        DSHLocationFix *fix = [DSHLocationFix new];
-        [fix requestAuthorization];
-        // Held only for the duration of the dialog; the fix object goes away
-        // with the block.
+        [DSHLocationFix prompt];
         [DSHHarness.shared.log append:@"[bridge] asked for location access"];
     };
     [DSHCapabilityRegistry.shared registerCapability:capability];
@@ -92,7 +104,7 @@ static const NSTimeInterval kFixTimeout = 12;
         DSHLocationFix *fix = [DSHLocationFix new];
         CLAuthorizationStatus status = [fix status];
         if (status == kCLAuthorizationStatusNotDetermined) {
-            [fix requestAuthorization];
+            [DSHLocationFix prompt];
             return [DSHHostBridgeResponse errorWithStatus:403 code:@"permission_denied"
                                                   message:@"iOS has just asked the user for location access. Tell them to allow it, then try again."
                                               recoverable:YES];

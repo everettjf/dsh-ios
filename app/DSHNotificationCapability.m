@@ -73,7 +73,7 @@ static NSLock *sLock = nil;
                                             title:@"Notifications"
                                           details:@"Lets the agent notify you when a long task finishes. At most 10 an hour."
                                              gate:DSHCapabilityGateSystemPermission
-                                 enabledByDefault:NO
+                                 enabledByDefault:YES
                                         available:YES];
     capability.requestSystemPermission = ^{ [self requestAuthorization]; };
     [DSHCapabilityRegistry.shared registerCapability:capability];
