@@ -268,4 +268,42 @@
                    @"/dev/location is still there, and it bypasses every capability gate:\n%@", out);
 }
 
+/// Removing the nodes is the visible half of that fix. The load-bearing half is
+/// that the drivers are never registered: dyn_open answers ENXIO for a minor
+/// with no dev_ops behind it, so a guest that recreates the node itself — which
+/// it can, mknod writes a real file into the image — still opens nothing. This
+/// asserts the half that a later change is more likely to undo by accident.
+- (void)testRecreatingTheDeviceNodesGetsTheGuestNothing {
+    [self waitForHarnessReady];
+
+    XCTestExpectation *done = [self expectationWithDescription:@"mknod"];
+    NSMutableString *out = [NSMutableString string];
+    NSString *command = @"mknod /tmp/clip c 240 0 2>/dev/null; "
+                        @"mknod /tmp/loc c 240 1 2>/dev/null; "
+                        @"for n in clip loc; do "
+                        @"  cat /tmp/$n >/dev/null 2>&1; echo \"READ-$n:$?\"; "
+                        @"done; rm -f /tmp/clip /tmp/loc";
+    [ISHShellExecutor executeCommand:command lineCallback:^(NSString *line, BOOL isStdErr) {
+        [out appendFormat:@"%@\n", line];
+    } completion:^(ISHShellExecutionResult *result) {
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:120];
+    NSLog(@"[dsh-report] recreated dyn-dev nodes: %@",
+          [out stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet]);
+
+    // Assert the markers arrived before asserting what they say: every check
+    // below is a negative, and a command that produced no output at all would
+    // satisfy all of them without testing anything.
+    for (NSString *name in @[@"clip", @"loc"]) {
+        NSString *marker = [NSString stringWithFormat:@"READ-%@:", name];
+        XCTAssertTrue([out containsString:marker],
+                      @"no result for the %@ node — the probe did not run:\n%@", name, out);
+    }
+    XCTAssertFalse([out containsString:@"READ-clip:0"],
+                   @"a recreated clipboard node was readable:\n%@", out);
+    XCTAssertFalse([out containsString:@"READ-loc:0"],
+                   @"a recreated location node was readable:\n%@", out);
+}
+
 @end

@@ -86,8 +86,23 @@ static NSString *const kSkipStartupMessage = @"Skip Startup Message";
     if (err < 0)
         return err;
 
+#ifndef DSH_APP
     fs_register(&iosfs);
     fs_register(&iosfs_unsafe);
+#else
+    // DSH does not register these.
+    //
+    // `mount -t ios <dir>` hands the guest a real iOS directory, and sys_mount
+    // checks no privilege at all, so any guest process can ask for it. The
+    // system directory picker is real consent the first time — but the mount is
+    // saved as a security-scoped bookmark in NSUserDefaults and iosfs_init()
+    // silently restores it on every launch afterwards. That is a standing grant
+    // the capability registry never hears about: no switch, no entry in the
+    // activity record, no "last used", and nothing in DSH that revokes it.
+    //
+    // DSH's own answer to the same need is files.import / files.export, which
+    // move one file at a time through the same picker and are recorded.
+#endif
 
     // need to do this first so that we can have a valid current for the generic_mknod calls
     err = become_first_process();
@@ -168,7 +183,9 @@ static NSString *const kSkipStartupMessage = @"Skip Startup Message";
     do_mount(&procfs, "proc", "/proc", "", 0);
     do_mount(&devptsfs, "devpts", "/dev/pts", "", 0);
 
+#ifndef DSH_APP
     iosfs_init(); // let it mount any filesystems from user defaults
+#endif
 
     [self configureDns];
     

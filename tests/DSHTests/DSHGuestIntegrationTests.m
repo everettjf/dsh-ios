@@ -247,4 +247,41 @@
     [self waitForExpectations:@[done] timeout:120];
 }
 
+/// iSH lets the guest mount a real iOS directory with `mount -t ios`, and
+/// sys_mount checks no privilege, so any process in the image can ask. The
+/// picker is genuine consent the first time, but the grant is then saved as a
+/// bookmark and silently restored at every launch, where nothing in DSH knows
+/// about it or can take it back. DSH does not register the filesystem, so the
+/// mount fails at the type lookup, before any picker is raised.
+- (void)testTheGuestCannotMountTheHostFilesystem {
+    [self waitForReady];
+    XCTestExpectation *done = [self expectationWithDescription:@"mount"];
+    NSMutableString *out = [NSMutableString string];
+    // An unregistered filesystem type fails in sys_mount's type lookup with
+    // EINVAL, before iosfs_mount runs and before any picker is raised.
+    NSString *command = @"mkdir -p /mnt/probe; "
+                        @"for t in ios ios-unsafe; do "
+                        @"  mount -t $t none /mnt/probe >/dev/null 2>&1; "
+                        @"  echo \"RC-$t:$?\"; "
+                        @"done; "
+                        @"echo \"IOSMOUNTS:$(awk '$3 ~ /^ios/' /proc/mounts | wc -l)\"";
+    [ISHShellExecutor executeCommand:command lineCallback:^(NSString *line, BOOL isStdErr) {
+        [out appendFormat:@"%@\n", line];
+    } completion:^(ISHShellExecutionResult *result) {
+        for (NSString *type in @[@"ios", @"ios-unsafe"]) {
+            NSString *marker = [NSString stringWithFormat:@"RC-%@:", type];
+            XCTAssertTrue([out containsString:marker],
+                          @"no result for -t %@ — the probe did not run: %@", type, out);
+        }
+        XCTAssertTrue([out containsString:@"IOSMOUNTS:0"],
+                      @"an ios filesystem is mounted in the guest: %@", out);
+        XCTAssertFalse([out containsString:@"RC-ios:0"],
+                       @"`mount -t ios` succeeded: %@", out);
+        XCTAssertFalse([out containsString:@"RC-ios-unsafe:0"],
+                       @"`mount -t ios-unsafe` succeeded: %@", out);
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:180];
+}
+
 @end

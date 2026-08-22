@@ -263,6 +263,22 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
             return;
         [self.scrollbarView setContentOffset:CGPointMake(0, newOffset) animated:NO];
     } else if ([message.name isEqualToString:@"openLink"]) {
+#ifdef DSH_APP
+        // The guest chooses this string. A terminal hyperlink (OSC 8) carries a
+        // target the displayed text does not have to match, so a link reading
+        // "docs" can point anywhere — and openURL: takes any scheme iOS knows,
+        // including ones that act rather than navigate. shortcuts://run-shortcut
+        // is the sharp example: it would run a shortcut without passing the
+        // confirmation DSH puts in front of its own shortcuts.run capability.
+        // A tap is still required, so this is a trap to be sprung rather than a
+        // silent channel — but nothing about the link tells the user where it
+        // goes. Web schemes only.
+        NSString *scheme = [NSURL URLWithString:message.body].scheme.lowercaseString;
+        if (![@[@"http", @"https", @"mailto"] containsObject:scheme ?: @""]) {
+            NSLog(@"[dsh] refused a terminal link with scheme %@", scheme ?: @"(none)");
+            return;
+        }
+#endif
         [UIApplication openURL:message.body];
     }
 }
