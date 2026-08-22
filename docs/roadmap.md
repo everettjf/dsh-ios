@@ -13,7 +13,7 @@ which this plan references rather than repeats.
 | Background boot with progress + ETA (launch watchdog safe) | done |
 | Guest image auto-upgrade with user-data migration | done |
 | Host bridge: listener, token, capability registry, `device_info` | done |
-| Calendar and Reminders (read) over EventKit, off by default | done |
+| Calendar and Reminders (read) over EventKit | done |
 | Apple Health (read): activity, heart rate, sleep, workouts | done |
 | Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
 | Per-call confirmation for everything that writes | done |
@@ -22,17 +22,23 @@ which this plan references rather than repeats.
 | Activity record: every capability call and every guest tool call, with a viewer | done |
 | Calendar and Reminders: creating, not just reading | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 31, app 89 (device + simulator), UI 6 | done |
-| Distribution: build-it-yourself only | open |
+| Tests: emulator 3, rootfs 31, app 93 (device + simulator), UI 6 | done |
+| Capabilities ship on; the switch turns them off | done |
+| One-command release: bump, test, archive, upload (`scripts/release.sh`) | done |
+| Distribution: TestFlight (internal) and build-it-yourself | partly open |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
 
 ## What to do next, and why in this order
 
-The bridge went from one read-only capability to fifteen tools in two days,
-including ones that write to the user's calendar and run arbitrary Shortcuts.
-That changes which problems matter. The ordering below is an argument, not a
-backlog: each item says why it comes before the one after it.
+The bridge went from one read-only capability to nineteen routes, including
+ones that write to the user's calendar and run arbitrary Shortcuts, and those
+capabilities now ship on. That changes which problems matter, and it sharpens
+the first and third items in particular: a gate nobody has audited matters more
+when it is the only thing left in the way, and attacker-influenceable content
+reaches a live capability set rather than one the user had to go and enable.
+The ordering below is an argument, not a backlog: each item says why it comes
+before the one after it.
 
 ### 1. Audit the rest of the emulator's surface
 
@@ -136,14 +142,20 @@ of it.
 
 ### 6. Distribution
 
-**Why last of the substantive items:** it is a decision, not an
-implementation, and the decision is genuinely unresolved. The app is GPL-3.0
-because iSH is, and the GPL sits badly with the App Store's terms — which is
-why iSH ships the way it does. TestFlight needs a paid account and a review
-pass that a Linux emulator running arbitrary code may not survive. The
-realistic options are: keep building from source (today), sideload through
-AltStore-style tooling, or take the App Store question seriously and find out.
-Worth deciding deliberately rather than drifting.
+**Where it stands now:** builds upload. `scripts/release.sh` bumps the version,
+runs every suite, archives, validates and uploads to App Store Connect, so
+internal TestFlight works and 1.0.2 is there. That settles the mechanics and
+leaves the two real questions untouched.
+
+*External testers* need Beta App Review — the first time a reviewer looks at a
+Linux emulator that runs arbitrary code. Worth finding out early and cheaply,
+because the answer shapes everything after it.
+
+*The App Store itself* is unresolved for a reason that is not technical: the
+app is GPL-3.0 because iSH is, and the GPL sits badly with the App Store's
+terms, which is why iSH ships the way it does. The realistic options remain
+building from source, AltStore-style sideloading, or taking the licence
+question seriously. Worth deciding deliberately rather than drifting.
 
 ### Later, but worth writing down: run the model on the device
 
@@ -200,10 +212,22 @@ a dialog nobody can see (background → refuse). Never stack them (a second
 prompt while one is up → refuse). Always answer (timeout → refuse,
 recoverably). Each is a test.
 
-**No clipboard reading.** Built, tried on a device, removed. iOS confirms every
-programmatic read of a pasteboard that came from another app and no API avoids
-it, so the capability's real behaviour was to interrupt the user on every use.
-Writing raises no system prompt and stays.
+**No clipboard at all.** Reading was built, tried on a device and removed: iOS
+confirms every programmatic read of a pasteboard that came from another app and
+no API avoids it, so the capability's real behaviour was to interrupt the user
+on every use. Writing raises no system prompt and was kept for a while, then
+dropped too — the question changed from "which direction" to "is this domain
+worth it", and "the agent can silently replace what you are about to paste" is
+not worth the convenience.
+
+**Capabilities ship on; the switch turns them off.** They shipped off at first,
+which mostly meant a hunt through settings before anything worked. The switch
+was never what stood between the agent and the data: a read still waits on
+iOS's own permission dialog, a write still asks every single time. What the
+switch is for is taking a capability away entirely, and that is one tap. The
+consequence is that anything shipping on must have a real gate underneath it —
+a test asserts exactly that, and it caught `files.import` sitting behind nothing
+else until its own document picker was recognised as the gate.
 
 **Contacts is search-only.** There is deliberately no route that returns the
 address book. The agent has to name who it wants.
@@ -215,6 +239,17 @@ empty answer carries a note saying so, and the tool is told to relay it.
 **Files never touch the fakefs.** Contents cross the bridge base64-encoded and
 the guest writes them itself. Costs a real 8 MB ceiling; keeps the emulator's
 filesystem out of the app.
+
+**Anything a capability does on the main thread has to survive being called
+from it.** Capability code is reached two ways — a bridge handler on a
+background queue, and a settings switch on the main thread — and a bare
+`dispatch_sync` to the main queue deadlocks the second caller. Turning on
+Location did exactly that: the main thread waited on itself and the watchdog
+killed the app a few seconds later, which reads as a crash and leaves no crash
+report. `DSHRunOnMainSync` runs inline when it is already on the main thread and
+is now the only way capability code hops to it. The clipboard read that was
+removed earlier had the same shape, which is the argument for fixing the class
+rather than the instance.
 
 **Contract tests are not enough.** They prove a capability refuses correctly,
 which is most of the safety surface and none of the does-it-work surface. Two
