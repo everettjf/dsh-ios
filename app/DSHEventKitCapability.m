@@ -323,14 +323,15 @@ static const NSInteger kMaxDays = 366;
                                               recoverable:NO];
 
         NSString *location = [request.json[@"location"] isKindOfClass:NSString.class] ? request.json[@"location"] : nil;
-        NSMutableString *detail = [NSMutableString stringWithFormat:@"“%@”\n%@", title, [self humanDate:start allDay:allDay]];
+        NSMutableString *detail = [NSMutableString stringWithFormat:@"“%@”\n%@",
+                                   DSHDisplayValue(title, 120), [self humanDate:start allDay:allDay]];
         if (!allDay) [detail appendFormat:@" – %@", [self humanDate:end allDay:NO]];
-        if (location.length) [detail appendFormat:@"\n%@", location];
+        if (location.length) [detail appendFormat:@"\n%@", DSHDisplayValue(location, 80)];
         [detail appendFormat:@"\n\nIn %@.", calendar.title];
         DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this to your calendar?" detail:detail
                                                                 capability:DSHCapabilityCalendarWrite];
         DSHHostBridgeResponse *declined = [DSHCallConfirmation refusalFor:outcome
-                                                                  action:[NSString stringWithFormat:@"adding “%@” to the calendar", title]];
+                                                                  action:[NSString stringWithFormat:@"adding “%@” to the calendar", DSHDisplayValue(title, 120)]];
         if (declined)
             return declined;
 
@@ -384,13 +385,13 @@ static const NSInteger kMaxDays = 366;
                                                   message:@"There is no reminders list on this device that DSH may write to."
                                               recoverable:NO];
 
-        NSMutableString *detail = [NSMutableString stringWithFormat:@"“%@”", title];
+        NSMutableString *detail = [NSMutableString stringWithFormat:@"“%@”", DSHDisplayValue(title, 120)];
         if (due) [detail appendFormat:@"\ndue %@", [self humanDate:due allDay:NO]];
         [detail appendFormat:@"\n\nIn %@.", list.title];
         DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Add this reminder?" detail:detail
                                                                 capability:DSHCapabilityRemindersWrite];
         DSHHostBridgeResponse *declined = [DSHCallConfirmation refusalFor:outcome
-                                                                  action:[NSString stringWithFormat:@"adding the reminder “%@”", title]];
+                                                                  action:[NSString stringWithFormat:@"adding the reminder “%@”", DSHDisplayValue(title, 120)]];
         if (declined)
             return declined;
 

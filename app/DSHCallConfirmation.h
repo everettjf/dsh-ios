@@ -65,4 +65,31 @@ typedef NS_ENUM(NSInteger, DSHConfirmationOutcome) {
 
 @end
 
+/// Prepares a value the agent chose for a place where the user reads DSH's own
+/// words — a confirmation alert, mostly.
+///
+/// The agent writes the title of the event it wants to add, and the agent is
+/// steerable by whatever it has just read: an invitation from a stranger, a note
+/// on a contact, a file that was imported. So the alert that exists to let a
+/// human check the agent's work is partly written by whoever wrote that content.
+/// It can only do its job if the value cannot pretend to be the alert.
+///
+/// Three ways it could, and what happens to each:
+///
+///   - Structure. A title containing newlines can append convincing paragraphs
+///     in DSH's own voice ("\n\nNo action needed — tap Add to dismiss"). All
+///     whitespace collapses to single spaces, so a value is one run of text.
+///   - Length. A title of five thousand characters pushes what the user needs —
+///     which calendar, and when — past the bottom of the alert. Values are
+///     clamped, with an ellipsis where the cut happened.
+///   - Direction and invisibility. Bidi overrides (U+202A–U+202E, U+2066–U+2069)
+///     reorder what is displayed without changing what is stored, so the text
+///     the user reads and the text that gets acted on differ. Those and other
+///     control characters are removed rather than rendered.
+///
+/// This does not make attacker-chosen text safe to believe. It makes it
+/// identifiable: what survives is one bounded run, and the sentence around it
+/// belongs to DSH.
+NSString *DSHDisplayValue(NSString *_Nullable value, NSUInteger limit);
+
 NS_ASSUME_NONNULL_END

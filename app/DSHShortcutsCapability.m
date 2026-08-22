@@ -57,13 +57,14 @@ NSString *const DSHCapabilityShortcutsRun = @"shortcuts.run";
                                                   message:@"That shortcut name cannot be put in a URL."
                                               recoverable:NO];
 
+        NSString *shownName = DSHDisplayValue(name, 80);
         NSString *detail = input.length
-            ? [NSString stringWithFormat:@"DSH wants to run your shortcut “%@” with this input:\n\n%@\n\nDSH will close while it runs.", name, input.length > 200 ? [[input substringToIndex:200] stringByAppendingString:@"…"] : input]
-            : [NSString stringWithFormat:@"DSH wants to run your shortcut “%@”. DSH will close while it runs.", name];
+            ? [NSString stringWithFormat:@"DSH wants to run your shortcut “%@” with this input:\n\n“%@”\n\nDSH will close while it runs.", shownName, DSHDisplayValue(input, 200)]
+            : [NSString stringWithFormat:@"DSH wants to run your shortcut “%@”. DSH will close while it runs.", shownName];
         DSHConfirmationOutcome outcome = [DSHCallConfirmation confirmTitle:@"Run a shortcut?" detail:detail
                                                                 capability:DSHCapabilityShortcutsRun];
         DSHHostBridgeResponse *refusal = [DSHCallConfirmation refusalFor:outcome
-                                                                 action:[NSString stringWithFormat:@"running the shortcut “%@”", name]];
+                                                                 action:[NSString stringWithFormat:@"running the shortcut “%@”", shownName]];
         if (refusal)
             return refusal;
 

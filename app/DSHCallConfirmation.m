@@ -20,6 +20,60 @@ static NSUInteger sPresentedCount = 0;
 static BOOL sPromptUp = NO;
 static NSLock *sLock = nil;
 
+NSString *DSHDisplayValue(NSString *value, NSUInteger limit) {
+    if (![value isKindOfClass:NSString.class] || value.length == 0)
+        return @"";
+
+    // Control characters and the bidi overrides, which are formatting rather
+    // than control and so survive a plain control-character filter.
+    static NSCharacterSet *removed;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSMutableCharacterSet *set = [NSMutableCharacterSet new];
+        // Cc only, spelled out. NSCharacterSet.controlCharacterSet is Cc *and*
+        // Cf, and Cf contains the zero-width joiner: filtering the whole
+        // category takes a family emoji apart into four people and breaks
+        // Indic and Persian text that joins with ZWJ/ZWNJ on purpose.
+        [set addCharactersInRange:NSMakeRange(0x0000, 0x0020)];
+        [set addCharactersInRange:NSMakeRange(0x007F, 0x0021)];  // DEL + C1
+        [set formUnionWithCharacterSet:NSCharacterSet.illegalCharacterSet];
+        // The formatting characters that actually reorder what is displayed.
+        [set addCharactersInRange:NSMakeRange(0x202A, 5)];   // LRE RLE PDF LRO RLO
+        [set addCharactersInRange:NSMakeRange(0x2066, 4)];   // LRI RLI FSI PDI
+        [set addCharactersInRange:NSMakeRange(0x200E, 2)];   // LRM RLM
+        [set addCharactersInRange:NSMakeRange(0x061C, 1)];   // ALM
+        // Tabs and newlines are Cc, and the whitespace collapse below turns
+        // them into a single space rather than joining the words either side.
+        [set removeCharactersInRange:NSMakeRange(0x0009, 1)];
+        [set removeCharactersInRange:NSMakeRange(0x000A, 1)];
+        [set removeCharactersInRange:NSMakeRange(0x000D, 1)];
+        removed = set;
+    });
+
+    NSString *stripped = [[value componentsSeparatedByCharactersInSet:removed] componentsJoinedByString:@""];
+    NSArray *words = [stripped componentsSeparatedByCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    NSMutableArray *kept = [NSMutableArray array];
+    for (NSString *word in words)
+        if (word.length) [kept addObject:word];
+    NSString *flat = [kept componentsJoinedByString:@" "];
+
+    if (flat.length > limit) {
+        // Enumerating gives grapheme clusters, ZWJ sequences included;
+        // -rangeOfComposedCharacterSequencesForRange: does not span a ZWJ and
+        // cuts a family emoji apart. Whole clusters only, so the result can
+        // come in under the limit rather than over it.
+        __block NSUInteger cut = 0;
+        [flat enumerateSubstringsInRange:NSMakeRange(0, flat.length)
+                                 options:NSStringEnumerationByComposedCharacterSequences
+                              usingBlock:^(NSString *sub, NSRange range, NSRange enclosing, BOOL *stop) {
+            if (NSMaxRange(range) > limit) { *stop = YES; return; }
+            cut = NSMaxRange(range);
+        }];
+        flat = [[flat substringToIndex:cut] stringByAppendingString:@"…"];
+    }
+    return flat;
+}
+
 @implementation DSHCallConfirmation
 
 + (void)initialize {

@@ -345,6 +345,65 @@ Two consequences, both load-bearing:
 All read types are requested in a single sheet, so the user makes one decision
 with a full view of what is being asked for.
 
+### The threat model this is all actually for
+
+The capability set crossed a line the moment writes were added, and it is worth
+naming what the shape now is.
+
+The agent **reads** content that people other than the user wrote: an invitation
+from a stranger sitting in the calendar, a note on a contact, a file that was
+imported, whatever `curl` returned in the guest. The agent also **writes** to
+the device: events, reminders, notifications, shortcuts. Both halves are in one
+loop, and the thing in the middle is a language model that cannot reliably tell
+an instruction it was given from an instruction it merely read. Text inside a
+calendar event can try to steer the model into `shortcut_run`, and nothing in
+the model's architecture prevents it from complying.
+
+**The confirmation is the mitigation, and it is a good one** — every write is
+shown to a human in concrete terms before it happens, and no amount of
+persuading the model produces a tap. But that only holds while the alert says
+what is really about to happen. The agent writes part of the alert: the title of
+the event, the name of the file, the input to the shortcut. So the attacker
+writes part of it too, one step removed.
+
+Three ways a value could stop the alert from telling the truth:
+
+1. **It writes its own paragraphs.** A title containing newlines can continue
+   the alert in DSH's voice — `Lunch\n\nIn Personal.\n\nNo action needed, tap
+   Add to dismiss.` The user reads a sentence DSH never wrote.
+2. **It buries the part that matters.** Five thousand characters of title push
+   *which calendar* and *when* past the bottom of the alert, so what remains
+   visible is only what the attacker chose.
+3. **It displays as something other than what it is.** Bidi overrides reorder
+   the rendering without changing the stored value, so the string the user reads
+   and the event that gets created are different strings. Other control
+   characters render as nothing at all.
+
+`DSHDisplayValue` (see `DSHCallConfirmation.h`) is the answer to all three:
+whitespace collapses so a value is one run, the value is clamped with a visible
+ellipsis, and control characters and bidi overrides are removed rather than
+rendered. Every agent-chosen value interpolated into an alert goes through it.
+Alert **titles** are static strings, always — the sentence naming the effect is
+never one the agent can influence.
+
+This does not make attacker-chosen text safe to believe. It makes it
+identifiable: what reaches the screen is one bounded run inside quotation marks,
+and every word outside those quotes is DSH's.
+
+**A related instance, found in the emulator rather than here.** hterm implements
+OSC 8, so the guest could print a terminal hyperlink whose visible text and
+target differ, and `+[UIApplication openURL:]` accepted any scheme — including
+`shortcuts://run-shortcut`, which would have run a shortcut without passing this
+gate at all. Terminal links are now restricted to web schemes. It is the same
+problem in a different pane: attacker-chosen text rendered where the user
+reasonably reads it as the app's own.
+
+**What is still open.** `notify` posts a system notification whose title and
+body the agent writes; it is clamped but it is not confirmed, and a notification
+looks like it came from DSH. Grouping the activity timeline by turn, and using
+it to answer "what did the agent read just before it did that", both remain
+undone and are what would turn this record into forensics.
+
 ## 5. Delivery plan
 
 Phase-by-phase status, plus the work that is independent of this bridge, lives

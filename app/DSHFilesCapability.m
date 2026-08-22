@@ -167,9 +167,9 @@ static const NSTimeInterval kPickerTimeout = 120;
         DSHConfirmationOutcome outcome =
             [DSHCallConfirmation confirmTitle:@"Save a file out of DSH?"
                                        detail:[NSString stringWithFormat:@"DSH wants to save “%@” (%.1f KB). You will choose where it goes.",
-                                               safeName, data.length / 1024.0]
+                                               DSHDisplayValue(safeName, 80), data.length / 1024.0]
                                    capability:DSHCapabilityFilesExport];
-        DSHHostBridgeResponse *refusal = [DSHCallConfirmation refusalFor:outcome action:[NSString stringWithFormat:@"saving “%@”", safeName]];
+        DSHHostBridgeResponse *refusal = [DSHCallConfirmation refusalFor:outcome action:[NSString stringWithFormat:@"saving “%@”", DSHDisplayValue(safeName, 80)]];
         if (refusal)
             return refusal;
 
