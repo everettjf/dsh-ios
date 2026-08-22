@@ -10,6 +10,8 @@
 <p align="center">
   <a href="https://xnu.app/dsh-ios/">Project page</a> ·
   <a href="README.zh.md">中文说明</a> ·
+  <a href="docs/dsh-ios-walkthrough.mp4">12-second walkthrough</a> ·
+  <a href="https://discord.gg/eGzEaP6TzR">Discord</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#tests">Tests</a> ·
@@ -28,6 +30,8 @@ emulator, boots a bundled Alpine Linux image with Node.js 22 and
 `@deepseek-ai/dsh`, supervises `dsh web`, and shows the harness's own web UI in
 a `WKWebView`. The agent loop, sessions, tools and the shell all run on the
 device; only the model API calls leave it.
+
+▶ **[Watch the 12-second product walkthrough](docs/dsh-ios-walkthrough.mp4)** — real-device first launch, the full workspace, and the iPhone interface.
 
 | Real iPad Air (M3, iPadOS 27) — first launch | Sessions & workspace |
 |---|---|

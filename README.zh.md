@@ -10,6 +10,8 @@
 <p align="center">
   <a href="https://xnu.app/dsh-ios/">项目主页</a> ·
   <a href="README.md">English</a> ·
+  <a href="docs/dsh-ios-walkthrough.mp4">12 秒产品导览</a> ·
+  <a href="https://discord.gg/eGzEaP6TzR">Discord</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#工作原理">工作原理</a> ·
   <a href="#测试">测试</a> ·
@@ -27,6 +29,8 @@ DSH 是一个原生 iOS app：它内嵌 [iSH-ARM64](ish-arm64) 用户态 Linux �
 Alpine Linux 镜像（含 Node.js 22 和 `@deepseek-ai/dsh`），托管 `dsh web` 进程，并在
 `WKWebView` 里显示 harness 自己的 Web 界面。Agent 循环、会话、工具、shell 全部在设备本地
 运行，只有模型 API 请求会离开设备。
+
+▶ **[观看 12 秒产品导览](docs/dsh-ios-walkthrough.mp4)**——包含真机首次启动、完整工作区和 iPhone 界面。
 
 | iPad Air 真机（M3，iPadOS 27）首次启动 | 会话与工作区 |
 |---|---|
