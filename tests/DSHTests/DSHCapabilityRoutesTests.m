@@ -23,6 +23,8 @@
 #import <Contacts/Contacts.h>
 #import "DSHNotificationCapability.h"
 #import "DSHFilesCapability.h"
+#import "DSHPhotosCapability.h"
+#import "DSHShareCapability.h"
 #import "DSHShortcutsCapability.h"
 #import "DSHEventKitCapability.h"
 
@@ -41,6 +43,8 @@
     [DSHContactsCapability installOn:self.bridge];
     [DSHNotificationCapability installOn:self.bridge];
     [DSHFilesCapability installOn:self.bridge];
+    [DSHPhotosCapability installOn:self.bridge];
+    [DSHShareCapability installOn:self.bridge];
     [DSHShortcutsCapability installOn:self.bridge];
     [DSHEventKitCapability installOn:self.bridge];
     // Capabilities ship on now; these suites assert what happens when one is off,
@@ -95,10 +99,12 @@
 /// Capabilities ship on, so every one of them has to carry a real gate underneath:
 /// a switch on its own protects nothing once the switch starts out closed.
 - (void)testEveryCapabilityThatShipsOnHasAGateUnderTheSwitch {
-    // device.info returns no user data. files.import cannot return anything at all
-    // until the user picks a file in the system document picker, so the interaction
-    // is the gate even though the enum has no name for it.
-    NSArray *gatedByTheirOwnInteraction = @[@"device.info", @"files.import"];
+    // device.info returns no user data. files.import and photos.import cannot
+    // return anything at all until the user picks something in a system picker
+    // that runs outside this process, so the interaction is the gate even though
+    // the enum has no name for it. Nothing else may claim that exemption: it
+    // only holds when the route's whole payload is what a person handed over.
+    NSArray *gatedByTheirOwnInteraction = @[@"device.info", @"files.import", @"photos.import"];
     for (DSHCapability *capability in DSHCapabilityRegistry.shared.capabilities) {
         if (!capability.enabledByDefault) continue;
         if ([gatedByTheirOwnInteraction containsObject:capability.identifier]) continue;
@@ -407,6 +413,51 @@
     // both are refusals, and neither may create anything.
     XCTAssertTrue(status == 403, @"unexpected status %ld", (long) status);
     XCTAssertEqualObjects(json[@"error"][@"code"], @"permission_denied");
+}
+
+/// Photos and the share sheet, added last, have to obey the same contract as
+/// everything before them: refused when switched off, before any UI appears.
+- (void)testPhotosAndShareAreRefusedWhileSwitchedOff {
+    DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
+    [registry setEnabled:NO forIdentifier:@"photos.import"];
+    [registry setEnabled:NO forIdentifier:@"share.present"];
+
+    NSInteger status = 0;
+    [self send:@"POST" path:@"/v1/photos/import" body:@{} status:&status];
+    XCTAssertEqual(status, 403, @"photo import must refuse before showing a picker");
+    [self send:@"POST" path:@"/v1/share" body:@{@"text": @"hello"} status:&status];
+    XCTAssertEqual(status, 403, @"share must refuse before showing a sheet");
+}
+
+/// The library is never listed, counted or searched — a human hands over one
+/// photo or the agent gets nothing. Asserted as the absence of any other route.
+- (void)testThereIsNoRouteThatReadsTheLibrary {
+    for (NSString *path in @[@"/v1/photos", @"/v1/photos/list", @"/v1/photos/search"]) {
+        NSInteger status = 0;
+        [self send:@"GET" path:path body:nil status:&status];
+        XCTAssertEqual(status, 404, @"%@ should not exist", path);
+    }
+}
+
+/// Sharing is the agent choosing the words and the user choosing the
+/// destination, so it validates before it asks rather than putting a
+/// confirmation in front of a request that was never going to work.
+- (void)testShareValidatesItsTextBeforeAskingAnyone {
+    DSHCapabilityRegistry *registry = DSHCapabilityRegistry.shared;
+    [registry setEnabled:YES forIdentifier:@"share.present"];
+    NSUInteger before = DSHCallConfirmation.presentedCount;
+
+    NSInteger status = 0;
+    [self send:@"POST" path:@"/v1/share" body:@{} status:&status];
+    XCTAssertEqual(status, 400, @"no text at all");
+    NSString *huge = [@"" stringByPaddingToLength:DSHShareCapability.maximumCharacters + 1
+                                       withString:@"x" startingAtIndex:0];
+    [self send:@"POST" path:@"/v1/share" body:@{@"text": huge} status:&status];
+    XCTAssertEqual(status, 413, @"over the ceiling");
+
+    XCTAssertEqual(DSHCallConfirmation.presentedCount, before,
+                   @"the user was asked about a call that could not run");
+    [registry setEnabled:NO forIdentifier:@"share.present"];
 }
 
 @end

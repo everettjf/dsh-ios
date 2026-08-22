@@ -127,6 +127,8 @@ BRIDGE_TOOL_CASES=(
     "reminders_create|{\"title\":\"Buy milk\"}|Added.*Buy milk.*to Home"
     "file_import|{}|picked.*notes[.]txt"
     "file_export|{\"name\":\"report.md\",\"base64\":\"aGVsbG8=\"}|Saved.*report[.]md"
+    "photo_import|{}|picked.*IMG_0042"
+    "share|{\"text\":\"hello there\"}|shared the text"
     "shortcut_run|{\"name\":\"Log Water\"}|Started the shortcut"
 )
 for bridge_case in "${BRIDGE_TOOL_CASES[@]}"; do

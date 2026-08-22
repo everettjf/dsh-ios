@@ -167,6 +167,8 @@ app 内运行一个 loopback HTTP 服务，guest 里的 dsh 工具通过它访�
 | `file_import` | 你挑一个文件交给 agent | 文件选择器本身即确认 |
 | `calendar_create_event`、`reminders_create` | 新建事件/提醒 | **每次都问** |
 | `file_export` | 从 DSH 导出文件 | **每次都问** |
+| `photo_import` | 一张照片，由你在系统选择器里挑 | 开关（选择器即为门） |
+| `share` | 把文本交给 iOS 分享面板 | 开关 + 每次确认 |
 | `shortcut_run` | 运行你的某个快捷指令 | **每次都问** |
 
 照片和分享已完成设计但尚未实现——每加一个能力 = app 侧一个路由 + guest 插件里一个 tool。

@@ -95,6 +95,12 @@ const server = http.createServer((req, res) => {
   } else if (path === '/v1/files/import') {
     // "STUB-FILE-CONTENT" base64-encoded.
     send(200, { name: 'notes.txt', bytes: 17, base64: 'U1RVQi1GSUxFLUNPTlRFTlQ=' });
+  } else if (path === '/v1/photos/import') {
+    // A one-pixel PNG, so the shape is a real image rather than a placeholder.
+    send(200, { name: 'IMG_0042.jpeg', type: 'public.jpeg', bytes: 68,
+                base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' });
+  } else if (path === '/v1/share') {
+    send(200, { shared: true, note: 'The user shared the text. Where it went is not reported.' });
   } else if (path === '/v1/files/export') {
     send(200, { saved: true, name: 'report.md', bytes: 5 });
   } else if (path === '/v1/shortcut/run') {

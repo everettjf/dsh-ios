@@ -756,6 +756,54 @@ export function apply(ctx) {
   }));
 
   ctx.tools.register(defineTool({
+    name: "photo_import",
+    description:
+      "Ask the user to hand you a photo: opens the iOS photo picker and returns the chosen image, base64-encoded. " +
+      "There is no way to list, search or count the library — a person has to pick each one. " +
+      "The user may close the picker without choosing, which is a normal answer, not an error to retry.",
+    parameters: {},
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string" },
+          type: { type: "string" },
+          bytes: { type: "number" },
+          base64: { type: "string" },
+        },
+      },
+      render: (_args, value) => [{ type: "text", text: `The user picked “${value.name}” (${value.bytes} bytes).` }],
+    },
+    execute: () => call("/v1/photos/import", { method: "POST", body: {} }),
+    presentCall: () => ({ card: "generic", title: "Ask the user for a photo", kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
+    name: "share",
+    description:
+      "Offer text to the iOS share sheet, so the user can send it on — a message, a note, AirDrop. " +
+      "DSH shows the user the text and asks first, then they choose where it goes. " +
+      "Where they sent it is not reported back; you learn only whether they shared it or dismissed the sheet.",
+    parameters: {
+      text: { type: "string", description: "The text to share. Required, at most 4000 characters." },
+    },
+    output: {
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { shared: { type: "boolean" }, note: { type: "string" } },
+      },
+      render: (_args, value) => [{ type: "text", text: value.note }],
+    },
+    execute: ({ text }) => {
+      if (!text) throw new Error("text is required");
+      return call("/v1/share", { method: "POST", body: { text } });
+    },
+    presentCall: () => ({ card: "generic", title: "Offer text to the share sheet", kind: "other" }),
+  }));
+
+  ctx.tools.register(defineTool({
     name: "shortcut_run",
     description:
       "Run one of the user's own Shortcuts by name, optionally with text input. Two things to understand before using it:\n" +

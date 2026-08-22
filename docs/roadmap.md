@@ -22,7 +22,10 @@ which this plan references rather than repeats.
 | Activity record: every capability call and every guest tool call, with a viewer | done |
 | Calendar and Reminders: creating, not just reading | done |
 | Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Tests: emulator 3, rootfs 31, app 93 (device + simulator), UI 6 | done |
+| Photos (import) and the share sheet | done |
+| Prompt-injection threat model, and every alert value sanitised | done |
+| A turn interrupted by the background is explained on the way back | done |
+| Tests: emulator 3, rootfs 33, app 110 (device + simulator), UI 6 | done |
 | Capabilities ship on; the switch turns them off | done |
 | One-command release: bump, test, archive, upload (`scripts/release.sh`) | done |
 | Distribution: TestFlight (internal) and build-it-yourself | partly open |
@@ -40,7 +43,13 @@ reaches a live capability set rather than one the user had to go and enable.
 The ordering below is an argument, not a backlog: each item says why it comes
 before the one after it.
 
-### 1. Audit the rest of the emulator's surface
+### 1. Audit the rest of the emulator's surface — *done*
+
+Two findings, both fixed and both with end-to-end tests: the guest could mount
+a real iOS directory with a grant that survived silently across launches, and a
+terminal hyperlink could open any URL scheme, `shortcut://run-shortcut`
+included. Five other surfaces were checked and found already shut. The original
+argument is kept below because it is why this came first.
 
 **Why first:** the whole value proposition of the capability system is the
 sentence "the app decides, per capability, and nothing reaches iOS without
@@ -83,7 +92,7 @@ Two things it does *not* do yet, both deliberately deferred: grouping a
 timeline by turn, and using it for injection forensics (what did the agent read
 just before it did that). Both want the threat model below to exist first.
 
-### 3. Write down the prompt-injection threat model — and check the copy against it
+### 3. Write down the prompt-injection threat model — *done*
 
 **Why third:** the capability set crossed a line and the docs have not caught
 up. The agent now *reads* attacker-influenceable content (calendar invites from
@@ -105,10 +114,14 @@ truth?" Likely outcomes: quote and length-clamp interpolated values, keep
 attacker-controlled text visually distinct from DSH's own words, and never let
 it occupy the title.
 
-**Cost:** small in code, and it is the kind of thing that is very expensive to
-add after somebody is hurt by it.
+**What landed:** the threat model is in [host-bridge.md](host-bridge.md), and
+`DSHDisplayValue` now stands between every agent-chosen value and the alert it
+appears in — whitespace collapsed, length clamped, bidi overrides and control
+characters removed. Titles were already static. What is still open is named
+there too: `notify` writes a system notification that looks like DSH's own, and
+the record cannot yet say what the agent read just before it acted.
 
-### 4. Backgrounding, or: make a turn survivable
+### 4. Backgrounding, or: make a turn survivable — *two of three tiers*
 
 **Why fourth:** it is the largest usability ceiling, but it is genuinely hard,
 and the three items above are cheap and make it easier. iOS suspends the app,
@@ -132,13 +145,31 @@ Anything that pretends the app keeps running in the background (silent audio
 and friends) is off the table: it drains the battery, and it is the kind of
 trick that gets an app removed rather than shipped.
 
-### 5. Photos and the share sheet
+**What landed:** the first two. `DSHTurnPresence` holds a background task
+assertion on the way out, so a step already in flight finishes instead of being
+cut mid-write, and it notices that a turn was in progress when the app left and
+says so in the bar on the way back — at the moment the user is looking at a
+stalled conversation, rather than as a warning in front of the app they were
+switching to.
 
-**Why fifth:** they are the last two entries in the capability matrix that need
+**What did not:** resumable turns. It stays open on purpose. Keeping enough
+state to pick a turn up again is a change to the harness rather than to this
+app, and the right first move is still to raise it upstream rather than build
+something bespoke here.
+
+### 5. Photos and the share sheet — *done*
+
+**Why fifth:** they were the last two entries in the capability matrix needing
 no new mechanism — `PHPickerViewController` where the picker is the consent
 (like file import), and a per-call write for the share sheet. Mechanical, and
-therefore the right thing to do *after* the structural work above, not instead
-of it.
+therefore the right thing to do *after* the structural work above.
+
+Two decisions inside them. There is no route that lists, searches or counts the
+photo library: the agent cannot ask what pictures exist, a person hands it one.
+And the share sheet asks first even though it is itself a chooser — the sheet
+asks *where* the text goes, never whether text the agent wrote should leave at
+all, and a sheet appearing mid-turn with a plausible message already in it is
+the shape of a mistake.
 
 ### 6. Distribution
 

@@ -204,6 +204,8 @@ reach iOS capabilities. Shipping today:
 | `file_import` | you pick a file and hand it to the agent | the picker is the consent |
 | `calendar_create_event`, `reminders_create` | adds an event or reminder | **asks every time** |
 | `file_export` | saves a file out of DSH | **asks every time** |
+| `photo_import` | one photo, chosen by you in the system picker | switch (the picker is the gate) |
+| `share` | offers text to the iOS share sheet | switch + confirmation each time |
 | `shortcut_run` | runs one of your shortcuts | **asks every time** |
 
 Photos and the share sheet are designed but not built — each is one route in the

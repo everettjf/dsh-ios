@@ -10,6 +10,7 @@
 #import "DSHCapabilitiesViewController.h"
 #import "DSHActivityViewController.h"
 #import "DSHActivityLog.h"
+#import "DSHTurnPresence.h"
 #import "DSHStatusOverlayView.h"
 #import "TerminalViewController.h"
 #import "AppDelegate.h"
@@ -49,6 +50,9 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     [nc addObserver:self selector:@selector(logChanged:) name:DSHLogBufferDidChangeNotification object:nil];
     [nc addObserver:self selector:@selector(bootStateChanged:) name:DSHBootStateDidChangeNotification object:nil];
     [self observeActivity];
+    [DSHTurnPresence.shared start];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(turnWasInterrupted)
+                                               name:DSHTurnWasInterruptedNotification object:nil];
     [self applyHarnessState];
 }
 
@@ -362,6 +366,22 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"About DSH" message:message preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
+}
+
+#pragma mark - A turn that did not survive the background
+
+/// Long enough to read once, and it goes away on the next status update anyway.
+static const NSTimeInterval kInterruptedNoticeVisible = 8;
+
+- (void)turnWasInterrupted {
+    // The bar, not an alert: the user came back to carry on, and a dialog to
+    // dismiss first would be in the way of the thing they returned for.
+    self.titleLabel.text = @"DSH · paused while away";
+    self.titleLabel.accessibilityLabel =
+        @"A turn was running when DSH went to the background. iOS suspends the app there, "
+        @"so it made no progress while you were away.";
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(applyHarnessState) object:nil];
+    [self performSelector:@selector(applyHarnessState) withObject:nil afterDelay:kInterruptedNoticeVisible];
 }
 
 #pragma mark - Capability activity indicator

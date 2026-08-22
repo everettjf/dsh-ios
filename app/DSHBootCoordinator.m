@@ -14,6 +14,8 @@
 #import "DSHContactsCapability.h"
 #import "DSHNotificationCapability.h"
 #import "DSHFilesCapability.h"
+#import "DSHPhotosCapability.h"
+#import "DSHShareCapability.h"
 #import "DSHShortcutsCapability.h"
 #import "DSHActivityCapability.h"
 #import "AppDelegate.h"
@@ -128,6 +130,8 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     [DSHContactsCapability installOn:bridge];
     [DSHNotificationCapability installOn:bridge];
     [DSHFilesCapability installOn:bridge];
+    [DSHPhotosCapability installOn:bridge];
+    [DSHShareCapability installOn:bridge];
     [DSHShortcutsCapability installOn:bridge];
     [DSHActivityCapability installOn:bridge];
     if ([bridge start]) {
