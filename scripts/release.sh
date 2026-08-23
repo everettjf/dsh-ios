@@ -146,7 +146,8 @@ plist="$ARCHIVE/Products/Applications/DSH.app/Info.plist"
 # Apple's own validator catches these, but only after a ten-minute upload.
 for key in NSHealthShareUsageDescription NSHealthUpdateUsageDescription \
            NSCalendarsFullAccessUsageDescription NSRemindersFullAccessUsageDescription \
-           NSContactsUsageDescription NSLocationWhenInUseUsageDescription; do
+           NSContactsUsageDescription NSLocationWhenInUseUsageDescription \
+           NSLocationAlwaysAndWhenInUseUsageDescription; do
     plutil -extract "$key" raw "$plist" >/dev/null 2>&1 \
         || die "$key is missing from the archived app; App Store validation would reject it"
 done

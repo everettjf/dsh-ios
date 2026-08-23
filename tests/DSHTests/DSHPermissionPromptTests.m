@@ -55,4 +55,16 @@
     }
 }
 
+/// App Store Connect statically checks the CoreLocation API surface and requires
+/// both strings even though DSH only requests when-in-use authorization.
+- (void)testLocationUsageDescriptionsArePresent {
+    NSDictionary *info = NSBundle.mainBundle.infoDictionary;
+    for (NSString *key in @[@"NSLocationWhenInUseUsageDescription",
+                             @"NSLocationAlwaysAndWhenInUseUsageDescription"]) {
+        NSString *purpose = info[key];
+        XCTAssertGreaterThan(purpose.length, 0,
+                             @"%@ is missing; App Store validation will reject the archive", key);
+    }
+}
+
 @end

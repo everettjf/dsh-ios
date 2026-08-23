@@ -43,6 +43,8 @@
 	<string>DSH never writes to Apple Health. It only reads, and only after you switch Apple Health on in DSH ▸ Capabilities. This description is required because the app links HealthKit.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>DSH runs a local web server inside the app and connects to it over loopback.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>DSH uses your location only while you are using the app, when the agent needs it for something you asked and after you switch Location on in DSH ▸ Capabilities. DSH does not track your location in the background.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>DSH asks for your location only when the agent needs it for something you asked, and only after you switch Location on in DSH ▸ Capabilities. It never tracks you in the background.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
