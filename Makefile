@@ -58,6 +58,7 @@ test: test-emu test-rootfs test-sim
 
 test-emu: emulator
 	tests/emu-test.sh
+	tests/scripts-test.sh
 
 test-rootfs: emulator
 	tests/rootfs-test.sh
@@ -68,16 +69,16 @@ test-sim: project
 	rm -rf build/test-sim.xcresult
 	-xcrun simctl boot "$(SIM)" 2>/dev/null
 	-xcrun simctl uninstall "$(SIM)" $(BUNDLE_ID) 2>/dev/null   # start from a fresh rootfs import
-	$(XCB) -destination 'platform=iOS Simulator,name=$(SIM)' -resultBundlePath build/test-sim.xcresult test
+	$(XCB) -destination 'platform=iOS Simulator,name=$(SIM)' -collect-test-diagnostics never -resultBundlePath build/test-sim.xcresult test
 
 test-device: project
 	rm -rf build/test-device.xcresult
-	$(XCB) -destination 'id=$(DEVICE)' -resultBundlePath build/test-device.xcresult test
+	$(XCB) -destination 'id=$(DEVICE)' -collect-test-diagnostics never -resultBundlePath build/test-device.xcresult test
 
 # Unit + guest-integration tests only (no UI automation needed on the device).
 test-device-unit: project
 	rm -rf build/test-device-unit.xcresult
-	$(XCB) -destination 'id=$(DEVICE)' -only-testing:DSHTests -resultBundlePath build/test-device-unit.xcresult test
+	$(XCB) -destination 'id=$(DEVICE)' -collect-test-diagnostics never -only-testing:DSHTests -resultBundlePath build/test-device-unit.xcresult test
 
 archive: project
 	$(XCB) -destination 'generic/platform=iOS' -archivePath build/DSH.xcarchive archive

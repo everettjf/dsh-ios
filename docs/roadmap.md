@@ -25,10 +25,11 @@ which this plan references rather than repeats.
 | Photos (import) and the share sheet | done |
 | Prompt-injection threat model, and every alert value sanitised | done |
 | A turn interrupted by the background is explained on the way back | done |
-| Tests: emulator 3, rootfs 33, app 110 (device + simulator), UI 6 | done |
+| Tests: emulator 3, rootfs 37, app 111 (device + simulator), UI 6 | done |
 | Capabilities ship on; the switch turns them off | done |
 | One-command release: bump, test, archive, upload (`scripts/release.sh`) | done |
-| Distribution: TestFlight (internal) and build-it-yourself | partly open |
+| Distribution: external TestFlight and build-it-yourself | done |
+| P4 reliability: feedback triage, location/threading, release diagnostics | done |
 
 Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
 
@@ -171,16 +172,19 @@ asks *where* the text goes, never whether text the agent wrote should leave at
 all, and a sheet appearing mid-turn with a plausible message already in it is
 the shape of a mistake.
 
-### 6. Distribution
+### 6. Distribution — *external TestFlight shipped*
 
-**Where it stands now:** builds upload. `scripts/release.sh` bumps the version,
-runs every suite, archives, validates and uploads to App Store Connect, so
-internal TestFlight works and 1.0.2 is there. That settles the mechanics and
-leaves the two real questions untouched.
+**Where it stands now:** external TestFlight is live; 1.0.6 (7) is the latest
+validated upload. `scripts/release.sh` bumps the version, runs every suite,
+archives, verifies privacy purpose strings, validates and uploads. P4 also
+removed Xcode's ten-minute post-failure diagnostics stall, made simulator
+selection handle current parenthesized model names, and added regression
+coverage for the release helper itself.
 
-*External testers* need Beta App Review — the first time a reviewer looks at a
-Linux emulator that runs arbitrary code. Worth finding out early and cheaply,
-because the answer shapes everything after it.
+Tester reports now have a fixed intake and verification path in
+[testflight-feedback.md](testflight-feedback.md): every report is tied to a
+build/device/OS, triaged by impact, linked to its fix, and closed only after a
+new build or regression test verifies it.
 
 *The App Store itself* is unresolved for a reason that is not technical: the
 app is GPL-3.0 because iSH is, and the GPL sits badly with the App Store's
@@ -217,12 +221,13 @@ turn through end to end, then a decision — not a commitment up front.
 
 ## Smaller things, worth doing when they get in the way
 
-- **Startup time**, ~25 s to a usable harness, dominated by Node's jitless
-  start inside the emulator. Measure where it actually goes (module compilation
-  vs plugin tree) before optimising; a smaller default plugin set for first
-  paint is the obvious lever.
-- **Guest image size**, 95 MB compressed, mostly `node_modules`. Pruning
-  dev-only files would shrink both the download and the first-launch import.
+- **Startup time**, roughly 20–25 s to a usable harness, dominated by Node's
+  jitless start inside the emulator. The app records image/guest boot and HTTP
+  readiness separately; P4 shortened readiness polling from 500 ms to 250 ms.
+  Plugin/module profiling is the next lever, and should precede changing the
+  default plugin set.
+- **Guest image size**, 81 MB compressed after the P3 pruning pass. Any further
+  pruning needs the rootfs native-module and end-to-end agent tests to stay green.
 - **Upstream the emulator fixes.** The NEON conversion gadgets, the
   FMOV-immediate decoding fix, the `waitpid` EINTR fix and the `lld` probe are
   self-contained and useful to iSH-ARM64 generally — see

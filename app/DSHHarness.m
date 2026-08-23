@@ -171,7 +171,9 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
     self.guestPid = pid;
     [self.log append:[NSString stringWithFormat:@"[dsh-ios] guest pid %d", pid]];
 
-    self.probe = [[DSHReadinessProbe alloc] initWithURL:self.baseURL interval:0.5 timeout:self.startupTimeout];
+    // A shorter interval trims up to 250 ms from the visible startup tail
+    // without adding meaningful work during the roughly 20-second guest boot.
+    self.probe = [[DSHReadinessProbe alloc] initWithURL:self.baseURL interval:0.25 timeout:self.startupTimeout];
     [self.probe startWithHandler:^(BOOL ready, NSTimeInterval elapsed) {
         typeof(self) self = weakSelf;
         if (self == nil || generation != self.launchGeneration)

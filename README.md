@@ -90,7 +90,7 @@ without it.)
 ```bash
 git clone https://github.com/everettjf/dsh-ios.git && cd dsh-ios
 make emulator        # iSH-ARM64 CLI + fakefsify (used to build and test the guest image)
-make rootfs          # build/root.tar.gz — Alpine + Node 22 + dsh (~95 MB, ~6 min, needs network)
+make rootfs          # build/root.tar.gz — Alpine + Node 22 + dsh (~81 MB, ~6 min, needs network)
 open DSH.xcodeproj   # DSH scheme → your iPad → set the team → Run
 ```
 

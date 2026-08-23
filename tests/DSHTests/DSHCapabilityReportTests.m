@@ -120,8 +120,9 @@
     NSLog(@"[dsh-report] ---- capability report ----");
 
     // Permission states first, so a refusal below has an explanation next to it.
-    NSLog(@"[dsh-report] location services enabled: %@, authorization: %ld",
-          CLLocationManager.locationServicesEnabled ? @"YES" : @"NO",
+    // Do not call +locationServicesEnabled from this main-thread XCTest. The
+    // location route checks it on a worker queue before requesting a fix.
+    NSLog(@"[dsh-report] location authorization: %ld",
           (long) [CLLocationManager new].authorizationStatus);
     NSLog(@"[dsh-report] contacts authorization: %ld",
           (long) [CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts]);

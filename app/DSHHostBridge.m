@@ -13,7 +13,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-static const NSUInteger kMaxRequestBytes = 256 * 1024;   // plenty for JSON arguments
+// An 8 MB exported file expands to about 10.7 MB as base64 inside JSON. Keep
+// the transport ceiling above the capability ceiling while still bounding
+// memory before JSON parsing.
+static const NSUInteger kMaxRequestBytes = 12 * 1024 * 1024;
 static const NSTimeInterval kSocketTimeout = 15;
 
 #pragma mark - Response

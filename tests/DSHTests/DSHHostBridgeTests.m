@@ -7,6 +7,9 @@
 //
 
 #import <XCTest/XCTest.h>
+#import <arpa/inet.h>
+#import <sys/socket.h>
+#import <unistd.h>
 #import "DSHHostBridge.h"
 #import "DSHCapability.h"
 #import "DSHDeviceCapability.h"
@@ -183,12 +186,22 @@
 }
 
 - (void)testBodyLargerThanTheLimitIsRefused {
-    NSMutableString *huge = [NSMutableString string];
-    while (huge.length < 300 * 1024)
-        [huge appendString:@"0123456789"];
-    NSInteger status = 0;
-    [self request:@"POST" path:@"/v1/device" token:self.bridge.token body:@{ @"pad": huge } host:nil status:&status];
-    XCTAssertEqual(status, 413);
+    // Announce an oversized body without uploading 12 MB. The bridge must
+    // reject from Content-Length before waiting for or allocating the body.
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in address = { .sin_len = sizeof(address), .sin_family = AF_INET,
+        .sin_port = htons(self.bridge.port), .sin_addr.s_addr = htonl(INADDR_LOOPBACK) };
+    XCTAssertEqual(connect(fd, (struct sockaddr *) &address, sizeof(address)), 0);
+    NSString *head = [NSString stringWithFormat:
+        @"POST /v1/device HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer %@\r\nContent-Length: 12582913\r\n\r\n",
+        self.bridge.token];
+    NSData *bytes = [head dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertEqual(send(fd, bytes.bytes, bytes.length, 0), (ssize_t) bytes.length);
+    char response[512] = {0};
+    ssize_t count = recv(fd, response, sizeof(response) - 1, 0);
+    close(fd);
+    XCTAssertGreaterThan(count, 0);
+    XCTAssertNotEqual(strstr(response, "HTTP/1.1 413"), NULL);
 }
 
 - (void)testStopClosesThePort {

@@ -1,0 +1,49 @@
+name: TestFlight feedback
+description: Report a problem found in an external TestFlight build
+title: "[TestFlight] "
+labels: ["testflight", "feedback"]
+body:
+  - type: input
+    id: build
+    attributes:
+      label: App version and build
+      description: Find this in DSH ⋯ ▸ About DSH or the TestFlight app.
+      placeholder: "1.0.6 (7)"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS
+      placeholder: "iPad Air (M3), iPadOS 27.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Impact
+      options:
+        - App cannot start or data may be lost
+        - Core feature is blocked
+        - Feature works incorrectly but has a workaround
+        - Cosmetic or suggestion
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Start from a known screen and include whether this happens every time.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Attach screenshots and the relevant ⋯ ▸ Server Log tail. Remove API keys, tokens, personal data, and conversation contents first.

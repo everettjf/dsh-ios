@@ -14,6 +14,19 @@ NSString *const DSHCapabilityLocationRead = @"location.read";
 /// A first fix usually lands in a second or two indoors, longer from cold.
 static const NSTimeInterval kFixTimeout = 12;
 
+/// Core Location warns when this process-wide check runs on the main thread.
+/// Bridge routes normally execute on a worker queue, but keeping the helper
+/// safe also protects tests and future callers.
+static BOOL DSHLocationServicesEnabled(void) {
+    if (!NSThread.isMainThread)
+        return CLLocationManager.locationServicesEnabled;
+    __block BOOL enabled = NO;
+    dispatch_sync(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        enabled = CLLocationManager.locationServicesEnabled;
+    });
+    return enabled;
+}
+
 @interface DSHLocationFix : NSObject <CLLocationManagerDelegate>
 /// Asks iOS for access and keeps itself alive until the user answers.
 + (void)prompt;
@@ -92,7 +105,10 @@ static DSHLocationFix *sPrompt;
                                           details:@"One fix at a time, when the agent asks. DSH never tracks you in the background."
                                              gate:DSHCapabilityGateSystemPermission
                                  enabledByDefault:YES
-                                        available:CLLocationManager.locationServicesEnabled];
+                                        // Core Location is present on every supported iOS
+                                        // device. Whether the global service is switched on
+                                        // is checked only when a route is actually used.
+                                        available:YES];
     capability.requestSystemPermission = ^{
         [DSHLocationFix prompt];
         [DSHHarness.shared.log append:@"[bridge] asked for location access"];
@@ -101,6 +117,10 @@ static DSHLocationFix *sPrompt;
 
     [bridge registerRoute:@"GET" path:@"/v1/location" capability:DSHCapabilityLocationRead
                   handler:^DSHHostBridgeResponse *(DSHHostBridgeRequest *request) {
+        if (!DSHLocationServicesEnabled())
+            return [DSHHostBridgeResponse errorWithStatus:503 code:@"unavailable"
+                                                  message:@"Location Services are turned off in iOS Settings ▸ Privacy & Security ▸ Location Services."
+                                              recoverable:YES];
         DSHLocationFix *fix = [DSHLocationFix new];
         CLAuthorizationStatus status = [fix status];
         if (status == kCLAuthorizationStatusNotDetermined) {
