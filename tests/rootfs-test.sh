@@ -22,7 +22,7 @@ ok()  { pass=$((pass+1)); printf '  \033[32mPASS\033[0m %s\n' "$*"; }
 bad() { fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s\n' "$*"; }
 # check <name> <command...>: runs the command (no eval), records the result
 check() { local name="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$name"; else bad "$name"; fi; }
-filter() { grep -v --line-buffered 'expose_wasm' || true; }
+filter() { sed '/expose_wasm/d'; }
 # A guest process that starts while the previous one is still tearing down can
 # lose the fakefs lock and print nothing; every command here has output, so
 # an empty result means "try again".
@@ -60,6 +60,14 @@ sed 's/^/     /' "$WORK/sanity.txt"
 check "node >= 22.19 in guest" grep -Eq '^v(22\.(19|[2-9][0-9])|2[3-9]|[3-9][0-9])' "$WORK/sanity.txt"
 check "dsh 0.1.x in guest"      grep -Eq '^0\.1\.' "$WORK/sanity.txt"
 check "dsh-selftest passes"     grep -q 'SELFTEST OK' "$WORK/sanity.txt"
+check "sharp keeps musl arm64 runtime" test -d "$WORK/fakefs/data/usr/local/lib/node_modules/@img/sharp-linuxmusl-arm64"
+check "sharp drops unusable glibc runtime" test ! -e "$WORK/fakefs/data/usr/local/lib/node_modules/@img/sharp-linux-arm64"
+check "sharp drops unusable wasm fallback" test ! -e "$WORK/fakefs/data/usr/local/lib/node_modules/@img/sharp-wasm32"
+if find "$WORK/fakefs/data" -name '._*' -print -quit | grep -q .; then
+    bad "rootfs contains no macOS AppleDouble files"
+else
+    ok "rootfs contains no macOS AppleDouble files"
+fi
 
 echo "== profile composition"
 guest 'export HOME=/root; node --expose-internals /usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile web --dump-config' > "$WORK/config.yml"
