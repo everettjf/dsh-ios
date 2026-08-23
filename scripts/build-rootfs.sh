@@ -25,7 +25,10 @@ log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 # The guest node prints this warning on every start; strip it from build logs.
-filter() { grep -v --line-buffered 'expose_wasm' || true; }
+# `sed` deliberately returns success for empty input while `pipefail` still
+# propagates a failing emulator command.  The old `grep ... || true` hid guest
+# failures and could export a corrupt image as a successful build.
+filter() { sed '/expose_wasm/d'; }
 
 ish() {
     # ish <script-on-stdin>; runs /bin/sh inside the fakefs
@@ -69,13 +72,24 @@ log "Guest phase 2: install node_modules + polyfills + overlay"
 # node polyfills, our overlay) and stream it into the guest in a single pass.
 rm -rf payload && mkdir -p payload/usr/local/lib payload/lib
 mv stage/node_modules payload/usr/local/lib/node_modules
+# npm retains every optional sharp binary named in the lockfile even when the
+# target is pinned to linux/arm64/musl.  The glibc build cannot load on Alpine,
+# and the wasm fallback cannot run under DSH's jitless Node.  Keep only the
+# musl/arm64 pair that sharp actually selects in the guest.  Also strip macOS
+# AppleDouble files before they become tens of thousands of fakefs entries.
+rm -rf payload/usr/local/lib/node_modules/@img/sharp-linux-arm64 \
+       payload/usr/local/lib/node_modules/@img/sharp-libvips-linux-arm64 \
+       payload/usr/local/lib/node_modules/@img/sharp-wasm32
 cp "$ISH_SRC"/app/RootfsPatch.bundle/files/lib/*.js payload/lib/
 # Record the overlay version so the app does not re-apply (and downgrade) the
 # same RootfsPatch files on first launch.
 overlay_ver=$(/usr/libexec/PlistBuddy -c 'Print :version' "$ISH_SRC/app/RootfsPatch.bundle/manifest.plist")
 mkdir -p payload/ish && printf '%s\n' "$overlay_ver" > payload/ish/overlay-version
 cp -R "$ROOT/rootfs/overlay/." payload/
-tar czf payload.tgz -C payload .
+find payload -name '._*' -delete
+# BSD tar otherwise serialises extended attributes as AppleDouble `._*` files
+# when this payload is unpacked by the Linux guest.
+COPYFILE_DISABLE=1 tar czf payload.tgz -C payload .
 "$ISH_BUILD/ish" -f "$WORK/fakefs" /bin/sh -c 'cd / && tar xzf -' < payload.tgz 2>&1 | filter
 
 log "Guest phase 3: node-pty rebuild for musl, profile, cleanup"
