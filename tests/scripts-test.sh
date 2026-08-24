@@ -7,7 +7,7 @@ trap 'rm -f "$fixture"' EXIT
 
 printf '%s\n' \
   '== Devices ==' \
-  '-- iOS 27.0 --' \
+  '-- iOS 26.0 --' \
   '    iPad Pro 13-inch (M5) (CB894F29-D83F-492A-8927-18D23BC76403) (Shutdown) ' \
   '    iPhone 17 Pro (3135C53E-C4EA-4D81-B488-6692757B524C) (Shutdown)' > "$fixture"
 

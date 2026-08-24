@@ -28,6 +28,12 @@ NSString *DSHModelProviderName(DSHModelProvider provider) {
     return provider == DSHModelProviderDeepSeekAPI ? @"DeepSeek API" : @"Apple PCC";
 }
 
+BOOL DSHApplePCCSupported(void) {
+    if (@available(iOS 27.0, *))
+        return YES;
+    return NO;
+}
+
 // -boot lives in iSH's AppDelegate implementation; it is safe to run on any
 // single thread because `current` is thread-local.
 @interface AppDelegate (DSHBoot)
@@ -46,12 +52,14 @@ NSString *DSHModelProviderName(DSHModelProvider provider) {
 @implementation DSHBootCoordinator
 
 - (DSHModelProvider)modelProvider {
+    if (!DSHApplePCCSupported())
+        return DSHModelProviderDeepSeekAPI;
     NSInteger stored = [NSUserDefaults.standardUserDefaults integerForKey:kDSHModelProviderKey];
     return stored == DSHModelProviderDeepSeekAPI ? DSHModelProviderDeepSeekAPI : DSHModelProviderApplePCC;
 }
 
 - (void)setModelProvider:(DSHModelProvider)modelProvider {
-    DSHModelProvider normalized = modelProvider == DSHModelProviderDeepSeekAPI
+    DSHModelProvider normalized = !DSHApplePCCSupported() || modelProvider == DSHModelProviderDeepSeekAPI
         ? DSHModelProviderDeepSeekAPI : DSHModelProviderApplePCC;
     if (self.modelProvider == normalized)
         return;

@@ -30,6 +30,8 @@ typedef NS_ENUM(NSInteger, DSHModelProvider) {
 };
 
 NSString *DSHModelProviderName(DSHModelProvider provider);
+/// YES on iOS/iPadOS 27 and later, where Apple PCC can be selected.
+BOOL DSHApplePCCSupported(void);
 
 extern NSNotificationName const DSHBootStateDidChangeNotification;
 
@@ -44,7 +46,8 @@ extern NSNotificationName const DSHBootStateDidChangeNotification;
 @property (nonatomic, readonly, copy) NSString *statusMessage;
 /// Kernel boot result (0 = success); valid once the phase is Ready or Failed.
 @property (nonatomic, readonly) int bootError;
-/// Apple PCC is the default. The selected provider survives app launches.
+/// Apple PCC is the default on iOS 27+; iOS 26 always uses DeepSeek API.
+/// The selected provider survives app launches on systems that support PCC.
 @property (nonatomic) DSHModelProvider modelProvider;
 
 /// Starts the sequence on a background queue. Safe to call once per launch.

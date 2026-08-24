@@ -77,7 +77,7 @@ stock dsh web UI.</sub>
 
 ## Quick start
 
-**Prerequisites:** macOS on Apple Silicon, Xcode 27, iOS/iPadOS 27, `brew install meson ninja lld`
+**Prerequisites:** macOS on Apple Silicon, Xcode 27, iOS/iPadOS 26 or later, `brew install meson ninja lld`. iOS/iPadOS 26 uses the DeepSeek API; iOS/iPadOS 27 or later defaults to Apple PCC and lets the user switch providers.
 (`ld.lld` builds the guest VDSO; without it the guest cannot run),
 Node.js ≥ 20 + npm, the `xcodeproj` Ruby gem (`gem install xcodeproj`, or
 CocoaPods), an Apple developer team for device signing.
