@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img alt="Platform" src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-16%2B-blue">
+  <img alt="Platform" src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-27%2B-blue">
   <img alt="Guest" src="https://img.shields.io/badge/guest-Alpine%203.21%20%C2%B7%20Node%2022%20%C2%B7%20dsh%200.1-1f6feb">
   <img alt="Tests" src="https://img.shields.io/badge/tests-emu%20%C2%B7%20rootfs%20%C2%B7%20XCTest%20%C2%B7%20XCUITest-success">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-green"></a>
@@ -29,7 +29,8 @@ DSH is a native iOS app that embeds the [iSH-ARM64](ish-arm64) userspace Linux
 emulator, boots a bundled Alpine Linux image with Node.js 22 and
 `@deepseek-ai/dsh`, supervises `dsh web`, and shows the harness's own web UI in
 a `WKWebView`. The agent loop, sessions, tools and the shell all run on the
-device; only the model API calls leave it.
+device. Model requests use Apple Private Cloud Compute (PCC) by default, with no API key
+for the user to create, paste or store.
 
 ▶ **[Watch the 12-second product walkthrough](docs/dsh-ios-walkthrough.mp4)** — real-device first launch, the full workspace, and the iPhone interface.
 
@@ -54,8 +55,9 @@ stock dsh web UI.</sub>
 
 ## Features
 
-- **Fully on-device** — Alpine 3.21 (aarch64) + Node 22 + dsh 0.1 inside the
-  app; works offline except for the model API.
+- **No model account or API key by default** — Alpine 3.21, Node 22 and dsh run
+  inside the app; model inference uses Apple PCC and authenticates through the
+  device. The Model Provider menu can switch back to the standard DeepSeek API.
 - **The real harness UI** — dsh's own web app served on loopback: sessions,
   workspaces, tools, permission presets, settings.
 - **A shell when you want one** — `>_` in the DSH bar opens an Alpine terminal
@@ -75,7 +77,7 @@ stock dsh web UI.</sub>
 
 ## Quick start
 
-**Prerequisites:** macOS on Apple Silicon, Xcode 26/27, `brew install meson ninja lld`
+**Prerequisites:** macOS on Apple Silicon, Xcode 27, iOS/iPadOS 27, `brew install meson ninja lld`
 (`ld.lld` builds the guest VDSO; without it the guest cannot run),
 Node.js ≥ 20 + npm, the `xcodeproj` Ruby gem (`gem install xcodeproj`, or
 CocoaPods), an Apple developer team for device signing.
@@ -101,9 +103,10 @@ make run TEAM=XXXXXXXXXX DEVICE=<udid>   # build, sign, install, launch on the i
 ```
 
 First launch imports the guest image (~30 s, progress on the overlay); later
-launches take a few seconds. When the harness asks for a DeepSeek API key,
-paste it or tap *Configure later*; keys are stored by dsh inside the guest
-(`/root/.dsh`), never by the app.
+launches take a few seconds. DSH configures the harness to use Apple PCC
+automatically; there is no model account or API-key setup step. Choose **More
+(…) ▸ Model Provider ▸ DeepSeek API** to use your own DeepSeek API key instead;
+changing providers restarts the harness while keeping sessions on disk.
 
 ## How it works
 

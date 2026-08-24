@@ -89,7 +89,7 @@ libarchive_target = libarchive_project.targets.find { |t| t.name == 'libarchive'
 
 # our files
 app_dir = ROOT + 'app'
-app_source_refs = Dir[(app_dir + '*.m').to_s].sort.map { |f| app_group.new_file(File.basename(f)) }
+app_source_refs = Dir[(app_dir + '*.{m,swift}').to_s].sort.map { |f| app_group.new_file(File.basename(f)) }
 Dir[(app_dir + '*.h').to_s].sort.each { |f| app_group.new_file(File.basename(f)) }
 xcconfig_ref = app_group.new_file('AppDSH.xcconfig')
 app_group.new_file('Info.plist')
@@ -105,7 +105,7 @@ Dir[(ROOT + 'rootfs/**/*').to_s].sort.select { |f| File.file?(f) }.each do |f|
 end
 
 # --- app target ---------------------------------------------------------------
-dsh = project.new_target(:application, 'DSH', :ios, '16.0')
+dsh = project.new_target(:application, 'DSH', :ios, '27.0')
 dsh.build_configuration_list.build_configurations.each do |bc|
   bc.build_settings.clear
   bc.base_configuration_reference = xcconfig_ref
@@ -177,7 +177,7 @@ ordered.each { |ph| phases << ph }
 # --- test bundles -------------------------------------------------------------
 common_test_settings = {
   'PRODUCT_NAME' => '$(TARGET_NAME)',
-  'IPHONEOS_DEPLOYMENT_TARGET' => '16.0',
+  'IPHONEOS_DEPLOYMENT_TARGET' => '27.0',
   'SDKROOT' => 'iphoneos',
   'SUPPORTED_PLATFORMS' => 'iphoneos iphonesimulator',
   'TARGETED_DEVICE_FAMILY' => '1,2',
@@ -193,7 +193,7 @@ common_test_settings = {
   'HEADER_SEARCH_PATHS' => '$(inherited) $(SRCROOT)/ish-arm64 $(SRCROOT)/ish-arm64/app $(SRCROOT)/app',
 }
 
-tests = project.new_target(:unit_test_bundle, 'DSHTests', :ios, '16.0')
+tests = project.new_target(:unit_test_bundle, 'DSHTests', :ios, '27.0')
 tg = tests_group.new_group('DSHTests', 'DSHTests')
 Dir[(ROOT + 'tests/DSHTests/*.m').to_s].sort.each { |f| tests.source_build_phase.add_file_reference(tg.new_file(File.basename(f)), true) }
 Dir[(ROOT + 'tests/DSHTests/*.h').to_s].sort.each { |f| tg.new_file(File.basename(f)) }
@@ -209,7 +209,7 @@ tests.build_configuration_list.build_configurations.each do |bc|
 end
 tests.add_dependency(dsh)
 
-uitests = project.new_target(:ui_test_bundle, 'DSHUITests', :ios, '16.0')
+uitests = project.new_target(:ui_test_bundle, 'DSHUITests', :ios, '27.0')
 ug = tests_group.new_group('DSHUITests', 'DSHUITests')
 Dir[(ROOT + 'tests/DSHUITests/*.m').to_s].sort.each { |f| uitests.source_build_phase.add_file_reference(ug.new_file(File.basename(f)), true) }
 ug.new_file('Info.plist')

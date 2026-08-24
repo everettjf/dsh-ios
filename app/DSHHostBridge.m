@@ -24,6 +24,8 @@ static const NSTimeInterval kSocketTimeout = 15;
 @interface DSHHostBridgeResponse ()
 @property (nonatomic, readwrite) NSInteger status;
 @property (nonatomic, readwrite, copy) NSDictionary *body;
+@property (nonatomic, readwrite, copy, nullable) NSData *rawBody;
+@property (nonatomic, readwrite, copy) NSString *contentType;
 @end
 
 @implementation DSHHostBridgeResponse
@@ -36,6 +38,16 @@ static const NSTimeInterval kSocketTimeout = 15;
     DSHHostBridgeResponse *response = [DSHHostBridgeResponse new];
     response.status = status;
     response.body = body ?: @{};
+    response.contentType = @"application/json";
+    return response;
+}
+
++ (instancetype)status:(NSInteger)status contentType:(NSString *)contentType rawBody:(NSData *)rawBody {
+    DSHHostBridgeResponse *response = [DSHHostBridgeResponse new];
+    response.status = status;
+    response.body = @{};
+    response.rawBody = rawBody;
+    response.contentType = contentType;
     return response;
 }
 
@@ -445,12 +457,13 @@ static const NSTimeInterval kSocketTimeout = 15;
 }
 
 - (void)sendResponse:(DSHHostBridgeResponse *)response to:(int)fd {
-    NSData *json = [NSJSONSerialization dataWithJSONObject:response.body options:0 error:nil]
+    NSData *json = response.rawBody ?: [NSJSONSerialization dataWithJSONObject:response.body options:0 error:nil]
                    ?: [@"{\"error\":{\"code\":\"internal\",\"message\":\"unserialisable response\"}}" dataUsingEncoding:NSUTF8StringEncoding];
     NSString *head = [NSString stringWithFormat:
-                      @"HTTP/1.1 %ld %@\r\nContent-Type: application/json\r\nContent-Length: %lu\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
+                      @"HTTP/1.1 %ld %@\r\nContent-Type: %@\r\nContent-Length: %lu\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
                       (long) response.status,
                       response.status == 200 ? @"OK" : @"Error",
+                      response.contentType ?: @"application/json",
                       (unsigned long) json.length];
     NSMutableData *out = [[head dataUsingEncoding:NSUTF8StringEncoding] mutableCopy];
     [out appendData:json];

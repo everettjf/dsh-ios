@@ -23,8 +23,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface DSHHostBridgeResponse : NSObject
 @property (nonatomic, readonly) NSInteger status;
 @property (nonatomic, readonly, copy) NSDictionary *body;
+@property (nonatomic, readonly, copy, nullable) NSData *rawBody;
+@property (nonatomic, readonly, copy) NSString *contentType;
 + (instancetype)ok:(NSDictionary *)body;
 + (instancetype)status:(NSInteger)status body:(NSDictionary *)body;
++ (instancetype)status:(NSInteger)status contentType:(NSString *)contentType rawBody:(NSData *)rawBody;
 /// `{ "error": { "code": …, "message": …, "recoverable": … } }` with a status.
 + (instancetype)errorWithStatus:(NSInteger)status
                            code:(NSString *)code

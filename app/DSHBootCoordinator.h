@@ -24,6 +24,13 @@ typedef NS_ENUM(NSInteger, DSHBootPhase) {
     DSHBootPhaseFailed,
 };
 
+typedef NS_ENUM(NSInteger, DSHModelProvider) {
+    DSHModelProviderApplePCC = 0,
+    DSHModelProviderDeepSeekAPI,
+};
+
+NSString *DSHModelProviderName(DSHModelProvider provider);
+
 extern NSNotificationName const DSHBootStateDidChangeNotification;
 
 @interface DSHBootCoordinator : NSObject
@@ -37,6 +44,8 @@ extern NSNotificationName const DSHBootStateDidChangeNotification;
 @property (nonatomic, readonly, copy) NSString *statusMessage;
 /// Kernel boot result (0 = success); valid once the phase is Ready or Failed.
 @property (nonatomic, readonly) int bootError;
+/// Apple PCC is the default. The selected provider survives app launches.
+@property (nonatomic) DSHModelProvider modelProvider;
 
 /// Starts the sequence on a background queue. Safe to call once per launch.
 - (void)start;

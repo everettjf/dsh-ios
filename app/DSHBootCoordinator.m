@@ -22,6 +22,11 @@
 #import <UIKit/UIKit.h>
 
 NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidChangeNotification";
+static NSString *const kDSHModelProviderKey = @"DSHModelProvider";
+
+NSString *DSHModelProviderName(DSHModelProvider provider) {
+    return provider == DSHModelProviderDeepSeekAPI ? @"DeepSeek API" : @"Apple PCC";
+}
 
 // -boot lives in iSH's AppDelegate implementation; it is safe to run on any
 // single thread because `current` is thread-local.
@@ -39,6 +44,37 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
 @end
 
 @implementation DSHBootCoordinator
+
+- (DSHModelProvider)modelProvider {
+    NSInteger stored = [NSUserDefaults.standardUserDefaults integerForKey:kDSHModelProviderKey];
+    return stored == DSHModelProviderDeepSeekAPI ? DSHModelProviderDeepSeekAPI : DSHModelProviderApplePCC;
+}
+
+- (void)setModelProvider:(DSHModelProvider)modelProvider {
+    DSHModelProvider normalized = modelProvider == DSHModelProviderDeepSeekAPI
+        ? DSHModelProviderDeepSeekAPI : DSHModelProviderApplePCC;
+    if (self.modelProvider == normalized)
+        return;
+    [NSUserDefaults.standardUserDefaults setInteger:normalized forKey:kDSHModelProviderKey];
+    [self configureModelEnvironment];
+    [DSHHarness.shared.log append:[NSString stringWithFormat:@"[dsh-ios] model provider -> %@", DSHModelProviderName(normalized)]];
+    if (self.phase == DSHBootPhaseReady)
+        [DSHHarness.shared restart];
+}
+
+- (void)configureModelEnvironment {
+    DSHHostBridge *bridge = DSHHostBridge.shared;
+    NSMutableDictionary *env = [DSHHarness.shared.extraEnvironment mutableCopy];
+    [env removeObjectForKey:@"DEEPSEEK_BASE_URL"];
+    [env removeObjectForKey:@"DEEPSEEK_API_KEY"];
+    if (self.modelProvider == DSHModelProviderApplePCC) {
+        // dsh expects an OpenAI-compatible provider. PCC authentication is
+        // performed by iOS; this token only authenticates the loopback hop.
+        env[@"DEEPSEEK_BASE_URL"] = bridge.baseURLString;
+        env[@"DEEPSEEK_API_KEY"] = bridge.token;
+    }
+    DSHHarness.shared.extraEnvironment = env;
+}
 
 + (instancetype)shared {
     static DSHBootCoordinator *shared;
@@ -138,6 +174,7 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
         NSMutableDictionary *env = [DSHHarness.shared.extraEnvironment mutableCopy];
         [env addEntriesFromDictionary:bridge.guestEnvironment];
         DSHHarness.shared.extraEnvironment = env;
+        [self configureModelEnvironment];
     } else {
         [DSHHarness.shared.log append:@"[dsh-ios] host bridge could not start; iOS capabilities are unavailable"];
     }
