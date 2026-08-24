@@ -12,6 +12,7 @@
 #import "DSHLogBuffer.h"
 #import "DSHReadinessProbe.h"
 #import "DSHHarness.h"
+#import "DSHBootCoordinator.h"
 #import "DSHTestHTTPServer.h"
 
 #pragma mark - Fake launcher
@@ -221,6 +222,11 @@
     XCTAssertEqualObjects(DSHHarnessStateName(DSHHarnessStateReady), @"ready");
     XCTAssertEqualObjects(DSHHarnessStateName(DSHHarnessStateFailed), @"failed");
     XCTAssertEqualObjects(DSHHarnessStateName(DSHHarnessStateIdle), @"idle");
+}
+
+- (void)testModelProviderNames {
+    XCTAssertEqualObjects(DSHModelProviderName(DSHModelProviderApplePCC), @"Apple PCC");
+    XCTAssertEqualObjects(DSHModelProviderName(DSHModelProviderDeepSeekAPI), @"DeepSeek API");
 }
 
 @end
