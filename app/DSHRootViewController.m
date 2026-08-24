@@ -514,6 +514,7 @@ static const NSTimeInterval kActivityIndicatorVisible = 6;
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
     self.pageLoaded = YES;
+    [DSHHarness.shared.log append:[NSString stringWithFormat:@"[perf] web interface loaded (harness %.3fs)", DSHHarness.shared.lastStartupDuration]];
     [self.overlay hide];
 }
 

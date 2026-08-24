@@ -72,7 +72,7 @@
 }
 
 - (void)share:(UIBarButtonItem *)sender {
-    UIActivityViewController *vc = [[UIActivityViewController alloc] initWithActivityItems:@[self.textView.text ?: @""] applicationActivities:nil];
+    UIActivityViewController *vc = [[UIActivityViewController alloc] initWithActivityItems:@[self.log.diagnosticReport] applicationActivities:nil];
     vc.popoverPresentationController.barButtonItem = sender;
     [self presentViewController:vc animated:YES completion:nil];
 }

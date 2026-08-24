@@ -54,7 +54,7 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
 - (instancetype)initWithLauncher:(id<DSHGuestProcessLauncher>)launcher {
     if (self = [super init]) {
         _launcher = launcher;
-        _log = [[DSHLogBuffer alloc] initWithCapacity:400];
+        _log = [[DSHLogBuffer alloc] initPersistentWithCapacity:1000];
         _serverExecutable = @"/usr/local/bin/dsh-serve";
         _extraEnvironment = @{};
         _preferredPort = 3080;

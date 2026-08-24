@@ -91,6 +91,16 @@
     XCTAssertEqual(log.count, 10u);
 }
 
+- (void)testLogBufferRedactsCredentialsBeforeRetainingThem {
+    DSHLogBuffer *log = [[DSHLogBuffer alloc] initWithCapacity:10];
+    [log append:@"DEEPSEEK_API_KEY=secret-value request failed"];
+    [log append:@"Authorization: Bearer another-secret"];
+    NSString *text = [log.lines componentsJoinedByString:@"\n"];
+    XCTAssertFalse([text containsString:@"secret-value"]);
+    XCTAssertFalse([text containsString:@"another-secret"]);
+    XCTAssertTrue([text containsString:@"<redacted>"]);
+}
+
 - (void)testReadinessProbeSucceedsWhenServerAnswers {
     DSHTestHTTPServer *server = [[DSHTestHTTPServer alloc] initWithPort:0];
     DSHReadinessProbe *probe = [[DSHReadinessProbe alloc] initWithURL:server.baseURL interval:0.1 timeout:5];

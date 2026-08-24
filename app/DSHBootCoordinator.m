@@ -116,6 +116,7 @@ BOOL DSHApplePCCSupported(void) {
     if (self.started)
         return;
     self.started = YES;
+    [DSHHarness.shared.log append:@"[perf] app boot coordinator started"];
     [self setPhase:DSHBootPhaseImportingImage message:@"Preparing the Linux environment…" progress:-1];
     // UIApplication is main-thread-only; grab the delegate here, not on the queue.
     AppDelegate *app = (AppDelegate *) UIApplication.sharedApplication.delegate;
@@ -131,10 +132,13 @@ BOOL DSHApplePCCSupported(void) {
                   progress:fraction];
         }];
         NSTimeInterval imported = -t0.timeIntervalSinceNow;
+        [DSHHarness.shared.log append:[NSString stringWithFormat:@"[perf] image preparation %.3fs", imported]];
 
         // 2. Boot the emulator kernel (mount the fakefs, start init).
         [self setPhase:DSHBootPhaseBootingKernel message:@"Booting the Linux guest…" progress:-1];
         int err = [app boot];
+        NSTimeInterval kernelBoot = -t0.timeIntervalSinceNow - imported;
+        [DSHHarness.shared.log append:[NSString stringWithFormat:@"[perf] guest kernel boot %.3fs", kernelBoot]];
         self.bootError = err;
         [DSHHarness.shared.log append:[NSString stringWithFormat:@"[dsh-ios] guest boot %@ (image %.1fs, total %.1fs)",
                                        err == 0 ? @"ok" : [NSString stringWithFormat:@"failed: %d", err],

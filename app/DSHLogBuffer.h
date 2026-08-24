@@ -14,6 +14,7 @@ extern NSNotificationName const DSHLogBufferDidChangeNotification;
 @interface DSHLogBuffer : NSObject
 
 - (instancetype)initWithCapacity:(NSUInteger)capacity NS_DESIGNATED_INITIALIZER;
+- (instancetype)initPersistentWithCapacity:(NSUInteger)capacity;
 - (instancetype)init NS_UNAVAILABLE;
 
 @property (nonatomic, readonly) NSUInteger capacity;
@@ -29,6 +30,11 @@ extern NSNotificationName const DSHLogBufferDidChangeNotification;
 @property (nonatomic, readonly, copy) NSArray<NSString *> *lines;
 /// The last `n` lines joined by "\n".
 - (NSString *)tail:(NSUInteger)n;
+
+/// A shareable report containing this launch and the retained launch logs.
+/// Persistent buffers retain at most the ten most recent launches. Ordinary
+/// in-memory buffers return their current lines only.
+@property (nonatomic, readonly, copy) NSString *diagnosticReport;
 
 /// Lines that add nothing for the user (e.g. the V8 flag warning).
 + (BOOL)isNoiseLine:(NSString *)line;
