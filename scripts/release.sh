@@ -139,6 +139,7 @@ step "Archiving"
 rm -rf "$ARCHIVE" "$EXPORT_DIR"
 xcodebuild -project DSH.xcodeproj -scheme "$SCHEME" -configuration Release \
     DSH_DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+    -allowProvisioningUpdates \
     -destination 'generic/platform=iOS' \
     -archivePath "$ARCHIVE" archive
 
@@ -168,6 +169,7 @@ cat > build/ExportOptions.plist <<PLIST
 PLIST
 
 xcodebuild -exportArchive -archivePath "$ARCHIVE" \
+    -allowProvisioningUpdates \
     -exportOptionsPlist build/ExportOptions.plist \
     -exportPath "$EXPORT_DIR"
 
