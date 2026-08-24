@@ -192,24 +192,24 @@ terms, which is why iSH ships the way it does. The realistic options remain
 building from source, AltStore-style sideloading, or taking the licence
 question seriously. Worth deciding deliberately rather than drifting.
 
-### Later, but worth writing down: run the model on the device
+### Apple-hosted model without an API key — *prototype landed*
 
-iOS 26 added `FoundationModels.framework`, an on-device LLM, and it is present
-in the SDK this app already builds against. dsh speaks an OpenAI-compatible
-protocol, and the bridge is already an HTTP server — so this is one more route,
-`POST /v1/chat/completions`, backed by the system model, with
-`DEEPSEEK_BASE_URL` pointed at it. No API key, no network, and nothing leaves
-the device.
+iOS 27 exposes `PrivateCloudComputeLanguageModel` through
+`FoundationModels.framework`. DSH now prototypes an OpenAI-compatible loopback
+route backed by PCC, with `DEEPSEEK_BASE_URL` pointed at it. Authentication is
+performed by iOS, so the user does not create or enter an API key. Requests do
+leave the device for Apple's PCC service, under PCC's privacy guarantees.
 
-That last part is the real argument. The uncomfortable shape of the app right
-now is that a user switches on Health, Calendar and Contacts, and that data is
-then sent to a remote model to be reasoned about. An on-device model makes
-"an agent on your phone, reading your phone" coherent rather than ironic.
+That privacy boundary is the real argument. A user can switch on Health,
+Calendar and Contacts without handing an API credential to the guest or
+creating a separate model-provider account. PCC is still a remote service, so
+the UI and capability copy must continue to say that model requests leave the
+device rather than describing the whole agent as offline.
 
-The honest caveats: the system model is small, its tool-calling is likely to be
-much weaker than DeepSeek's, and the work is not trivial (SSE translation, tool
-call format mapping). The way to find out is a half-day prototype that gets one
-turn through end to end, then a decision — not a commitment up front.
+The adapter translates OpenAI messages, SSE responses and one tool call per
+model step. It keeps tool execution in dsh so the existing capability gates and
+Activity record remain authoritative. It still needs real-device quality and
+quota testing before replacing the TestFlight model path with confidence.
 
 ### Not on this list, deliberately
 

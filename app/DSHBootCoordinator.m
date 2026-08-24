@@ -137,6 +137,11 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     if ([bridge start]) {
         NSMutableDictionary *env = [DSHHarness.shared.extraEnvironment mutableCopy];
         [env addEntriesFromDictionary:bridge.guestEnvironment];
+        // dsh expects an OpenAI-compatible provider. PCC authentication is
+        // performed by iOS; the bridge token only authenticates this loopback
+        // hop and is regenerated on every app launch.
+        env[@"DEEPSEEK_BASE_URL"] = bridge.baseURLString;
+        env[@"DEEPSEEK_API_KEY"] = bridge.token;
         DSHHarness.shared.extraEnvironment = env;
     } else {
         [DSHHarness.shared.log append:@"[dsh-ios] host bridge could not start; iOS capabilities are unavailable"];

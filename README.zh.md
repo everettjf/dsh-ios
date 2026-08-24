@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img alt="Platform" src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-16%2B-blue">
+  <img alt="Platform" src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-27%2B-blue">
   <img alt="Guest" src="https://img.shields.io/badge/guest-Alpine%203.21%20%C2%B7%20Node%2022%20%C2%B7%20dsh%200.1-1f6feb">
   <img alt="Tests" src="https://img.shields.io/badge/tests-emu%20%C2%B7%20rootfs%20%C2%B7%20XCTest%20%C2%B7%20XCUITest-success">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-green"></a>
@@ -28,7 +28,7 @@
 DSH 是一个原生 iOS app：它内嵌 [iSH-ARM64](ish-arm64) 用户态 Linux 模拟器，启动内置的
 Alpine Linux 镜像（含 Node.js 22 和 `@deepseek-ai/dsh`），托管 `dsh web` 进程，并在
 `WKWebView` 里显示 harness 自己的 Web 界面。Agent 循环、会话、工具、shell 全部在设备本地
-运行，只有模型 API 请求会离开设备。
+运行；模型请求走 Apple Private Cloud Compute（PCC），用户不需要创建、粘贴或保存 API key。
 
 ▶ **[观看 12 秒产品导览](docs/dsh-ios-walkthrough.mp4)**——包含真机首次启动、完整工作区和 iPhone 界面。
 
@@ -51,7 +51,7 @@ Alpine Linux 镜像（含 Node.js 22 和 `@deepseek-ai/dsh`），托管 `dsh web
 
 ## 特性
 
-- **完全本地运行**——app 内部就是 Alpine 3.21（aarch64）+ Node 22 + dsh 0.1；除模型 API 外可离线使用。
+- **不需要模型账号或 API key**——Alpine 3.21、Node 22 和 dsh 都在 app 内运行；模型推理由 Apple PCC 提供，并通过用户设备认证。
 - **原汁原味的 harness 界面**——dsh 自己的 Web 应用通过本机回环端口提供：会话、工作区、工具、权限预设、设置。
 - **随时可用的 shell**——DSH 状态栏的 `>_` 打开同一 guest 里的 Alpine 终端（`apk add`、`npm i -g`、查看 `~/.dsh`）；`⋯` 菜单提供 重新加载 / 服务日志 / 重启 Harness / 在 Safari 打开 / 关于。
 - **受监督的服务进程**——自动选择空闲端口、HTTP 就绪探测、崩溃退避重启、回到前台时健康检查、启动页实时日志。
@@ -62,7 +62,7 @@ Alpine Linux 镜像（含 Node.js 22 和 `@deepseek-ai/dsh`），托管 `dsh web
 
 ## 快速开始
 
-**环境要求：** Apple Silicon 的 macOS，Xcode 26/27，`brew install meson ninja lld`
+**环境要求：** Apple Silicon 的 macOS，Xcode 27，iOS/iPadOS 27，`brew install meson ninja lld`
 （`ld.lld` 用于构建 guest 的 VDSO，缺少它 guest 无法运行），Node.js ≥ 20 + npm，
 `xcodeproj` Ruby gem（`gem install xcodeproj`，或随 CocoaPods 一起），以及一个 Apple 开发者团队用于真机签名。
 
@@ -79,8 +79,8 @@ open DSH.xcodeproj   # 选 DSH scheme → 你的 iPad → 设置 team → Run
 make run TEAM=XXXXXXXXXX DEVICE=<udid>   # 构建、签名、安装、启动到 iPad
 ```
 
-首次启动会导入 guest 镜像（约 30 秒，启动页有进度），之后启动只需几秒。harness 询问 DeepSeek
-API key 时，粘贴即可，或点「稍后配置」；key 由 dsh 存在 guest 内（`/root/.dsh`），app 本身不保存。
+首次启动会导入 guest 镜像（约 30 秒，启动页有进度），之后启动只需几秒。DSH 会自动把
+harness 配置到 Apple PCC，没有模型账号或 API key 的设置步骤。
 
 ## 工作原理
 
