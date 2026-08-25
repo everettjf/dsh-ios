@@ -7,7 +7,6 @@
 #import "DSHBootCoordinator.h"
 #import "DSHHarness.h"
 #import "DSHRootViewController.h"
-#import "DSH-Swift.h"
 
 // iSH's AppDelegate boots the kernel inside -willFinishLaunching. That takes
 // far longer than iOS's launch watchdog allows on a phone (importing the guest
@@ -29,7 +28,6 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     if ([NSUserDefaults.standardUserDefaults boolForKey:@"recovery"])
         return YES;
-    [DSHAppleModelBridge registerRoutes];
     // Kicks off image import → kernel boot → data migration → harness start.
     [DSHBootCoordinator.shared start];
     return YES;

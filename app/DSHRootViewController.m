@@ -178,19 +178,6 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     UIAction *capabilities = [UIAction actionWithTitle:@"Capabilities" image:[UIImage systemImageNamed:@"switch.2"] identifier:@"dsh.capabilities" handler:^(UIAction *a) { [weakSelf presentCapabilities]; }];
     UIAction *activity = [UIAction actionWithTitle:@"Activity" image:[UIImage systemImageNamed:@"list.bullet.rectangle"] identifier:@"dsh.activity" handler:^(UIAction *a) { [weakSelf presentActivity]; }];
     UIAction *log = [UIAction actionWithTitle:@"Server Log" image:[UIImage systemImageNamed:@"doc.text.magnifyingglass"] identifier:@"dsh.log" handler:^(UIAction *a) { [weakSelf presentLog]; }];
-    UIMenu *provider = nil;
-    if (DSHApplePCCSupported()) {
-        DSHModelProvider selectedProvider = DSHBootCoordinator.shared.modelProvider;
-        UIAction *pcc = [UIAction actionWithTitle:@"Apple PCC" image:[UIImage systemImageNamed:@"apple.intelligence"] identifier:@"dsh.provider.pcc" handler:^(UIAction *a) {
-            [weakSelf selectModelProvider:DSHModelProviderApplePCC];
-        }];
-        pcc.state = selectedProvider == DSHModelProviderApplePCC ? UIMenuElementStateOn : UIMenuElementStateOff;
-        UIAction *deepSeek = [UIAction actionWithTitle:@"DeepSeek API" image:[UIImage systemImageNamed:@"key"] identifier:@"dsh.provider.deepseek" handler:^(UIAction *a) {
-            [weakSelf selectModelProvider:DSHModelProviderDeepSeekAPI];
-        }];
-        deepSeek.state = selectedProvider == DSHModelProviderDeepSeekAPI ? UIMenuElementStateOn : UIMenuElementStateOff;
-        provider = [UIMenu menuWithTitle:@"Model Provider" image:[UIImage systemImageNamed:@"cloud"] identifier:@"dsh.provider" options:0 children:@[pcc, deepSeek]];
-    }
     UIAction *restart = [UIAction actionWithTitle:@"Restart Harness" image:[UIImage systemImageNamed:@"arrow.triangle.2.circlepath"] identifier:@"dsh.restart" handler:^(UIAction *a) { [weakSelf confirmRestart]; }];
     restart.attributes = UIMenuElementAttributesDestructive;
     UIAction *safari = [UIAction actionWithTitle:@"Open in Safari" image:[UIImage systemImageNamed:@"safari"] identifier:@"dsh.safari" handler:^(UIAction *a) {
@@ -199,8 +186,6 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     }];
     UIAction *about = [UIAction actionWithTitle:@"About DSH" image:[UIImage systemImageNamed:@"info.circle"] identifier:@"dsh.about" handler:^(UIAction *a) { [weakSelf presentAbout]; }];
     NSMutableArray<UIMenuElement *> *children = [NSMutableArray arrayWithObjects:reload, terminal, nil];
-    if (provider)
-        [children addObject:provider];
     [children addObjectsFromArray:@[capabilities, activity, log, [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[safari, restart]], about]];
     return [UIMenu menuWithChildren:children];
 }
@@ -315,22 +300,6 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
 }
 
 #pragma mark - Actions
-
-- (void)selectModelProvider:(DSHModelProvider)provider {
-    if (DSHBootCoordinator.shared.modelProvider == provider)
-        return;
-    DSHBootCoordinator.shared.modelProvider = provider;
-    // Rebuild the immutable menu so its checkmark follows the saved choice.
-    self.menuButton.menu = [self buildMenu];
-    NSString *message = provider == DSHModelProviderDeepSeekAPI
-        ? @"The harness is restarting. Configure your DeepSeek API key in the harness when prompted."
-        : @"The harness is restarting with Apple Private Cloud Compute. No API key is needed.";
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Switched to %@", DSHModelProviderName(provider)]
-                                                                   message:message
-                                                            preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-    [self presentViewController:alert animated:YES completion:nil];
-}
 
 - (void)reloadWebView {
     if (DSHHarness.shared.state == DSHHarnessStateReady)

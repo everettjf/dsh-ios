@@ -50,7 +50,6 @@
 		4E3C8D6D679B97419401AA91 /* DSHLogBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = DC0C3934003989200FF6ABB3 /* DSHLogBuffer.m */; };
 		4FC30588AC0D4F09810A3606 /* DebugServer.c in Sources */ = {isa = PBXBuildFile; fileRef = DA7B254E7E6F64F887FBCDD5 /* DebugServer.c */; };
 		524BBB8113C85E5DFB5C1031 /* ihash1.png in Resources */ = {isa = PBXBuildFile; fileRef = 991EB064CDF88F293EF7B44C /* ihash1.png */; };
-		5287AE2E79C03942BBE40AF3 /* DSHAppleModelBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6F0F749F88C56A88D05BB8 /* DSHAppleModelBridge.swift */; };
 		52BA6B35C01A6814E05F502A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1C52859F89852E27A6B2452 /* Assets.xcassets */; };
 		57A03600C6799E86C1D8E927 /* hterm_all.js in Resources */ = {isa = PBXBuildFile; fileRef = B99445288D5C21E32AE5F7A1 /* hterm_all.js */; };
 		5AD365B8B95524FFE2A814F1 /* DSHCallConfirmationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 92D3AFE8DF9EF760031EF211 /* DSHCallConfirmationTests.m */; };
@@ -232,7 +231,6 @@
 		47C89D70031092F6527B578B /* LocationDevice.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = LocationDevice.m; sourceTree = "<group>"; };
 		4A786A175D653912D8B4770F /* rgb.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = rgb.png; sourceTree = "<group>"; };
 		4AF6D33F8B0A61B2EB231CD4 /* iinhash.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = iinhash.png; sourceTree = "<group>"; };
-		4F6F0F749F88C56A88D05BB8 /* DSHAppleModelBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DSHAppleModelBridge.swift; sourceTree = "<group>"; };
 		4F89C1F99F202E565D56FF90 /* AboutViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AboutViewController.m; sourceTree = "<group>"; };
 		50DC38ACFF4384CF9E81ECF7 /* DSHRootUpgrader.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHRootUpgrader.m; sourceTree = "<group>"; };
 		51F68FBA826744AFF8271C92 /* AccessibilityFixes.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AccessibilityFixes.m; sourceTree = "<group>"; };
@@ -252,7 +250,6 @@
 		69819C707CE6CF30C13432D0 /* DSHGuestIntegrationTests.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHGuestIntegrationTests.m; sourceTree = "<group>"; };
 		69BA6A085A94C25897A98232 /* DSHLocationCapability.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHLocationCapability.m; sourceTree = "<group>"; };
 		69DBAC3ABFA7ABD88F199A58 /* AboutAppearanceViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AboutAppearanceViewController.m; sourceTree = "<group>"; };
-		6AA9A874CAA61541500A8856 /* DSH-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "DSH-Bridging-Header.h"; sourceTree = "<group>"; };
 		6B53F39343BB5F671B489CA9 /* pydann1.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = pydann1.png; sourceTree = "<group>"; };
 		6D28C2A3136E2BAE23596F29 /* DSHGuestLauncher.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHGuestLauncher.m; sourceTree = "<group>"; };
 		6D725F6BD9250068EC4EB8D8 /* BarButton.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = BarButton.m; sourceTree = "<group>"; };
@@ -823,7 +820,6 @@
 				D36CEAB7B28500DE314E5270 /* DSHActivityLog.m */,
 				B8B6547BA8B921FEAAEC1D73 /* DSHActivityViewController.m */,
 				1655D8FDA703BAED0A3671E6 /* DSHAppDelegate.m */,
-				4F6F0F749F88C56A88D05BB8 /* DSHAppleModelBridge.swift */,
 				A6ED1271498F9FB6EFB0FE28 /* DSHBootCoordinator.m */,
 				8E836706F734CEE97EA83702 /* DSHCallConfirmation.m */,
 				C4278E7F945636799F316466 /* DSHCapabilitiesViewController.m */,
@@ -851,7 +847,6 @@
 				D1A15D9772A225295905E4EA /* DSHShortcutsCapability.m */,
 				C99D34BFB78CCDA6D7BE3F25 /* DSHStatusOverlayView.m */,
 				F6153E8494529435233ABC5E /* DSHTurnPresence.m */,
-				6AA9A874CAA61541500A8856 /* DSH-Bridging-Header.h */,
 				1F062FD855E547F568897EDE /* DSHActivityCapability.h */,
 				D856E70FC38BAB035949B413 /* DSHActivityLog.h */,
 				CE373930496185643369AEAB /* DSHActivityViewController.h */,
@@ -1232,7 +1227,6 @@
 				5D68F899B1417C26D04FBEED /* DSHActivityLog.m in Sources */,
 				D6FD5306D20CEE1D51B4B2C4 /* DSHActivityViewController.m in Sources */,
 				80E7E34587D4FD3EEF30CD79 /* DSHAppDelegate.m in Sources */,
-				5287AE2E79C03942BBE40AF3 /* DSHAppleModelBridge.swift in Sources */,
 				B60EFEE256DD41382DC46799 /* DSHBootCoordinator.m in Sources */,
 				358856A5D2EF54BC3FC7DCBB /* DSHCallConfirmation.m in Sources */,
 				F58388A9FB3D34D34ADE42B2 /* DSHCapabilitiesViewController.m in Sources */,

@@ -37,9 +37,6 @@ DSH_ROOTFS_TARBALL = $(SRCROOT)/build/root.tar.gz
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DSH_APP=1
 HEADER_SEARCH_PATHS = $(ISH_SRC) $(ISH_SRC)/app $(ISH_SRC)/deps/libarchive/libarchive $(SRCROOT)/app
-SWIFT_VERSION = 5.0
-SWIFT_OBJC_INTERFACE_HEADER_NAME = DSH-Swift.h
-SWIFT_OBJC_BRIDGING_HEADER = $(SRCROOT)/app/DSH-Bridging-Header.h
 OTHER_LDFLAGS = $(inherited) -framework WebKit -framework EventKit -framework HealthKit -framework Contacts -framework UserNotifications -framework UniformTypeIdentifiers -framework PhotosUI -framework Photos
 
 // The AArch64 gadgets are host arm64 assembly: only Apple Silicon simulators

@@ -55,6 +55,7 @@
         message.textAlignment = NSTextAlignmentCenter;
         message.numberOfLines = 0;
         message.accessibilityIdentifier = @"dsh.overlay.message";
+        [message.heightAnchor constraintGreaterThanOrEqualToConstant:40].active = YES;
         self.messageLabel = message;
 
         UIProgressView *progress = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
@@ -70,6 +71,7 @@
         elapsed.textColor = UIColor.tertiaryLabelColor;
         elapsed.textAlignment = NSTextAlignmentCenter;
         elapsed.accessibilityIdentifier = @"dsh.overlay.elapsed";
+        [elapsed.heightAnchor constraintEqualToConstant:16].active = YES;
         self.elapsedLabel = elapsed;
 
         UITextView *log = [UITextView new];
@@ -104,10 +106,15 @@
         stack.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:stack];
 
+        NSLayoutConstraint *stableWidth = [stack.widthAnchor constraintEqualToAnchor:self.widthAnchor constant:-48];
+        // Prefer a fixed container width so changing status/elapsed strings do
+        // not resize and recenter the entire launch screen. On iPad the
+        // required 560 pt ceiling wins over this preferred width.
+        stableWidth.priority = UILayoutPriorityDefaultHigh;
         [NSLayoutConstraint activateConstraints:@[
             [stack.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
             [stack.centerYAnchor constraintEqualToAnchor:self.centerYAnchor constant:-30],
-            [stack.widthAnchor constraintLessThanOrEqualToAnchor:self.widthAnchor constant:-48],
+            stableWidth,
             [stack.widthAnchor constraintLessThanOrEqualToConstant:560],
             [message.widthAnchor constraintEqualToAnchor:stack.widthAnchor],
             [progress.widthAnchor constraintEqualToAnchor:stack.widthAnchor constant:-40],
@@ -136,11 +143,15 @@
 - (void)logTapped { if (self.logHandler) self.logHandler(); }
 
 - (void)showStarting:(NSString *)message {
+    [self.layer removeAllAnimations];
+    self.alpha = 1;
     self.hidden = NO;
     self.showingFailure = NO;
     self.messageLabel.text = message;
     self.messageLabel.textColor = UIColor.labelColor;
     [self.spinner startAnimating];
+    self.progress.hidden = NO;
+    self.progress.alpha = 0;
     self.retryButton.hidden = YES;
     self.terminalButton.hidden = NO;
     self.logButton.hidden = NO;
@@ -156,7 +167,8 @@
 - (void)setDeterminateProgress:(double)fraction detail:(NSString *)detail {
     self.progressStartedAt = nil;
     self.expected = 0;
-    self.progress.hidden = fraction < 0;
+    self.progress.hidden = NO;
+    self.progress.alpha = fraction < 0 ? 0 : 1;
     if (fraction >= 0)
         [self.progress setProgress:(float) MIN(fraction, 1.0) animated:YES];
     self.elapsedLabel.text = detail ?: @"";
@@ -165,11 +177,14 @@
 - (void)setProgressStartedAt:(NSDate *)startedAt expected:(NSTimeInterval)expected {
     self.progressStartedAt = startedAt;
     self.expected = expected;
-    self.progress.hidden = startedAt == nil;
+    self.progress.hidden = NO;
+    self.progress.alpha = startedAt == nil ? 0 : 1;
     [self tick];
 }
 
 - (void)showFailure:(NSString *)message {
+    [self.layer removeAllAnimations];
+    self.alpha = 1;
     self.hidden = NO;
     self.showingFailure = YES;
     self.progress.hidden = YES;

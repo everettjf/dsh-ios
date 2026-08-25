@@ -192,24 +192,13 @@ terms, which is why iSH ships the way it does. The realistic options remain
 building from source, AltStore-style sideloading, or taking the licence
 question seriously. Worth deciding deliberately rather than drifting.
 
-### Apple-hosted model without an API key — *prototype landed*
+### Apple PCC model adapter — *prototype removed*
 
-iOS 27 exposes `PrivateCloudComputeLanguageModel` through
-`FoundationModels.framework`. DSH now prototypes an OpenAI-compatible loopback
-route backed by PCC, with `DEEPSEEK_BASE_URL` pointed at it. Authentication is
-performed by iOS, so the user does not create or enter an API key. Requests do
-leave the device for Apple's PCC service, under PCC's privacy guarantees.
-
-That privacy boundary is the real argument. A user can switch on Health,
-Calendar and Contacts without handing an API credential to the guest or
-creating a separate model-provider account. PCC is still a remote service, so
-the UI and capability copy must continue to say that model requests leave the
-device rather than describing the whole agent as offline.
-
-The adapter translates OpenAI messages, SSE responses and one tool call per
-model step. It keeps tool execution in dsh so the existing capability gates and
-Activity record remain authoritative. It still needs real-device quality and
-quota testing before replacing the TestFlight model path with confidence.
+The iOS 27 `PrivateCloudComputeLanguageModel` prototype was removed after
+real-device testing. Its Foundation Models behavior was not equivalent enough
+to the DeepSeek API expected by DeepSeek Harness, and a TestFlight build also
+hit an `EXC_BAD_ACCESS` inside `LanguageModelSession.respond`. DSH now has one
+model path: the standard DeepSeek API configured by the harness.
 
 ### Not on this list, deliberately
 

@@ -234,16 +234,4 @@
     XCTAssertEqualObjects(DSHHarnessStateName(DSHHarnessStateIdle), @"idle");
 }
 
-- (void)testModelProviderNames {
-    XCTAssertEqualObjects(DSHModelProviderName(DSHModelProviderApplePCC), @"Apple PCC");
-    XCTAssertEqualObjects(DSHModelProviderName(DSHModelProviderDeepSeekAPI), @"DeepSeek API");
-}
-
-- (void)testPCCSupportMatchesOperatingSystemAvailability {
-    if (@available(iOS 27.0, *))
-        XCTAssertTrue(DSHApplePCCSupported());
-    else
-        XCTAssertFalse(DSHApplePCCSupported());
-}
-
 @end
