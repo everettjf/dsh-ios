@@ -4,6 +4,7 @@ enum DSHAgentPhase: Equatable, Sendable {
     case idle
     case streaming(step: Int)
     case completed
+    case cancelled
     case failed(message: String)
 }
 
@@ -16,12 +17,52 @@ struct DSHAgentSnapshot: Equatable, Sendable {
 enum DSHAgentRuntimeError: Error, LocalizedError, Equatable {
     case emptyPrompt
     case alreadyRunning
+    case nothingToRetry
+    case nothingToContinue
 
     var errorDescription: String? {
         switch self {
         case .emptyPrompt: return "Enter a message before sending."
         case .alreadyRunning: return "The agent is already responding."
+        case .nothingToRetry: return "There is no previous turn to retry."
+        case .nothingToContinue: return "There is no response to continue."
         }
+    }
+}
+
+struct DSHContextPolicy: Equatable, Sendable {
+    var maximumEstimatedTokens: Int = 32_000
+
+    func messagesForRequest(_ messages: [DSHChatMessage], systemPrompt: String?) -> [DSHChatMessage] {
+        let system = systemPrompt.flatMap { $0.isEmpty ? nil : DSHChatMessage(role: .system, content: $0) }
+        let budget = max(1_000, maximumEstimatedTokens - estimatedTokens(system))
+        let groups = turnGroups(messages)
+        var selected: [[DSHChatMessage]] = []
+        var used = 0
+        for group in groups.reversed() {
+            let cost = group.reduce(0) { $0 + estimatedTokens($1) }
+            if !selected.isEmpty, used + cost > budget { break }
+            selected.append(group)
+            used += cost
+        }
+        let history = selected.reversed().flatMap { $0 }
+        return system.map { [$0] + history } ?? history
+    }
+
+    private func turnGroups(_ messages: [DSHChatMessage]) -> [[DSHChatMessage]] {
+        var groups: [[DSHChatMessage]] = []
+        for message in messages {
+            if message.role == .user || groups.isEmpty { groups.append([message]) }
+            else { groups[groups.count - 1].append(message) }
+        }
+        return groups
+    }
+
+    private func estimatedTokens(_ message: DSHChatMessage?) -> Int {
+        guard let message else { return 0 }
+        let characters = (message.content?.count ?? 0) + (message.reasoningContent?.count ?? 0)
+            + message.toolCalls.reduce(0) { $0 + $1.name.count + $1.arguments.count }
+        return max(4, (characters + 3) / 4 + 8)
     }
 }
 
@@ -31,6 +72,7 @@ actor DSHAgentRuntime {
     private let systemPrompt: String?
     private let toolRegistry: DSHToolRegistry?
     private let maximumSteps: Int
+    private let contextPolicy: DSHContextPolicy
     private var messages: [DSHChatMessage]
     private var phase: DSHAgentPhase = .idle
     private var usage: DSHTokenUsage?
@@ -43,7 +85,8 @@ actor DSHAgentRuntime {
         systemPrompt: String? = nil,
         messages: [DSHChatMessage] = [],
         toolRegistry: DSHToolRegistry? = nil,
-        maximumSteps: Int = 8
+        maximumSteps: Int = 8,
+        contextPolicy: DSHContextPolicy = .init()
     ) {
         self.client = client
         self.model = model
@@ -51,6 +94,7 @@ actor DSHAgentRuntime {
         self.messages = messages
         self.toolRegistry = toolRegistry
         self.maximumSteps = maximumSteps
+        self.contextPolicy = contextPolicy
     }
 
     func snapshot() -> DSHAgentSnapshot {
@@ -70,14 +114,35 @@ actor DSHAgentRuntime {
 
     @discardableResult
     func send(_ prompt: String) async throws -> DSHAgentSnapshot {
+        guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { throw DSHAgentRuntimeError.emptyPrompt }
-        guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
+        messages.append(.init(role: .user, content: prompt))
+        return try await generateResponse()
+    }
 
+    @discardableResult
+    func retryLastTurn() async throws -> DSHAgentSnapshot {
+        guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
+        guard let index = messages.lastIndex(where: { $0.role == .user }) else { throw DSHAgentRuntimeError.nothingToRetry }
+        messages = Array(messages.prefix(through: index))
+        return try await generateResponse()
+    }
+
+    @discardableResult
+    func continueResponse() async throws -> DSHAgentSnapshot {
+        guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
+        guard messages.contains(where: { $0.role == .assistant }) else {
+            throw DSHAgentRuntimeError.nothingToContinue
+        }
+        return try await generateResponse()
+    }
+
+    private func generateResponse() async throws -> DSHAgentSnapshot {
+        guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
         isRunning = true
         defer { isRunning = false }
         usage = nil
-        messages.append(.init(role: .user, content: prompt))
         do {
             for step in 1...maximumSteps {
                 let assistantIndex = messages.count
@@ -85,11 +150,7 @@ actor DSHAgentRuntime {
                 phase = .streaming(step: step)
                 publish()
 
-                var requestMessages = messages
-                requestMessages.removeLast()
-                if let systemPrompt, !systemPrompt.isEmpty {
-                    requestMessages.insert(.init(role: .system, content: systemPrompt), at: 0)
-                }
+                let requestMessages = contextPolicy.messagesForRequest(Array(messages.dropLast()), systemPrompt: systemPrompt)
                 var toolCallFragments: [Int: ToolCallFragment] = [:]
                 var finishReason: DSHFinishReason?
                 for try await event in client.stream(request: .init(
@@ -123,6 +184,7 @@ actor DSHAgentRuntime {
                     }
                     publish()
                 }
+                try Task.checkCancellation()
 
                 let calls = messages[assistantIndex].toolCalls
                 guard finishReason == .toolCalls, !calls.isEmpty, let toolRegistry else {
@@ -137,6 +199,10 @@ actor DSHAgentRuntime {
                 }
             }
             throw DSHToolError.stepLimitExceeded
+        } catch is CancellationError {
+            phase = .cancelled
+            publish()
+            throw CancellationError()
         } catch {
             phase = .failed(message: error.localizedDescription)
             publish()

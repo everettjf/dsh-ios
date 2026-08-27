@@ -58,6 +58,17 @@
                   self.app.staticTexts[@"DeepSeek Agent"].exists);
 }
 
+- (void)testConversationBrowserIsNativeAndCanCreateSession {
+    XCUIElement *conversations = self.app.buttons[@"dsh.native.sessions"];
+    XCTAssertTrue([conversations waitForExistenceWithTimeout:3]);
+    [conversations tap];
+    XCTAssertTrue([self.app.navigationBars[@"Conversations"] waitForExistenceWithTimeout:3]);
+    XCTAssertTrue(self.app.staticTexts[@"No Conversations"].exists || self.app.buttons[@"New"].exists);
+    XCTAssertEqual(self.app.webViews.count, 0u);
+    [self.app.buttons[@"New"] tap];
+    XCTAssertTrue([self.app.navigationBars[@"DeepSeek"] waitForExistenceWithTimeout:3]);
+}
+
 - (void)testLandscapeKeepsNativeControlsReachable {
     XCUIDevice.sharedDevice.orientation = UIDeviceOrientationLandscapeLeft;
     sleep(1);

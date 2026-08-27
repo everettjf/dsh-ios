@@ -3,6 +3,7 @@ import UIKit
 
 struct DSHNativeRootView: View {
     @State private var model = DSHAgentViewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -17,11 +18,14 @@ struct DSHNativeRootView: View {
                 } else {
                     messageList
                 }
+                responseStatus
                 composer
             }
             .navigationTitle("DeepSeek")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItemGroup(placement: .topBarLeading) {
+                    Button("Conversations", systemImage: "sidebar.left") { model.isShowingSessions = true }
+                        .accessibilityIdentifier("dsh.native.sessions")
                     Button("New Conversation", systemImage: "square.and.pencil") { model.newSession() }
                         .accessibilityIdentifier("dsh.native.new-session")
                 }
@@ -31,6 +35,10 @@ struct DSHNativeRootView: View {
                 }
             }
             .sheet(isPresented: $model.isShowingSettings) { settingsView }
+            .sheet(isPresented: $model.isShowingSessions) { SessionBrowserView(model: model) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active { model.persistForLifecycle() }
+            }
         }
     }
 
@@ -58,14 +66,49 @@ struct DSHNativeRootView: View {
                 .lineLimit(1...6)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("dsh.native.composer")
-            Button("Send", systemImage: "arrow.up.circle.fill") { model.send() }
+            if model.isStreaming {
+                Button("Stop", systemImage: "stop.circle.fill", role: .destructive) { model.stop() }
+                    .labelStyle(.iconOnly)
+                    .font(.title2)
+                    .accessibilityIdentifier("dsh.native.stop")
+            } else {
+                Menu("Response Actions", systemImage: "ellipsis.circle") {
+                    Button("Retry Last Turn", systemImage: "arrow.counterclockwise") { model.retryLastTurn() }
+                        .disabled(!model.canRetry)
+                    Button("Continue Response", systemImage: "text.append") { model.continueResponse() }
+                        .disabled(!model.canContinue)
+                }
                 .labelStyle(.iconOnly)
-                .font(.title2)
-                .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.isStreaming)
-                .accessibilityIdentifier("dsh.native.send")
+                Button("Send", systemImage: "arrow.up.circle.fill") { model.send() }
+                    .labelStyle(.iconOnly)
+                    .font(.title2)
+                    .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("dsh.native.send")
+            }
         }
         .padding()
         .background(.bar)
+    }
+
+    @ViewBuilder private var responseStatus: some View {
+        switch model.snapshot.phase {
+        case .failed(let message):
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .accessibilityIdentifier("dsh.native.failure")
+        case .cancelled:
+            Label("Response stopped", systemImage: "stop.circle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .accessibilityIdentifier("dsh.native.cancelled")
+        case .idle, .streaming, .completed:
+            EmptyView()
+        }
     }
 
     private var settingsView: some View {
@@ -146,6 +189,97 @@ struct DSHNativeRootView: View {
         case .failed: return .red
         case .disabled, .connecting: return .secondary
         }
+    }
+}
+
+private struct SessionBrowserView: View {
+    let model: DSHAgentViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var renameID: UUID?
+    @State private var renameTitle = ""
+    @State private var deleteID: UUID?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if model.sessions.isEmpty {
+                    ContentUnavailableView("No Conversations", systemImage: "bubble.left.and.bubble.right")
+                } else {
+                    List(model.sessions) { session in
+                        Button {
+                            model.selectSession(session.id)
+                        } label: {
+                            SessionRow(session: session, selected: session.id == model.currentSessionID)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing) {
+                            Button("Delete", systemImage: "trash", role: .destructive) { deleteID = session.id }
+                            Button("Rename", systemImage: "pencil") {
+                                renameID = session.id
+                                renameTitle = session.title
+                            }
+                            .tint(.blue)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Conversations")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("New", systemImage: "square.and.pencil") { model.newSession() }
+                }
+            }
+            .alert("Rename Conversation", isPresented: Binding(
+                get: { renameID != nil },
+                set: { if !$0 { renameID = nil } }
+            )) {
+                TextField("Title", text: $renameTitle)
+                Button("Rename") {
+                    if let renameID { model.renameSession(renameID, title: renameTitle) }
+                    renameID = nil
+                }
+                Button("Cancel", role: .cancel) { renameID = nil }
+            }
+            .confirmationDialog("Delete this conversation?", isPresented: Binding(
+                get: { deleteID != nil },
+                set: { if !$0 { deleteID = nil } }
+            )) {
+                Button("Delete Conversation", role: .destructive) {
+                    if let deleteID { model.deleteSession(deleteID) }
+                    deleteID = nil
+                }
+                Button("Cancel", role: .cancel) { deleteID = nil }
+            } message: {
+                Text("This removes its local message history.")
+            }
+        }
+    }
+}
+
+private struct SessionRow: View {
+    let session: DSHSessionRecord
+    let selected: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: selected ? "checkmark.circle.fill" : "bubble.left")
+                .foregroundStyle(selected ? Color.accentColor : Color.secondary)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(session.title).lineLimit(1)
+                Text(session.updatedAt, style: .relative)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if session.turnState == .running || session.turnState == .interrupted {
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel("Interrupted response")
+            }
+        }
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
     }
 }
 

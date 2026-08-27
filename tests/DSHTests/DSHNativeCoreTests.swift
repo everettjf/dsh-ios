@@ -130,6 +130,62 @@ final class DSHNativeCoreTests: XCTestCase {
         XCTAssertTrue(snapshot.messages.isEmpty)
     }
 
+    func testAgentRuntimeCancellationRetainsPartialResponse() async throws {
+        let runtime = DSHAgentRuntime(client: SuspendedModelClient(), model: "deepseek-chat")
+        let task = Task { try await runtime.send("Hello") }
+        try await Task.sleep(for: .milliseconds(50))
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            XCTFail("Expected cancellation")
+        } catch is CancellationError { }
+
+        let snapshot = await runtime.snapshot()
+        XCTAssertEqual(snapshot.phase, .cancelled)
+        XCTAssertEqual(snapshot.messages.last?.content, "partial")
+    }
+
+    func testAgentRuntimeRetriesWithoutDuplicatingUserMessageAndCanContinue() async throws {
+        let client = SequencedModelClient(scripts: [
+            [.contentDelta("first"), .completed(.stop)],
+            [.contentDelta("replacement"), .completed(.stop)],
+            [.contentDelta("continued"), .completed(.stop)]
+        ])
+        let runtime = DSHAgentRuntime(client: client, model: "deepseek-chat")
+
+        _ = try await runtime.send("Question")
+        let retried = try await runtime.retryLastTurn()
+        XCTAssertEqual(retried.messages.map(\.role), [.user, .assistant])
+        XCTAssertEqual(retried.messages.last?.content, "replacement")
+
+        let continued = try await runtime.continueResponse()
+        XCTAssertEqual(continued.messages.map(\.role), [.user, .assistant, .assistant])
+        XCTAssertEqual(continued.messages.last?.content, "continued")
+        let requests = await client.requests()
+        XCTAssertEqual(requests[1].messages.map(\.role), [.user])
+        XCTAssertEqual(requests[2].messages.map(\.role), [.user, .assistant])
+    }
+
+    func testContextPolicyKeepsNewestTurnWhole() {
+        let old = String(repeating: "o", count: 5_000)
+        let newest = String(repeating: "n", count: 5_000)
+        let messages: [DSHChatMessage] = [
+            .init(role: .user, content: old),
+            .init(role: .assistant, content: "old answer"),
+            .init(role: .user, content: newest),
+            .init(role: .assistant, content: "new answer"),
+            .init(role: .tool, content: "tool result", toolCallID: "call-1")
+        ]
+
+        let selected = DSHContextPolicy(maximumEstimatedTokens: 1_000)
+            .messagesForRequest(messages, systemPrompt: "system")
+
+        XCTAssertEqual(selected.map(\.role), [.system, .user, .assistant, .tool])
+        XCTAssertEqual(selected[1].content, newest)
+        XCTAssertEqual(selected.last?.toolCallID, "call-1")
+    }
+
     func testAgentRuntimeExecutesToolAndContinuesNextStep() async throws {
         let client = SequencedModelClient(scripts: [
             [
@@ -198,6 +254,38 @@ final class DSHNativeCoreTests: XCTestCase {
         try await store.delete(id: newer.id)
         let deleted = try await store.load(id: newer.id)
         XCTAssertNil(deleted)
+    }
+
+    func testSessionStoreMigratesLegacyRecordsToCurrentSchema() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DSHSessionMigrationTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let id = UUID()
+        let record = DSHSessionRecord(
+            id: id,
+            title: "Legacy",
+            messages: [.init(role: .user, content: "hello")],
+            createdAt: Date(timeIntervalSince1970: 1),
+            updatedAt: Date(timeIntervalSince1970: 2)
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoder.encode(record)) as? [String: Any])
+        json.removeValue(forKey: "schemaVersion")
+        json.removeValue(forKey: "turnState")
+        let url = directory.appendingPathComponent(id.uuidString).appendingPathExtension("json")
+        try JSONSerialization.data(withJSONObject: json).write(to: url)
+        let store = DSHSessionStore(directory: directory)
+
+        let loaded = try await store.load(id: id)
+        let migrated = try XCTUnwrap(loaded)
+
+        XCTAssertEqual(migrated.schemaVersion, DSHSessionRecord.currentSchemaVersion)
+        XCTAssertEqual(migrated.turnState, .completed)
+        let rewritten = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertEqual(rewritten["schemaVersion"] as? Int, DSHSessionRecord.currentSchemaVersion)
+        XCTAssertEqual(rewritten["turnState"] as? String, DSHSessionTurnState.completed.rawValue)
     }
 
     func testMCPClientInitializesPagesToolsAndPreservesSessionHeaders() async throws {
@@ -641,5 +729,22 @@ private struct ScriptedModelClient: DSHModelClient {
 
     func lastRequest() async -> DSHCompletionRequest? {
         await recorder.request
+    }
+}
+
+private struct SuspendedModelClient: DSHModelClient {
+    func stream(request: DSHCompletionRequest) -> AsyncThrowingStream<DSHModelEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                continuation.yield(.contentDelta("partial"))
+                do {
+                    try await Task.sleep(for: .seconds(30))
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: CancellationError())
+                }
+            }
+            continuation.onTermination = { @Sendable _ in task.cancel() }
+        }
     }
 }

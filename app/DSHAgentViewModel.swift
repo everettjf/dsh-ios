@@ -11,11 +11,14 @@ final class DSHAgentViewModel {
     var configurationError: String?
     var mcpConfigurations = DSHMCPServerConfigurationStore.load()
     var mcpStatuses: [DSHMCPServerStatus] = []
+    var sessions: [DSHSessionRecord] = []
+    var isShowingSessions = false
 
     @ObservationIgnored private var runtime: DSHAgentRuntime
     @ObservationIgnored private var observationTask: Task<Void, Never>?
     @ObservationIgnored private var sendTask: Task<Void, Never>?
     @ObservationIgnored private var mcpTask: Task<Void, Never>?
+    @ObservationIgnored private var persistenceTask: Task<Void, Never>?
     @ObservationIgnored private let sessionStore: DSHSessionStore
     @ObservationIgnored private let toolRegistry: DSHToolRegistry
     @ObservationIgnored private let mcpManager: DSHMCPServerManager
@@ -40,7 +43,7 @@ final class DSHAgentViewModel {
         mcpManager = DSHMCPServerManager(registry: registry)
         self.runtime = Self.makeRuntime(configuration, messages: [], toolRegistry: registry)
         observeRuntime()
-        Task { await restoreCurrentSession() }
+        Task { await restoreSessions() }
         refreshMCPServers()
     }
 
@@ -52,6 +55,10 @@ final class DSHAgentViewModel {
         if case .streaming = snapshot.phase { return true }
         return false
     }
+
+    var currentSessionID: UUID { sessionID }
+    var canRetry: Bool { !isStreaming && snapshot.messages.contains { $0.role == .user } }
+    var canContinue: Bool { !isStreaming && snapshot.messages.contains { $0.role == .assistant } }
 
     func send() {
         guard isConfigured, !isStreaming else {
@@ -68,6 +75,35 @@ final class DSHAgentViewModel {
             } catch {
                 // The runtime snapshot contains the user-facing failure state.
             }
+        }
+    }
+
+    func stop() {
+        sendTask?.cancel()
+    }
+
+    func persistForLifecycle() {
+        persistenceTask?.cancel()
+        let current = snapshot
+        guard !current.messages.isEmpty else { return }
+        persistenceTask = Task { await persist(current) }
+    }
+
+    func retryLastTurn() {
+        guard !isStreaming else { return }
+        sendTask = Task {
+            do { _ = try await runtime.retryLastTurn() }
+            catch is CancellationError { }
+            catch { }
+        }
+    }
+
+    func continueResponse() {
+        guard !isStreaming else { return }
+        sendTask = Task {
+            do { _ = try await runtime.continueResponse() }
+            catch is CancellationError { }
+            catch { }
         }
     }
 
@@ -107,6 +143,36 @@ final class DSHAgentViewModel {
     }
 
     func newSession() {
+        Task { await createNewSession() }
+    }
+
+    func selectSession(_ id: UUID) {
+        Task { await switchSession(to: id) }
+    }
+
+    func renameSession(_ id: UUID, title: String) {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return }
+        Task {
+            guard var record = try? await sessionStore.load(id: id) else { return }
+            record.title = title
+            record.updatedAt = Date()
+            try? await sessionStore.save(record)
+            await reloadSessionList()
+        }
+    }
+
+    func deleteSession(_ id: UUID) {
+        Task {
+            try? await sessionStore.delete(id: id)
+            if id == sessionID { await createNewSession(persistCurrent: false) }
+            else { await reloadSessionList() }
+        }
+    }
+
+    private func createNewSession(persistCurrent: Bool = true) async {
+        persistenceTask?.cancel()
+        if persistCurrent, !snapshot.messages.isEmpty { await persist(snapshot) }
         observationTask?.cancel()
         sendTask?.cancel()
         sessionID = UUID()
@@ -115,6 +181,8 @@ final class DSHAgentViewModel {
         runtime = Self.makeRuntime(configuration, messages: [], toolRegistry: toolRegistry)
         snapshot = .init(messages: [], phase: .idle, usage: nil)
         observeRuntime()
+        isShowingSessions = false
+        await reloadSessionList()
     }
 
     private func observeRuntime() {
@@ -124,42 +192,103 @@ final class DSHAgentViewModel {
             for await update in updates {
                 guard !Task.isCancelled else { return }
                 snapshot = update
-                if !update.messages.isEmpty {
-                    switch update.phase {
-                    case .completed, .failed:
-                        await persist(update)
-                    case .idle, .streaming:
-                        break
-                    }
-                }
+                if !update.messages.isEmpty { schedulePersistence(update) }
             }
         }
     }
 
-    private func restoreCurrentSession() async {
+    private func restoreSessions() async {
+        await reloadSessionList()
         guard let record = try? await sessionStore.load(id: sessionID) else {
             UserDefaults.standard.set(sessionID.uuidString, forKey: Self.currentSessionKey)
             return
         }
         observationTask?.cancel()
         createdAt = record.createdAt
-        snapshot = .init(messages: record.messages, phase: .idle, usage: nil)
+        if record.turnState == .running {
+            snapshot = .init(
+                messages: record.messages,
+                phase: .failed(message: "The previous response was interrupted when the app stopped. Retry or continue when ready."),
+                usage: nil
+            )
+        } else {
+            snapshot = .init(messages: record.messages, phase: .idle, usage: nil)
+        }
         runtime = Self.makeRuntime(configuration, messages: record.messages, toolRegistry: toolRegistry)
         observeRuntime()
+        if record.turnState == .running { await persist(snapshot, overrideState: .interrupted) }
     }
 
-    private func persist(_ update: DSHAgentSnapshot) async {
+    private func schedulePersistence(_ update: DSHAgentSnapshot) {
+        persistenceTask?.cancel()
+        let terminal: Bool
+        switch update.phase {
+        case .completed, .cancelled, .failed: terminal = true
+        case .idle, .streaming: terminal = false
+        }
+        persistenceTask = Task {
+            if !terminal { try? await Task.sleep(for: .milliseconds(300)) }
+            guard !Task.isCancelled else { return }
+            await persist(update)
+        }
+    }
+
+    private func persist(
+        _ update: DSHAgentSnapshot,
+        overrideState: DSHSessionTurnState? = nil
+    ) async {
         let firstPrompt = update.messages.first { $0.role == .user }?.content ?? "New conversation"
-        let title = String(firstPrompt.prefix(80))
+        let existingTitle = sessions.first(where: { $0.id == sessionID })?.title
+        let title = existingTitle ?? String(firstPrompt.prefix(80))
         let record = DSHSessionRecord(
             id: sessionID,
             title: title,
             messages: update.messages,
             createdAt: createdAt,
-            updatedAt: Date()
+            updatedAt: Date(),
+            turnState: overrideState ?? Self.turnState(update.phase)
         )
         try? await sessionStore.save(record)
         UserDefaults.standard.set(sessionID.uuidString, forKey: Self.currentSessionKey)
+        if let index = sessions.firstIndex(where: { $0.id == record.id }) { sessions[index] = record }
+        else { sessions.append(record) }
+        sessions.sort { $0.updatedAt > $1.updatedAt }
+    }
+
+    private func switchSession(to id: UUID) async {
+        guard id != sessionID, let record = try? await sessionStore.load(id: id) else {
+            isShowingSessions = false
+            return
+        }
+        persistenceTask?.cancel()
+        if !snapshot.messages.isEmpty { await persist(snapshot) }
+        sendTask?.cancel()
+        observationTask?.cancel()
+        sessionID = id
+        createdAt = record.createdAt
+        UserDefaults.standard.set(id.uuidString, forKey: Self.currentSessionKey)
+        let restoredPhase: DSHAgentPhase = record.turnState == .running
+            ? .failed(message: "The previous response was interrupted when the app stopped. Retry or continue when ready.")
+            : .idle
+        snapshot = .init(messages: record.messages, phase: restoredPhase, usage: nil)
+        runtime = Self.makeRuntime(configuration, messages: record.messages, toolRegistry: toolRegistry)
+        observeRuntime()
+        if record.turnState == .running { await persist(snapshot, overrideState: .interrupted) }
+        isShowingSessions = false
+    }
+
+    private func reloadSessionList() async {
+        sessions = (try? await sessionStore.list()) ?? []
+    }
+
+    private static func turnState(_ phase: DSHAgentPhase) -> DSHSessionTurnState {
+        switch phase {
+        case .idle: return .idle
+        case .streaming: return .running
+        case .completed: return .completed
+        case .cancelled: return .cancelled
+        case .failed: return .failed
+        }
     }
 
     private static func makeRuntime(
