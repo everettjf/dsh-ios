@@ -118,6 +118,7 @@ actor DSHAgentRuntime {
     private var phase: DSHAgentPhase = .idle
     private var usage: DSHTokenUsage?
     private var isRunning = false
+    private var lastStreamingPublishAt: ContinuousClock.Instant?
     private var observers: [UUID: AsyncStream<DSHAgentSnapshot>.Continuation] = [:]
 
     init(
@@ -187,6 +188,7 @@ actor DSHAgentRuntime {
         isRunning = true
         defer { isRunning = false }
         usage = nil
+        lastStreamingPublishAt = nil
         let turnID = UUID().uuidString
         let turnClock = ContinuousClock()
         let turnStartedAt = turnClock.now
@@ -219,13 +221,17 @@ actor DSHAgentRuntime {
                     )) {
                         try Task.checkCancellation()
                         if firstEventAt == nil { firstEventAt = modelClock.now }
+                        let forcePublish: Bool
                         switch event {
                         case .reasoningDelta(let text):
+                            forcePublish = false
                             messages[assistantIndex].reasoningContent =
                                 (messages[assistantIndex].reasoningContent ?? "") + text
                         case .contentDelta(let text):
+                            forcePublish = false
                             messages[assistantIndex].content = (messages[assistantIndex].content ?? "") + text
                         case .toolCallDelta(let delta):
+                            forcePublish = false
                             var fragment = toolCallFragments[delta.index] ?? ToolCallFragment()
                             fragment.id += delta.id ?? ""
                             fragment.name += delta.name ?? ""
@@ -238,11 +244,13 @@ actor DSHAgentRuntime {
                                 return DSHToolCall(id: value.id, name: value.name, arguments: value.arguments)
                             }
                         case .usage(let value):
+                            forcePublish = true
                             usage = value
                         case .completed(let reason):
+                            forcePublish = true
                             finishReason = reason
                         }
-                        publish()
+                        publishStreaming(force: forcePublish)
                     }
                     let firstTokenMS = firstEventAt.map { Self.milliseconds(modelStartedAt.duration(to: $0)) } ?? -1
                     let result = "finish=\(finishReason?.rawValue ?? "stream_end") first_event_ms=\(firstTokenMS) prompt_tokens=\(usage?.promptTokens ?? 0) completion_tokens=\(usage?.completionTokens ?? 0)"
@@ -325,6 +333,19 @@ actor DSHAgentRuntime {
     private func publish() {
         let value = snapshot()
         for continuation in observers.values { continuation.yield(value) }
+    }
+
+    /// Streaming providers can deliver hundreds of tiny deltas per second.
+    /// Updating SwiftUI and copying the message array for every fragment wastes
+    /// CPU and battery; 30 Hz remains visually smooth while terminal events are
+    /// always delivered immediately.
+    private func publishStreaming(force: Bool) {
+        let clock = ContinuousClock()
+        let now = clock.now
+        if !force, let lastStreamingPublishAt,
+           lastStreamingPublishAt.duration(to: now) < .milliseconds(33) { return }
+        self.lastStreamingPublishAt = now
+        publish()
     }
 
     private func removeObserver(_ id: UUID) {

@@ -716,6 +716,35 @@ final class DSHNativeCoreTests: XCTestCase {
         XCTAssertTrue(exported.contains("error=http_401"))
         XCTAssertFalse(exported.contains(secret))
     }
+
+    func testHighFrequencyStreamCompletesWithoutLosingDeltas() async throws {
+        let chunkCount = 10_000
+        let client = ScriptedModelClient(events: Array(repeating: .contentDelta("x"), count: chunkCount) + [.completed(.stop)])
+        let runtime = DSHAgentRuntime(client: client, model: "deepseek-chat")
+        let started = ContinuousClock().now
+
+        let snapshot = try await runtime.send("stress")
+
+        XCTAssertEqual(snapshot.messages.last?.content?.count, chunkCount)
+        XCTAssertEqual(snapshot.phase, .completed)
+        XCTAssertLessThan(started.duration(to: ContinuousClock().now), .seconds(10))
+    }
+
+    func testContextBudgetStaysBoundedAcrossOneHundredTurns() {
+        let messages = (0..<100).flatMap { turn -> [DSHChatMessage] in
+            [
+                .init(role: .user, content: "turn-\(turn)-" + String(repeating: "q", count: 1_000)),
+                .init(role: .assistant, content: String(repeating: "a", count: 1_000))
+            ]
+        }
+
+        let selected = DSHContextPolicy(maximumEstimatedTokens: 4_000)
+            .messagesForRequest(messages, systemPrompt: "system")
+
+        XCTAssertLessThan(selected.count, messages.count / 4)
+        XCTAssertEqual(selected.last?.content, String(repeating: "a", count: 1_000))
+        XCTAssertTrue(selected.contains { $0.content?.hasPrefix("turn-99-") == true })
+    }
 }
 
 private struct AgentTelemetryEvent: Sendable {
