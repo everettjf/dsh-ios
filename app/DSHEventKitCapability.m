@@ -183,7 +183,10 @@ static const NSInteger kMaxDays = 366;
         @"events": out,
         @"from": [self isoString:start],
         @"to": [self isoString:end],
-        @"truncated": @(events.count > out.count),
+        // Relational expressions have type `int` in Objective-C. Boxing the
+        // expression directly therefore serializes as JSON 0/1, which fails
+        // the tool's boolean output schema. Cast to BOOL before boxing.
+        @"truncated": @((BOOL) (events.count > out.count)),
     };
 }
 
@@ -227,7 +230,8 @@ static const NSInteger kMaxDays = 366;
         if (reminder.notes.length) item[@"notes"] = [reminder.notes substringToIndex:MIN(reminder.notes.length, 500u)];
         [out addObject:item];
     }
-    return @{ @"reminders": out, @"truncated": @(sorted.count > out.count) };
+    return @{ @"reminders": out,
+              @"truncated": @((BOOL) (sorted.count > out.count)) };
 }
 
 #pragma mark Routes

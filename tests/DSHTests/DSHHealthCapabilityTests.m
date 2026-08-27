@@ -188,8 +188,11 @@ static NSString *const kHealthRead = @"health.read";
     NSInteger status = 0;
     NSDictionary *json = [self get:@"/v1/health/workouts?days=99999&limit=99999" status:&status];
     XCTAssertTrue(status == 200 || status == 403, @"unexpected status %ld", (long) status);
-    if (status == 200)
+    if (status == 200) {
+        XCTAssertEqual(CFGetTypeID((__bridge CFTypeRef) json[@"truncated"]), CFBooleanGetTypeID(),
+                       @"tool schema requires a JSON boolean, not numeric 0/1");
         XCTAssertLessThanOrEqual([json[@"workouts"] count], 200u);
+    }
 }
 
 #pragma mark Sleep aggregation (pure)

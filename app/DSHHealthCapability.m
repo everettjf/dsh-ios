@@ -439,7 +439,9 @@ static const int64_t kQueryTimeoutSeconds = 5;
         @"from": [self isoString:[self startForDays:days]],
         @"to": [self isoString:NSDate.date],
         @"workouts": rows,
-        @"truncated": @(workouts.count > rows.count),
+        // A boxed comparison is otherwise NSNumber(int), emitted as JSON 0/1
+        // instead of the boolean required by the tool output schema.
+        @"truncated": @((BOOL) (workouts.count > rows.count)),
     } mutableCopy];
     if (rows.count == 0)
         body[@"note"] = [self emptyNote];

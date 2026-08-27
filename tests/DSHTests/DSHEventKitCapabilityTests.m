@@ -106,6 +106,8 @@ static NSString *const kRemindersRead = @"reminders.read";
     if (status == 200) {
         XCTAssertNotNil(json[@"events"]);
         XCTAssertNotNil(json[@"from"]);
+        XCTAssertEqual(CFGetTypeID((__bridge CFTypeRef) json[@"truncated"]), CFBooleanGetTypeID(),
+                       @"tool schema requires a JSON boolean, not numeric 0/1");
         XCTAssertLessThanOrEqual([json[@"events"] count], 5u, @"limit must be honoured");
     } else {
         XCTAssertEqual(status, 403);
@@ -121,6 +123,8 @@ static NSString *const kRemindersRead = @"reminders.read";
     NSDictionary *json = [self get:@"/v1/reminders?limit=3" status:&status];
     if (status == 200) {
         XCTAssertNotNil(json[@"reminders"]);
+        XCTAssertEqual(CFGetTypeID((__bridge CFTypeRef) json[@"truncated"]), CFBooleanGetTypeID(),
+                       @"tool schema requires a JSON boolean, not numeric 0/1");
         XCTAssertLessThanOrEqual([json[@"reminders"] count], 3u);
     } else {
         XCTAssertEqual(status, 403);
