@@ -24,6 +24,7 @@ NSString *DSHActivityOutcomeName(DSHActivityOutcome outcome) {
         case DSHActivityOutcomeRefused: return @"refused";
         case DSHActivityOutcomeDeclined: return @"declined";
         case DSHActivityOutcomeTimedOut: return @"timed out";
+        case DSHActivityOutcomeCancelled: return @"cancelled";
         case DSHActivityOutcomeError: return @"error";
         case DSHActivityOutcomeStarted: return @"started";
     }
@@ -34,12 +35,20 @@ static NSString *SourceName(DSHActivitySource source) {
         case DSHActivitySourceCapability: return @"capability";
         case DSHActivitySourceGuestTool: return @"tool";
         case DSHActivitySourceConfirmation: return @"asked";
+        case DSHActivitySourceNativeTurn: return @"turn";
+        case DSHActivitySourceModel: return @"model";
+        case DSHActivitySourceMCP: return @"mcp";
+        case DSHActivitySourceNativeGuest: return @"guest";
     }
 }
 
 static DSHActivitySource SourceFromName(NSString *name) {
     if ([name isEqualToString:@"tool"]) return DSHActivitySourceGuestTool;
     if ([name isEqualToString:@"asked"]) return DSHActivitySourceConfirmation;
+    if ([name isEqualToString:@"turn"]) return DSHActivitySourceNativeTurn;
+    if ([name isEqualToString:@"model"]) return DSHActivitySourceModel;
+    if ([name isEqualToString:@"mcp"]) return DSHActivitySourceMCP;
+    if ([name isEqualToString:@"guest"]) return DSHActivitySourceNativeGuest;
     return DSHActivitySourceCapability;
 }
 
@@ -47,6 +56,7 @@ static DSHActivityOutcome OutcomeFromName(NSString *name) {
     if ([name isEqualToString:@"refused"]) return DSHActivityOutcomeRefused;
     if ([name isEqualToString:@"declined"]) return DSHActivityOutcomeDeclined;
     if ([name isEqualToString:@"timed out"]) return DSHActivityOutcomeTimedOut;
+    if ([name isEqualToString:@"cancelled"]) return DSHActivityOutcomeCancelled;
     if ([name isEqualToString:@"error"]) return DSHActivityOutcomeError;
     if ([name isEqualToString:@"started"]) return DSHActivityOutcomeStarted;
     return DSHActivityOutcomeOK;
@@ -183,12 +193,30 @@ static DSHActivityOutcome OutcomeFromName(NSString *name) {
         return nil;
     NSString *flat = [[text componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet]
                       componentsJoinedByString:@" "];
+    flat = [self redactSecrets:flat];
     flat = [flat stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
     while ([flat containsString:@"  "])
         flat = [flat stringByReplacingOccurrencesOfString:@"  " withString:@" "];
     if (flat.length > kMaxDetailCharacters)
         flat = [[flat substringToIndex:kMaxDetailCharacters] stringByAppendingString:@"…"];
     return flat.length ? flat : nil;
+}
+
+/// Apply this both while recording and while exporting so records written by
+/// older app versions cannot leak credentials through a diagnostic report.
+- (NSString *)redactSecrets:(NSString *)text {
+    NSArray<NSString *> *patterns = @[
+        @"(?i)(Bearer\\s+)[^\\s,;\\\"]+",
+        @"(?i)((?:DEEPSEEK_API_KEY|DSH_HOST_BRIDGE_TOKEN|API[_-]?KEY|BEARER[_-]?TOKEN)\\s*[=:]\\s*)[^\\s,;]+",
+        @"(?i)(\\\"(?:api[_-]?key|bearerToken|authorization)\\\"\\s*:\\s*\\\")[^\\\"]+"
+    ];
+    NSString *output = text;
+    for (NSString *pattern in patterns) {
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+        output = [regex stringByReplacingMatchesInString:output options:0 range:NSMakeRange(0, output.length)
+                                             withTemplate:@"$1[REDACTED]"];
+    }
+    return output;
 }
 
 /// Only in-flight rows are candidates, and only recent ones: a correlation id
@@ -259,7 +287,7 @@ static DSHActivityOutcome OutcomeFromName(NSString *name) {
         if (entry.result) [out appendFormat:@"  → %@", entry.result];
         [out appendString:@"\n"];
     }
-    return out;
+    return [self redactSecrets:out];
 }
 
 #pragma mark Persistence

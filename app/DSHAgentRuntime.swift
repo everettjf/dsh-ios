@@ -1,5 +1,31 @@
 import Foundation
 
+protocol DSHAgentTelemetry: Sendable {
+    func started(source: String, name: String, detail: String, correlationID: String) async
+    func finished(source: String, name: String, detail: String, result: String, outcome: String, duration: TimeInterval, correlationID: String) async
+}
+
+struct DSHNoopAgentTelemetry: DSHAgentTelemetry {
+    func started(source: String, name: String, detail: String, correlationID: String) async { }
+    func finished(source: String, name: String, detail: String, result: String, outcome: String, duration: TimeInterval, correlationID: String) async { }
+}
+
+struct DSHActivityAgentTelemetry: DSHAgentTelemetry, @unchecked Sendable {
+    func started(source: String, name: String, detail: String, correlationID: String) async {
+        DSHNativeToolAudit.recordStarted(withSource: source, name: name, detail: detail, correlationID: correlationID)
+    }
+
+    func finished(
+        source: String, name: String, detail: String, result: String, outcome: String,
+        duration: TimeInterval, correlationID: String
+    ) async {
+        DSHNativeToolAudit.recordFinished(
+            withSource: source, name: name, detail: detail, result: result,
+            outcome: outcome, duration: duration, correlationID: correlationID
+        )
+    }
+}
+
 enum DSHAgentPhase: Equatable, Sendable {
     case idle
     case streaming(step: Int)
@@ -87,6 +113,7 @@ actor DSHAgentRuntime {
     private let toolRegistry: DSHToolRegistry?
     private let maximumSteps: Int
     private let contextPolicy: DSHContextPolicy
+    private let telemetry: any DSHAgentTelemetry
     private var messages: [DSHChatMessage]
     private var phase: DSHAgentPhase = .idle
     private var usage: DSHTokenUsage?
@@ -100,7 +127,8 @@ actor DSHAgentRuntime {
         messages: [DSHChatMessage] = [],
         toolRegistry: DSHToolRegistry? = nil,
         maximumSteps: Int = 8,
-        contextPolicy: DSHContextPolicy = .init()
+        contextPolicy: DSHContextPolicy = .init(),
+        telemetry: any DSHAgentTelemetry = DSHNoopAgentTelemetry()
     ) {
         self.client = client
         self.model = model
@@ -109,6 +137,7 @@ actor DSHAgentRuntime {
         self.toolRegistry = toolRegistry
         self.maximumSteps = maximumSteps
         self.contextPolicy = contextPolicy
+        self.telemetry = telemetry
     }
 
     func snapshot() -> DSHAgentSnapshot {
@@ -158,46 +187,69 @@ actor DSHAgentRuntime {
         isRunning = true
         defer { isRunning = false }
         usage = nil
+        let turnID = UUID().uuidString
+        let turnClock = ContinuousClock()
+        let turnStartedAt = turnClock.now
+        let attachmentCount = messages.reduce(0) { $0 + $1.attachments.count }
+        let turnDetail = "history_messages=\(messages.count) attachments=\(attachmentCount)"
+        await telemetry.started(source: "turn", name: "native.turn", detail: turnDetail, correlationID: turnID)
+        var completedSteps = 0
         do {
             for step in 1...maximumSteps {
+                completedSteps = step
                 let assistantIndex = messages.count
                 messages.append(.init(role: .assistant))
                 phase = .streaming(step: step)
                 publish()
 
                 let requestMessages = contextPolicy.messagesForRequest(Array(messages.dropLast()), systemPrompt: systemPrompt)
+                let modelID = "\(turnID)-model-\(step)"
+                let modelClock = ContinuousClock()
+                let modelStartedAt = modelClock.now
+                let modelDetail = "step=\(step) messages=\(requestMessages.count) tools=\(toolRegistry?.definitions.count ?? 0)"
+                await telemetry.started(source: "model", name: "model.stream", detail: modelDetail, correlationID: modelID)
+                var firstEventAt: ContinuousClock.Instant?
                 var toolCallFragments: [Int: ToolCallFragment] = [:]
                 var finishReason: DSHFinishReason?
-                for try await event in client.stream(request: .init(
-                    model: model,
-                    messages: requestMessages,
-                    tools: toolRegistry?.definitions ?? []
-                )) {
-                    try Task.checkCancellation()
-                    switch event {
-                    case .reasoningDelta(let text):
-                        messages[assistantIndex].reasoningContent =
-                            (messages[assistantIndex].reasoningContent ?? "") + text
-                    case .contentDelta(let text):
-                        messages[assistantIndex].content = (messages[assistantIndex].content ?? "") + text
-                    case .toolCallDelta(let delta):
-                        var fragment = toolCallFragments[delta.index] ?? ToolCallFragment()
-                        fragment.id += delta.id ?? ""
-                        fragment.name += delta.name ?? ""
-                        fragment.arguments += delta.arguments ?? ""
-                        toolCallFragments[delta.index] = fragment
-                        messages[assistantIndex].toolCalls = toolCallFragments.keys.sorted().compactMap { index in
-                            guard let value = toolCallFragments[index], !value.id.isEmpty, !value.name.isEmpty else {
-                                return nil
+                do {
+                    for try await event in client.stream(request: .init(
+                        model: model,
+                        messages: requestMessages,
+                        tools: toolRegistry?.definitions ?? []
+                    )) {
+                        try Task.checkCancellation()
+                        if firstEventAt == nil { firstEventAt = modelClock.now }
+                        switch event {
+                        case .reasoningDelta(let text):
+                            messages[assistantIndex].reasoningContent =
+                                (messages[assistantIndex].reasoningContent ?? "") + text
+                        case .contentDelta(let text):
+                            messages[assistantIndex].content = (messages[assistantIndex].content ?? "") + text
+                        case .toolCallDelta(let delta):
+                            var fragment = toolCallFragments[delta.index] ?? ToolCallFragment()
+                            fragment.id += delta.id ?? ""
+                            fragment.name += delta.name ?? ""
+                            fragment.arguments += delta.arguments ?? ""
+                            toolCallFragments[delta.index] = fragment
+                            messages[assistantIndex].toolCalls = toolCallFragments.keys.sorted().compactMap { index in
+                                guard let value = toolCallFragments[index], !value.id.isEmpty, !value.name.isEmpty else {
+                                    return nil
+                                }
+                                return DSHToolCall(id: value.id, name: value.name, arguments: value.arguments)
                             }
-                            return DSHToolCall(id: value.id, name: value.name, arguments: value.arguments)
+                        case .usage(let value):
+                            usage = value
+                        case .completed(let reason):
+                            finishReason = reason
                         }
-                    case .usage(let value):
-                        usage = value
-                    case .completed(let reason):
-                        finishReason = reason
+                        publish()
                     }
-                    publish()
+                    let firstTokenMS = firstEventAt.map { Self.milliseconds(modelStartedAt.duration(to: $0)) } ?? -1
+                    let result = "finish=\(finishReason?.rawValue ?? "stream_end") first_event_ms=\(firstTokenMS) prompt_tokens=\(usage?.promptTokens ?? 0) completion_tokens=\(usage?.completionTokens ?? 0)"
+                    await telemetry.finished(source: "model", name: "model.stream", detail: modelDetail, result: result, outcome: "ok", duration: Self.seconds(modelStartedAt.duration(to: modelClock.now)), correlationID: modelID)
+                } catch {
+                    await telemetry.finished(source: "model", name: "model.stream", detail: modelDetail, result: "error=\(Self.errorCategory(error))", outcome: error is CancellationError ? "cancelled" : "error", duration: Self.seconds(modelStartedAt.duration(to: modelClock.now)), correlationID: modelID)
+                    throw error
                 }
                 try Task.checkCancellation()
 
@@ -205,6 +257,7 @@ actor DSHAgentRuntime {
                 guard finishReason == .toolCalls, !calls.isEmpty, let toolRegistry else {
                     phase = .completed
                     publish()
+                    await finishTurn(id: turnID, detail: turnDetail, outcome: "ok", steps: completedSteps, startedAt: turnStartedAt)
                     return snapshot()
                 }
                 for call in calls {
@@ -217,12 +270,56 @@ actor DSHAgentRuntime {
         } catch is CancellationError {
             phase = .cancelled
             publish()
+            await finishTurn(id: turnID, detail: turnDetail, outcome: "cancelled", steps: completedSteps, startedAt: turnStartedAt, error: "cancelled")
             throw CancellationError()
         } catch {
             phase = .failed(message: error.localizedDescription)
             publish()
+            await finishTurn(id: turnID, detail: turnDetail, outcome: "error", steps: completedSteps, startedAt: turnStartedAt, error: Self.errorCategory(error))
             throw error
         }
+    }
+
+    private func finishTurn(
+        id: String, detail: String, outcome: String, steps: Int,
+        startedAt: ContinuousClock.Instant, error: String? = nil
+    ) async {
+        var result = "steps=\(steps) total_tokens=\(usage?.totalTokens ?? 0)"
+        if let error { result += " error=\(error)" }
+        await telemetry.finished(
+            source: "turn", name: "native.turn", detail: detail, result: result,
+            outcome: outcome, duration: Self.seconds(startedAt.duration(to: ContinuousClock().now)), correlationID: id
+        )
+    }
+
+    private static func seconds(_ duration: Duration) -> TimeInterval {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+    }
+
+    private static func milliseconds(_ duration: Duration) -> Int {
+        Int((seconds(duration) * 1_000).rounded())
+    }
+
+    static func errorCategory(_ error: Error) -> String {
+        if error is CancellationError { return "cancelled" }
+        if let error = error as? DSHModelClientError {
+            switch error {
+            case .invalidEndpoint: return "invalid_endpoint"
+            case .invalidResponse: return "invalid_response"
+            case .httpStatus(let status, _): return "http_\(status)"
+            case .malformedEvent: return "malformed_stream"
+            }
+        }
+        if let error = error as? URLError {
+            switch error.code {
+            case .notConnectedToInternet, .networkConnectionLost: return "offline"
+            case .timedOut: return "network_timeout"
+            case .cancelled: return "cancelled"
+            default: return "network_\(error.code.rawValue)"
+            }
+        }
+        if error is DSHToolError { return "tool_error" }
+        return "internal_error"
     }
 
     private func publish() {

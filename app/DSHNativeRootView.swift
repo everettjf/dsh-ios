@@ -30,13 +30,16 @@ struct DSHNativeRootView: View {
                     Button("New Conversation", systemImage: "square.and.pencil") { model.newSession() }
                         .accessibilityIdentifier("dsh.native.new-session")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button("Activity", systemImage: "list.bullet.rectangle") { model.isShowingActivity = true }
+                        .accessibilityIdentifier("dsh.native.activity-button")
                     Button("Settings", systemImage: "gearshape") { model.isShowingSettings = true }
                         .accessibilityIdentifier("dsh.native.settings")
                 }
             }
             .sheet(isPresented: $model.isShowingSettings) { settingsView }
             .sheet(isPresented: $model.isShowingSessions) { SessionBrowserView(model: model) }
+            .sheet(isPresented: $model.isShowingActivity) { ActivityContainer() }
             .fileImporter(
                 isPresented: $model.isImportingAttachments,
                 allowedContentTypes: [.data],
@@ -228,6 +231,14 @@ struct DSHNativeRootView: View {
         case .disabled, .connecting: return .secondary
         }
     }
+}
+
+private struct ActivityContainer: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        UINavigationController(rootViewController: DSHActivityViewController())
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) { }
 }
 
 private struct SessionBrowserView: View {

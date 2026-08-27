@@ -170,3 +170,57 @@ struct DSHGovernedTool: DSHNativeTool {
         }
     }
 }
+
+struct DSHAuditedTool: DSHNativeTool {
+    let definition: DSHToolDefinition
+    private let tool: any DSHNativeTool
+    private let source: String
+    private let auditName: String
+
+    init(_ tool: any DSHNativeTool, source: String, auditName: String) {
+        self.tool = tool
+        self.source = source
+        self.auditName = auditName
+        definition = tool.definition
+    }
+
+    func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue {
+        let id = UUID().uuidString
+        let detail: String
+        if case .object(let fields) = arguments { detail = "argument_fields=\(fields.keys.sorted().joined(separator: ","))" }
+        else { detail = "argument_shape=non_object" }
+        let started = ContinuousClock().now
+        DSHNativeToolAudit.recordStarted(withSource: source, name: auditName, detail: detail, correlationID: id)
+        do {
+            let result = try await tool.execute(arguments: arguments)
+            DSHNativeToolAudit.recordFinished(
+                withSource: source, name: auditName, detail: detail,
+                result: Self.shape(result), outcome: "ok", duration: Self.seconds(started.duration(to: ContinuousClock().now)),
+                correlationID: id
+            )
+            return result
+        } catch {
+            DSHNativeToolAudit.recordFinished(
+                withSource: source, name: auditName, detail: detail,
+                result: "error_category=\(DSHAgentRuntime.errorCategory(error))", outcome: "error",
+                duration: Self.seconds(started.duration(to: ContinuousClock().now)), correlationID: id
+            )
+            throw error
+        }
+    }
+
+    private static func shape(_ value: DSHJSONValue) -> String {
+        switch value {
+        case .object(let value): return "result_shape=object fields=\(value.count)"
+        case .array(let value): return "result_shape=array items=\(value.count)"
+        case .string(let value): return "result_shape=text characters=\(value.count)"
+        case .number: return "result_shape=number"
+        case .bool: return "result_shape=boolean"
+        case .null: return "result_shape=empty"
+        }
+    }
+
+    private static func seconds(_ duration: Duration) -> TimeInterval {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+    }
+}

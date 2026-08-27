@@ -678,6 +678,66 @@ final class DSHNativeCoreTests: XCTestCase {
         let calls = await executor.calls
         XCTAssertTrue(calls.isEmpty)
     }
+
+    func testAgentTelemetryRecordsLifecycleMetricsWithoutPromptContents() async throws {
+        let telemetry = RecordingAgentTelemetry()
+        let client = ScriptedModelClient(events: [
+            .contentDelta("private model response"),
+            .usage(.init(promptTokens: 7, completionTokens: 3, totalTokens: 10)),
+            .completed(.stop)
+        ])
+        let runtime = DSHAgentRuntime(client: client, model: "deepseek-chat", telemetry: telemetry)
+
+        _ = try await runtime.send("private user prompt")
+
+        let events = await telemetry.events
+        XCTAssertEqual(events.map(\.name), ["native.turn", "model.stream", "model.stream", "native.turn"])
+        XCTAssertEqual(events.map(\.outcome), ["started", "started", "ok", "ok"])
+        let exported = events.map { "\($0.detail) \($0.result)" }.joined(separator: " ")
+        XCTAssertTrue(exported.contains("prompt_tokens=7"))
+        XCTAssertTrue(exported.contains("total_tokens=10"))
+        XCTAssertFalse(exported.contains("private user prompt"))
+        XCTAssertFalse(exported.contains("private model response"))
+    }
+
+    func testAgentTelemetryRedactsHTTPFailureBodyToCategory() async {
+        let telemetry = RecordingAgentTelemetry()
+        let secret = "server-body-secret"
+        let runtime = DSHAgentRuntime(
+            client: ScriptedModelClient(events: [], terminalError: DSHModelClientError.httpStatus(401, secret)),
+            model: "deepseek-chat",
+            telemetry: telemetry
+        )
+
+        do { _ = try await runtime.send("hello") } catch { }
+
+        let events = await telemetry.events
+        let exported = events.map { "\($0.detail) \($0.result)" }.joined(separator: " ")
+        XCTAssertTrue(exported.contains("error=http_401"))
+        XCTAssertFalse(exported.contains(secret))
+    }
+}
+
+private struct AgentTelemetryEvent: Sendable {
+    let name: String
+    let detail: String
+    let result: String
+    let outcome: String
+}
+
+private actor RecordingAgentTelemetry: DSHAgentTelemetry {
+    private(set) var events: [AgentTelemetryEvent] = []
+
+    func started(source: String, name: String, detail: String, correlationID: String) async {
+        events.append(.init(name: name, detail: detail, result: "", outcome: "started"))
+    }
+
+    func finished(
+        source: String, name: String, detail: String, result: String, outcome: String,
+        duration: TimeInterval, correlationID: String
+    ) async {
+        events.append(.init(name: name, detail: detail, result: result, outcome: outcome))
+    }
 }
 
 private struct RouteCall: Sendable {

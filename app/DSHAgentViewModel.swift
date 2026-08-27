@@ -13,6 +13,7 @@ final class DSHAgentViewModel {
     var mcpStatuses: [DSHMCPServerStatus] = []
     var sessions: [DSHSessionRecord] = []
     var isShowingSessions = false
+    var isShowingActivity = false
     var isImportingAttachments = false
     var pendingAttachments: [DSHAttachment] = []
     var attachmentError: String?
@@ -358,7 +359,8 @@ final class DSHAgentViewModel {
             model: configuration.model,
             systemPrompt: "You are a fast, capable iOS assistant. Use native tools when appropriate.",
             messages: messages,
-            toolRegistry: toolRegistry
+            toolRegistry: toolRegistry,
+            telemetry: DSHActivityAgentTelemetry()
         )
     }
 
@@ -424,8 +426,11 @@ final class DSHAgentViewModel {
         }
         return DSHToolRegistry([
                 deviceInfo, devicePower, location, contacts, calendar, reminders, health,
-                DSHStageAttachmentTool(manager: guest, workspace: workspace, context: context),
-                DSHBashTool(manager: guest)
+                DSHAuditedTool(
+                    DSHStageAttachmentTool(manager: guest, workspace: workspace, context: context),
+                    source: "guest", auditName: "guest.stage_attachment"
+                ),
+                DSHAuditedTool(DSHBashTool(manager: guest), source: "guest", auditName: "guest.bash")
             ] + nativeWrites)
     }
 }

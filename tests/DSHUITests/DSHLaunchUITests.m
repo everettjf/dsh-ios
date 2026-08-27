@@ -87,4 +87,14 @@
     XCTAssertFalse(self.app.progressIndicators[@"dsh.overlay.progress"].exists);
 }
 
+- (void)testNativeActivityTimelineIsReachable {
+    XCUIElement *activity = self.app.buttons[@"dsh.native.activity-button"];
+    XCTAssertTrue([activity waitForExistenceWithTimeout:3]);
+    [activity tap];
+    XCTAssertTrue([self.app.navigationBars[@"Activity"] waitForExistenceWithTimeout:3]);
+    XCTAssertTrue([self.app.tables[@"dsh.activity"] waitForExistenceWithTimeout:2]);
+    XCTAssertFalse(self.app.webViews.firstMatch.exists);
+    [self.app.buttons[@"Done"] tap];
+}
+
 @end

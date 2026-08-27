@@ -233,6 +233,30 @@
     XCTAssertFalse([entry.detail containsString:@"\n"], @"a row is one line");
 }
 
+- (void)testSecretsAreRedactedFromRowsAndDiagnosticExport {
+    NSString *secret = @"phase10-super-secret-token";
+    NSString *detail = [NSString stringWithFormat:@"Authorization: Bearer %@ DEEPSEEK_API_KEY=%@", secret, secret];
+    [DSHActivityLog.shared recordSource:DSHActivitySourceModel name:@"model.stream" detail:detail
+                                 result:[NSString stringWithFormat:@"{\"bearerToken\":\"%@\"}", secret]
+                                outcome:DSHActivityOutcomeOK duration:0.1];
+
+    DSHActivityEntry *entry = [self waitForEntryNamed:@"model.stream"];
+    XCTAssertEqual(entry.source, DSHActivitySourceModel);
+    XCTAssertFalse([entry.detail containsString:secret]);
+    XCTAssertFalse([entry.result containsString:secret]);
+    XCTAssertFalse([DSHActivityLog.shared.plainText containsString:secret]);
+    XCTAssertTrue([DSHActivityLog.shared.plainText containsString:@"[REDACTED]"]);
+}
+
+- (void)testNativeSourcesAndCancelledOutcomeArePreserved {
+    [DSHActivityLog.shared recordSource:DSHActivitySourceNativeTurn name:@"native.turn" detail:@"steps=1"
+                                 result:nil outcome:DSHActivityOutcomeCancelled duration:0.2];
+    DSHActivityEntry *entry = [self waitForEntryNamed:@"native.turn"];
+    XCTAssertEqual(entry.source, DSHActivitySourceNativeTurn);
+    XCTAssertEqual(entry.outcome, DSHActivityOutcomeCancelled);
+    XCTAssertTrue([DSHActivityLog.shared.plainText containsString:@"cancelled"]);
+}
+
 - (void)testNewestFirstAndCountedForRepeatDetection {
     for (int i = 0; i < 4; i++)
         [DSHActivityLog.shared recordSource:DSHActivitySourceCapability name:@"calendar.write"

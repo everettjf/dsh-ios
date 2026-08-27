@@ -78,10 +78,14 @@ struct DSHMCPServerStatus: Identifiable, Equatable, Sendable {
 
 actor DSHMCPServerManager {
     private let registry: DSHToolRegistry
+    private let telemetry: any DSHAgentTelemetry
     private var statuses: [UUID: DSHMCPServerStatus] = [:]
     private var clients: [UUID: DSHMCPClient] = [:]
 
-    init(registry: DSHToolRegistry) { self.registry = registry }
+    init(registry: DSHToolRegistry, telemetry: any DSHAgentTelemetry = DSHActivityAgentTelemetry()) {
+        self.registry = registry
+        self.telemetry = telemetry
+    }
 
     func refresh(_ configurations: [DSHMCPServerConfiguration]) async -> [DSHMCPServerStatus] {
         for client in clients.values { await client.disconnect() }
@@ -96,8 +100,14 @@ actor DSHMCPServerManager {
                 continue
             }
             next[configuration.id] = .init(id: configuration.id, name: configuration.name, state: .connecting)
+            let connectionID = UUID().uuidString
+            let connectionDetail = "server_id=\(configuration.id.uuidString.prefix(8))"
+            let clock = ContinuousClock()
+            let startedAt = clock.now
+            await telemetry.started(source: "mcp", name: "mcp.connect", detail: connectionDetail, correlationID: connectionID)
             guard let endpoint = URL(string: configuration.endpoint), endpoint.scheme == "https" || Self.isLocalHTTP(endpoint) else {
                 next[configuration.id] = .init(id: configuration.id, name: configuration.name, state: .failed("Use HTTPS, or HTTP only for localhost."))
+                await telemetry.finished(source: "mcp", name: "mcp.connect", detail: connectionDetail, result: "error=invalid_endpoint", outcome: "error", duration: Self.seconds(startedAt.duration(to: clock.now)), correlationID: connectionID)
                 continue
             }
             let serverName = Self.uniqueName(configuration.name, id: configuration.id, used: &usedNames)
@@ -106,11 +116,18 @@ actor DSHMCPServerManager {
             do {
                 try await client.connect()
                 let descriptions = try await client.listTools()
-                tools.append(contentsOf: descriptions.map { DSHMCPTool(serverName: serverName, description: $0, client: client) })
+                tools.append(contentsOf: descriptions.map {
+                    DSHAuditedTool(
+                        DSHMCPTool(serverName: serverName, description: $0, client: client),
+                        source: "mcp", auditName: "mcp.tool"
+                    )
+                })
                 clients[configuration.id] = client
                 next[configuration.id] = .init(id: configuration.id, name: configuration.name, state: .connected(toolCount: descriptions.count))
+                await telemetry.finished(source: "mcp", name: "mcp.connect", detail: connectionDetail, result: "tools=\(descriptions.count)", outcome: "ok", duration: Self.seconds(startedAt.duration(to: clock.now)), correlationID: connectionID)
             } catch {
                 next[configuration.id] = .init(id: configuration.id, name: configuration.name, state: .failed(error.localizedDescription))
+                await telemetry.finished(source: "mcp", name: "mcp.connect", detail: connectionDetail, result: "error=\(Self.errorCategory(error))", outcome: "error", duration: Self.seconds(startedAt.duration(to: clock.now)), correlationID: connectionID)
             }
         }
         registry.replaceTools(withPrefix: "mcp__", with: tools)
@@ -132,5 +149,25 @@ actor DSHMCPServerManager {
         if used.contains(name) { name += "_\(id.uuidString.prefix(6).lowercased())" }
         used.insert(name)
         return name
+    }
+
+    private static func seconds(_ duration: Duration) -> TimeInterval {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+    }
+
+    private static func errorCategory(_ error: Error) -> String {
+        if let error = error as? DSHMCPError {
+            switch error {
+            case .invalidResponse: return "invalid_response"
+            case .httpStatus(let status): return "http_\(status)"
+            case .protocolError(let code, _): return "protocol_\(code)"
+            case .unsupportedProtocol: return "unsupported_protocol"
+            case .notInitialized: return "not_initialized"
+            }
+        }
+        if let error = error as? URLError {
+            return error.code == .timedOut ? "network_timeout" : "network_\(error.code.rawValue)"
+        }
+        return "connection_error"
     }
 }
