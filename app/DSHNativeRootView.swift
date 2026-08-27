@@ -198,6 +198,13 @@ struct DSHNativeRootView: View {
                     Button("Reconnect", systemImage: "arrow.clockwise") { model.refreshMCPServers() }
                         .disabled(model.mcpConfigurations.isEmpty)
                 }
+                Section("Linux Workspace") {
+                    LabeledContent("Startup", value: "On demand")
+                    Text("Linux starts only when a shell, attachment staging, or another Linux tool needs it.")
+                    Text("Existing guest files remain available. Legacy dsh web conversations are not imported into native conversations.")
+                        .accessibilityIdentifier("dsh.native.legacy-session-compatibility")
+                    Text("Arbitrary dsh plugins are not guaranteed to work; use native tools or MCP for supported extensions.")
+                }
                 if let error = model.configurationError {
                     Section { Text(error).foregroundStyle(.red) }
                 }

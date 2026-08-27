@@ -87,6 +87,18 @@
     XCTAssertFalse(self.app.progressIndicators[@"dsh.overlay.progress"].exists);
 }
 
+- (void)testSettingsExplainForwardOnlyLinuxCompatibility {
+    [self.app.buttons[@"dsh.native.settings"] tap];
+    XCTAssertTrue([self.app.navigationBars[@"Agent Settings"] waitForExistenceWithTimeout:3]);
+    XCUIElement *legacyNotice = self.app.staticTexts[@"dsh.native.legacy-session-compatibility"];
+    for (NSUInteger attempt = 0; attempt < 3 && !legacyNotice.exists; attempt++) {
+        [self.app swipeUp];
+    }
+    XCTAssertTrue([self.app.staticTexts[@"Linux Workspace"] waitForExistenceWithTimeout:2]);
+    XCTAssertTrue([legacyNotice waitForExistenceWithTimeout:2]);
+    XCTAssertFalse(self.app.progressIndicators[@"dsh.overlay.progress"].exists);
+}
+
 - (void)testNativeActivityTimelineIsReachable {
     XCUIElement *activity = self.app.buttons[@"dsh.native.activity-button"];
     XCTAssertTrue([activity waitForExistenceWithTimeout:3]);
