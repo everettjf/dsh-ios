@@ -36,6 +36,7 @@
 #import "DSHHealthCapability.h"
 #import "ISHShellExecutor.h"
 #import "DSHHarness.h"
+#import "DSHBootCoordinator.h"
 
 @interface DSHCapabilityReportTests : XCTestCase
 @property (nonatomic) DSHHostBridge *bridge;
@@ -95,15 +96,17 @@
 /// capability really worked without saying what it saw.
 /// Blocks until the guest is up, the way DSHGuestIntegrationTests does.
 - (void)waitForHarnessReady {
-    DSHHarness *harness = DSHHarness.shared;
-    if (harness.state == DSHHarnessStateReady)
+    DSHBootCoordinator *boot = DSHBootCoordinator.shared;
+    if (boot.phase == DSHBootPhaseReady)
         return;
-    XCTestExpectation *ready = [self expectationForNotification:DSHHarnessStateDidChangeNotification
-                                                         object:harness
+    XCTestExpectation *ready = [self expectationForNotification:DSHBootStateDidChangeNotification
+                                                         object:boot
                                                         handler:^BOOL(NSNotification *note) {
-        return harness.state == DSHHarnessStateReady;
+        return boot.phase == DSHBootPhaseReady || boot.phase == DSHBootPhaseFailed;
     }];
+    [boot start];
     [self waitForExpectations:@[ready] timeout:300];
+    XCTAssertEqual(boot.phase, DSHBootPhaseReady, @"guest boot failed: %@", boot.statusMessage);
 }
 
 - (void)report:(NSString *)path shape:(NSString *(^)(NSDictionary *))shape {

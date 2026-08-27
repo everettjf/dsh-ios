@@ -186,6 +186,7 @@ common_test_settings = {
   'GENERATE_INFOPLIST_FILE' => 'NO',
   'CLANG_ENABLE_OBJC_ARC' => 'YES',
   'CLANG_ENABLE_MODULES' => 'YES',
+  'SWIFT_VERSION' => '6.0',
   'LD_RUNPATH_SEARCH_PATHS' => '$(inherited) @executable_path/Frameworks @loader_path/Frameworks',
   'ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES' => 'NO',
   'ARCHS[sdk=iphonesimulator*]' => 'arm64',
@@ -195,7 +196,7 @@ common_test_settings = {
 
 tests = project.new_target(:unit_test_bundle, 'DSHTests', :ios, '26.0')
 tg = tests_group.new_group('DSHTests', 'DSHTests')
-Dir[(ROOT + 'tests/DSHTests/*.m').to_s].sort.each { |f| tests.source_build_phase.add_file_reference(tg.new_file(File.basename(f)), true) }
+Dir[(ROOT + 'tests/DSHTests/*.{m,swift}').to_s].sort.each { |f| tests.source_build_phase.add_file_reference(tg.new_file(File.basename(f)), true) }
 Dir[(ROOT + 'tests/DSHTests/*.h').to_s].sort.each { |f| tg.new_file(File.basename(f)) }
 tg.new_file('Info.plist')
 tests.build_configuration_list.build_configurations.each do |bc|

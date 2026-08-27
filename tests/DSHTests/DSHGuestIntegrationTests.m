@@ -16,6 +16,7 @@
 #import "DSHCapability.h"
 #import <HealthKit/HealthKit.h>
 #import "DSHMockLLMServer.h"
+#import "DSHBootCoordinator.h"
 
 @interface DSHGuestIntegrationTests : XCTestCase
 @end
@@ -23,12 +24,22 @@
 @implementation DSHGuestIntegrationTests
 
 - (void)waitForReady {
+    DSHBootCoordinator *boot = DSHBootCoordinator.shared;
+    if (boot.phase != DSHBootPhaseReady) {
+        XCTestExpectation *booted = [self expectationForNotification:DSHBootStateDidChangeNotification object:boot handler:^BOOL(NSNotification *n) {
+            return boot.phase == DSHBootPhaseReady || boot.phase == DSHBootPhaseFailed;
+        }];
+        [boot start];
+        [self waitForExpectations:@[booted] timeout:300];
+        XCTAssertEqual(boot.phase, DSHBootPhaseReady, @"guest boot failed: %@", boot.statusMessage);
+    }
     DSHHarness *h = DSHHarness.shared;
     if (h.state == DSHHarnessStateReady)
         return;
     XCTestExpectation *ready = [self expectationForNotification:DSHHarnessStateDidChangeNotification object:h handler:^BOOL(NSNotification *n) {
         return h.state == DSHHarnessStateReady;
     }];
+    [h start];
     [self waitForExpectations:@[ready] timeout:300];
 }
 
