@@ -1,2 +1,4 @@
 #import "DSHCallConfirmation.h"
 #import "DSHGuestRuntime.h"
+#import "DSHNativeToolAudit.h"
+#import "DSHNativeCapabilityBridge.h"

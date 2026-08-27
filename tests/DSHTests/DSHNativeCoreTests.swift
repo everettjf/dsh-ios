@@ -297,6 +297,199 @@ final class DSHNativeCoreTests: XCTestCase {
         let calls = await host.calls()
         XCTAssertEqual(calls.boots, 0)
     }
+
+    func testGovernedToolRefusesBeforeExecutionAndAuditsDecision() async throws {
+        let probe = ProbeTool()
+        let audit = RecordingAuditSink()
+        let tool = DSHGovernedTool(
+            probe,
+            permission: .init(identifier: "private.read", title: "Private read", gate: .enabledOnly, enabledByDefault: false),
+            authorization: FixedAuthorization(.refused("disabled")),
+            audit: audit
+        )
+
+        do {
+            _ = try await tool.execute(arguments: .object([:]))
+            XCTFail("Expected refusal")
+        } catch {
+            XCTAssertEqual(error as? DSHToolError, .disabled("disabled"))
+        }
+
+        let executionCount = await probe.executionCount()
+        XCTAssertEqual(executionCount, 0)
+        let records = await audit.records
+        XCTAssertEqual(records.map(\.outcome), ["started", "refused"])
+    }
+
+    func testGovernedToolAuditsOnlyResultShapeNotSensitiveContents() async throws {
+        let audit = RecordingAuditSink()
+        let tool = DSHGovernedTool(
+            ProbeTool(result: .object(["secret": .string("private-value")])),
+            permission: .init(identifier: "safe.read", title: "Safe read", gate: .enabledOnly, enabledByDefault: true),
+            authorization: FixedAuthorization(.allowed),
+            audit: audit
+        )
+
+        _ = try await tool.execute(arguments: .object(["query": .string("private-query")]))
+
+        let records = await audit.records
+        XCTAssertEqual(records.last?.outcome, "ok")
+        XCTAssertEqual(records.last?.result, "object with 1 field(s)")
+        XCTAssertFalse(records.contains { ($0.detail ?? "").contains("private-query") })
+        XCTAssertFalse(records.contains { ($0.result ?? "").contains("private-value") })
+    }
+
+    func testDeviceToolsHaveSeparateStableSchemas() async throws {
+        let info = DSHDeviceInfoTool()
+        let power = DSHDevicePowerTool()
+        XCTAssertEqual(info.definition.name, "device_info")
+        XCTAssertEqual(power.definition.name, "device_power")
+        guard case .object(let infoResult) = try await info.execute(arguments: .object([:])),
+              case .object(let powerResult) = try await power.execute(arguments: .object([:])) else {
+            return XCTFail("Expected object results")
+        }
+        XCTAssertNotNil(infoResult["system_version"])
+        XCTAssertNil(infoResult["battery_level"])
+        XCTAssertNotNil(powerResult["battery_level"])
+        XCTAssertNotNil(powerResult["thermal_state"])
+    }
+
+    func testNativeReadToolsMapArgumentsToInProcessRoutes() async throws {
+        let executor = RecordingRouteExecutor(result: .object(["rows": .array([])]))
+        _ = try await DSHNativeReadTool(.contacts, executor: executor).execute(arguments: .object([
+            "query": .string("Ada Lovelace"), "limit": .number(3)
+        ]))
+        _ = try await DSHNativeReadTool(.calendar, executor: executor).execute(arguments: .object([
+            "days": .number(-7), "limit": .number(20)
+        ]))
+        _ = try await DSHNativeReadTool(.health, executor: executor).execute(arguments: .object([
+            "metric": .string("sleep"), "days": .number(14)
+        ]))
+
+        let calls = await executor.calls
+        XCTAssertEqual(calls.map(\.path), ["/v1/contacts", "/v1/calendar/events", "/v1/health/sleep"])
+        XCTAssertEqual(calls[0].query, ["q": "Ada Lovelace", "limit": "3"])
+        XCTAssertEqual(calls[1].query, ["days": "-7", "limit": "20"])
+        XCTAssertEqual(calls[2].query, ["days": "14"])
+        XCTAssertTrue(calls.allSatisfy { $0.method == "GET" && $0.json == nil })
+    }
+
+    func testNativeReadToolsRejectUnboundedContactsAndUnknownHealthMetric() async {
+        let executor = RecordingRouteExecutor(result: .object([:]))
+        do {
+            _ = try await DSHNativeReadTool(.contacts, executor: executor).execute(arguments: .object([:]))
+            XCTFail("Missing contact query should fail")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("query is required")) }
+        do {
+            _ = try await DSHNativeReadTool(.health, executor: executor).execute(arguments: .object(["metric": .string("diagnosis")]))
+            XCTFail("Unknown health metric should fail")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("metric must be")) }
+        let calls = await executor.calls
+        XCTAssertTrue(calls.isEmpty)
+    }
+
+    func testNativeReadToolDefinitionsExposeFiveDistinctTools() {
+        let names = [
+            DSHNativeReadTool(.location).definition.name,
+            DSHNativeReadTool(.contacts).definition.name,
+            DSHNativeReadTool(.calendar).definition.name,
+            DSHNativeReadTool(.reminders).definition.name,
+            DSHNativeReadTool(.health).definition.name
+        ]
+        XCTAssertEqual(Set(names), Set(["location_query", "contacts_search", "calendar_query", "reminders_query", "health_query"]))
+    }
+
+    func testNativeWriteToolsUsePostRoutesAndPreserveBodies() async throws {
+        let executor = RecordingRouteExecutor(result: .object(["accepted": .bool(true)]))
+        _ = try await DSHNativeWriteTool(.notify, executor: executor).execute(arguments: .object(["title": .string("Done")]))
+        _ = try await DSHNativeWriteTool(.calendarCreate, executor: executor).execute(arguments: .object(["title": .string("Review"), "start": .string("2026-09-01 09:00")]))
+        _ = try await DSHNativeWriteTool(.fileImport, executor: executor).execute(arguments: .object([:]))
+        _ = try await DSHNativeWriteTool(.shortcutRun, executor: executor).execute(arguments: .object(["name": .string("Focus")]))
+
+        let calls = await executor.calls
+        XCTAssertEqual(calls.map(\.path), ["/v1/notify", "/v1/calendar/events", "/v1/files/import", "/v1/shortcut/run"])
+        XCTAssertTrue(calls.allSatisfy { $0.method == "POST" && $0.query.isEmpty && $0.json != nil })
+        guard case .object(let notification) = calls[0].json else { return XCTFail("Expected body") }
+        XCTAssertEqual(notification["title"], .string("Done"))
+    }
+
+    func testNativeWriteToolsAreCompleteAndValidateBeforeUI() async {
+        let names = DSHNativeWriteToolKind.allCases.map { DSHNativeWriteTool($0).definition.name }
+        XCTAssertEqual(Set(names), Set(["notify", "calendar_create_event", "reminders_create", "file_import", "file_export", "photo_import", "share", "shortcut_run"]))
+        let executor = RecordingRouteExecutor(result: .object([:]))
+        do {
+            _ = try await DSHNativeWriteTool(.share, executor: executor).execute(arguments: .object(["text": .string(String(repeating: "x", count: 4_001))]))
+            XCTFail("Oversized share should fail")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("4000")) }
+        do {
+            _ = try await DSHNativeWriteTool(.fileExport, executor: executor).execute(arguments: .object(["name": .string("a.txt")]))
+            XCTFail("Missing contents should fail")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("base64")) }
+        let calls = await executor.calls
+        XCTAssertTrue(calls.isEmpty)
+    }
+}
+
+private struct RouteCall: Sendable {
+    let method: String
+    let path: String
+    let query: [String: String]
+    let json: DSHJSONValue?
+}
+
+private actor RecordingRouteExecutor: DSHNativeRouteExecuting {
+    private(set) var calls: [RouteCall] = []
+    let result: DSHJSONValue
+    init(result: DSHJSONValue) { self.result = result }
+    func invoke(method: String, path: String, query: [String: String], json: DSHJSONValue?) async throws -> DSHJSONValue {
+        calls.append(.init(method: method, path: path, query: query, json: json))
+        return result
+    }
+}
+
+private struct FixedAuthorization: DSHToolAuthorizationPolicy {
+    let decision: DSHToolAuthorizationDecision
+    init(_ decision: DSHToolAuthorizationDecision) { self.decision = decision }
+    func authorize(permission: DSHToolPermission, detail: String?) async -> DSHToolAuthorizationDecision { decision }
+}
+
+private actor ProbeTool: DSHNativeTool {
+    nonisolated let definition = DSHToolDefinition(
+        name: "probe",
+        description: "Test probe",
+        parameters: .object(["type": .string("object")])
+    )
+    private var count = 0
+    private let result: DSHJSONValue
+    init(result: DSHJSONValue = .object(["value": .string("ok")])) { self.result = result }
+    func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue {
+        count += 1
+        return result
+    }
+    func executionCount() -> Int { count }
+}
+
+private struct AuditRecord: Sendable {
+    let outcome: String
+    let detail: String?
+    let result: String?
+}
+
+private actor RecordingAuditSink: DSHToolAuditSink {
+    var records: [AuditRecord] = []
+    func started(name: String, detail: String?, correlationID: String) async {
+        records.append(.init(outcome: "started", detail: detail, result: nil))
+    }
+    func finished(
+        name: String,
+        detail: String?,
+        result: String?,
+        outcome: String,
+        duration: TimeInterval,
+        correlationID: String
+    ) async {
+        records.append(.init(outcome: outcome, detail: detail, result: result))
+    }
 }
 
 private struct FixedApproval: DSHToolApprovalPolicy {

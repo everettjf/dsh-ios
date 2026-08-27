@@ -140,12 +140,70 @@ final class DSHAgentViewModel {
         let endpoint = URL(string: configuration.endpoint) ?? URL(string: DSHAgentConfiguration.defaultEndpoint)!
         let client = DSHOpenAICompatibleClient(baseURL: endpoint, apiKey: configuration.apiKey)
         let guest = DSHLazyGuestManager()
+        let authorization = DSHDefaultsToolAuthorizationPolicy()
+        let deviceInfo = DSHGovernedTool(
+            DSHDeviceInfoTool(),
+            permission: .init(identifier: "device.info", title: "Device information", gate: .enabledOnly, enabledByDefault: true),
+            authorization: authorization
+        )
+        let devicePower = DSHGovernedTool(
+            DSHDevicePowerTool(),
+            permission: .init(identifier: "device.power", title: "Battery and thermal state", gate: .enabledOnly, enabledByDefault: true),
+            authorization: authorization
+        )
+        let location = DSHGovernedTool(
+            DSHNativeReadTool(.location),
+            permission: .init(identifier: "location.read", title: "Current location", gate: .systemPermission, enabledByDefault: true),
+            authorization: authorization
+        )
+        let contacts = DSHGovernedTool(
+            DSHNativeReadTool(.contacts),
+            permission: .init(identifier: "contacts.read", title: "Contacts search", gate: .systemPermission, enabledByDefault: true),
+            authorization: authorization
+        )
+        let calendar = DSHGovernedTool(
+            DSHNativeReadTool(.calendar),
+            permission: .init(identifier: "calendar.read", title: "Calendar access", gate: .systemPermission, enabledByDefault: true),
+            authorization: authorization
+        )
+        let reminders = DSHGovernedTool(
+            DSHNativeReadTool(.reminders),
+            permission: .init(identifier: "reminders.read", title: "Reminders access", gate: .systemPermission, enabledByDefault: true),
+            authorization: authorization
+        )
+        let health = DSHGovernedTool(
+            DSHNativeReadTool(.health),
+            permission: .init(identifier: "health.read", title: "Apple Health access", gate: .systemPermission, enabledByDefault: true),
+            authorization: authorization
+        )
+        let nativeWrites: [DSHGovernedTool] = [
+            (.notify, "notifications.post", "Notifications"),
+            (.calendarCreate, "calendar.write", "Create calendar event"),
+            (.reminderCreate, "reminders.write", "Create reminder"),
+            (.fileImport, "files.import", "Choose a file"),
+            (.fileExport, "files.export", "Save a file"),
+            (.photoImport, "photos.import", "Choose a photo"),
+            (.share, "share.present", "Share content"),
+            (.shortcutRun, "shortcuts.run", "Run Shortcut")
+        ].map { kind, identifier, title in
+            // These adapters present their own native per-call confirmation or
+            // picker. The outer gate enforces the persistent capability switch;
+            // keeping confirmation in the adapter avoids asking twice.
+            DSHGovernedTool(
+                DSHNativeWriteTool(kind),
+                permission: .init(identifier: identifier, title: title, gate: .enabledOnly, enabledByDefault: true),
+                authorization: authorization
+            )
+        }
         return DSHAgentRuntime(
             client: client,
             model: configuration.model,
             systemPrompt: "You are a fast, capable iOS assistant. Use native tools when appropriate.",
             messages: messages,
-            toolRegistry: DSHToolRegistry([DSHDeviceInfoTool(), DSHBashTool(manager: guest)])
+            toolRegistry: DSHToolRegistry([
+                deviceInfo, devicePower, location, contacts, calendar, reminders, health,
+                DSHBashTool(manager: guest)
+            ] + nativeWrites)
         )
     }
 }

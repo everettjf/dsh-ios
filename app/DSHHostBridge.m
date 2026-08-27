@@ -144,6 +144,49 @@ static const NSTimeInterval kSocketTimeout = 15;
     }];
 }
 
+- (DSHHostBridgeResponse *)invokeNativeMethod:(NSString *)method
+                                         path:(NSString *)path
+                                        query:(NSDictionary<NSString *,NSString *> *)query
+                                         json:(NSDictionary *)json {
+    NSDictionary *route;
+    @synchronized (self.routes) {
+        route = self.routes[[NSString stringWithFormat:@"%@ %@", method.uppercaseString, path]];
+    }
+    if (route == nil)
+        return [DSHHostBridgeResponse errorWithStatus:404 code:@"invalid_request"
+                                              message:[NSString stringWithFormat:@"no route for %@ %@", method, path]
+                                          recoverable:NO];
+
+    NSString *capability = route[@"capability"];
+    if (capability) {
+        DSHCapabilityState state = [DSHCapabilityRegistry.shared stateForIdentifier:capability];
+        if (state == DSHCapabilityStateUnavailable)
+            return [DSHHostBridgeResponse errorWithStatus:501 code:@"unavailable"
+                                                  message:[NSString stringWithFormat:@"%@ is not available on this device", capability]
+                                              recoverable:NO];
+        if (state == DSHCapabilityStateDisabled)
+            return [DSHHostBridgeResponse errorWithStatus:403 code:@"permission_denied"
+                                                  message:[NSString stringWithFormat:@"%@ is switched off in DSH's settings; ask the user to enable it", capability]
+                                              recoverable:YES];
+    }
+
+    DSHHostBridgeRequest *request = [DSHHostBridgeRequest new];
+    request.method = method.uppercaseString;
+    request.path = path;
+    request.query = query ?: @{};
+    request.headers = @{};
+    request.json = json;
+
+    DSHHostBridgeHandler handler = route[@"handler"];
+    @try {
+        return handler(request);
+    } @catch (NSException *exception) {
+        return [DSHHostBridgeResponse errorWithStatus:500 code:@"internal"
+                                              message:exception.reason ?: @"handler failed"
+                                          recoverable:NO];
+    }
+}
+
 #pragma mark Lifecycle
 
 - (BOOL)start {
