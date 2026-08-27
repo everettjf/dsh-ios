@@ -186,6 +186,27 @@ final class DSHNativeCoreTests: XCTestCase {
         XCTAssertEqual(selected.last?.toolCallID, "call-1")
     }
 
+    func testAgentRequestExpandsTextAttachmentWithoutChangingStoredMessage() async throws {
+        let attachment = DSHAttachment(
+            name: "notes.txt",
+            mediaType: "text/plain",
+            byteCount: 5,
+            extractedText: "hello"
+        )
+        let client = ScriptedModelClient(events: [.contentDelta("done"), .completed(.stop)])
+        let runtime = DSHAgentRuntime(client: client, model: "deepseek-chat")
+
+        let snapshot = try await runtime.send("Summarize", attachments: [attachment])
+
+        XCTAssertEqual(snapshot.messages.first?.content, "Summarize")
+        XCTAssertEqual(snapshot.messages.first?.attachments, [attachment])
+        let recordedRequest = await client.lastRequest()
+        let request = try XCTUnwrap(recordedRequest)
+        XCTAssertTrue(request.messages[0].content?.contains("notes.txt") == true)
+        XCTAssertTrue(request.messages[0].content?.contains(attachment.id.uuidString) == true)
+        XCTAssertTrue(request.messages[0].content?.contains("hello") == true)
+    }
+
     func testAgentRuntimeExecutesToolAndContinuesNextStep() async throws {
         let client = SequencedModelClient(scripts: [
             [
@@ -274,6 +295,10 @@ final class DSHNativeCoreTests: XCTestCase {
         var json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoder.encode(record)) as? [String: Any])
         json.removeValue(forKey: "schemaVersion")
         json.removeValue(forKey: "turnState")
+        if var messages = json["messages"] as? [[String: Any]] {
+            for index in messages.indices { messages[index].removeValue(forKey: "attachments") }
+            json["messages"] = messages
+        }
         let url = directory.appendingPathComponent(id.uuidString).appendingPathExtension("json")
         try JSONSerialization.data(withJSONObject: json).write(to: url)
         let store = DSHSessionStore(directory: directory)
@@ -286,6 +311,78 @@ final class DSHNativeCoreTests: XCTestCase {
         let rewritten = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
         XCTAssertEqual(rewritten["schemaVersion"] as? Int, DSHSessionRecord.currentSchemaVersion)
         XCTAssertEqual(rewritten["turnState"] as? String, DSHSessionTurnState.completed.rawValue)
+        XCTAssertEqual(migrated.messages.first?.attachments, [])
+    }
+
+    func testWorkspaceImportsTextSafelyAndDeletesSessionFiles() async throws {
+        let sourceDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DSHAttachmentSource-\(UUID().uuidString)", isDirectory: true)
+        let workspaceDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DSHAttachmentWorkspace-\(UUID().uuidString)", isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: sourceDirectory)
+            try? FileManager.default.removeItem(at: workspaceDirectory)
+        }
+        try FileManager.default.createDirectory(at: sourceDirectory, withIntermediateDirectories: true)
+        let source = sourceDirectory.appendingPathComponent("notes\nunsafe.txt")
+        try Data("private text".utf8).write(to: source)
+        let store = DSHWorkspaceStore(directory: workspaceDirectory)
+        let sessionID = UUID()
+
+        let attachment = try await store.importFile(at: source, sessionID: sessionID)
+
+        XCTAssertEqual(attachment.name, "notesunsafe.txt")
+        XCTAssertEqual(attachment.extractedText, "private text")
+        let storedData = try await store.data(for: attachment, sessionID: sessionID)
+        XCTAssertEqual(storedData, Data("private text".utf8))
+        try await store.deleteSession(sessionID)
+        do {
+            _ = try await store.data(for: attachment, sessionID: sessionID)
+            XCTFail("Expected deleted attachment")
+        } catch {
+            XCTAssertEqual(error as? DSHWorkspaceError, .attachmentMissing)
+        }
+    }
+
+    func testWorkspaceRejectsEmptyAndOversizedFiles() async throws {
+        let sourceDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DSHAttachmentLimits-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: sourceDirectory) }
+        try FileManager.default.createDirectory(at: sourceDirectory, withIntermediateDirectories: true)
+        let store = DSHWorkspaceStore(directory: sourceDirectory.appendingPathComponent("workspace"))
+        let empty = sourceDirectory.appendingPathComponent("empty.txt")
+        try Data().write(to: empty)
+        let large = sourceDirectory.appendingPathComponent("large.bin")
+        try Data(repeating: 0, count: DSHWorkspaceStore.maximumFileBytes + 1).write(to: large)
+
+        do { _ = try await store.importFile(at: empty, sessionID: UUID()); XCTFail("Expected empty rejection") }
+        catch { XCTAssertEqual(error as? DSHWorkspaceError, .emptyFile) }
+        do { _ = try await store.importFile(at: large, sessionID: UUID()); XCTFail("Expected size rejection") }
+        catch { XCTAssertEqual(error as? DSHWorkspaceError, .fileTooLarge(DSHWorkspaceStore.maximumFileBytes)) }
+    }
+
+    func testWorkspacePrunesOnlyUnreferencedAttachments() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DSHAttachmentPrune-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let source = root.appendingPathComponent("source.txt")
+        try Data("text".utf8).write(to: source)
+        let store = DSHWorkspaceStore(directory: root.appendingPathComponent("workspace"))
+        let sessionID = UUID()
+        let kept = try await store.importFile(at: source, sessionID: sessionID)
+        let orphan = try await store.importFile(at: source, sessionID: sessionID)
+
+        try await store.pruneOrphans(referencedAttachmentIDs: [kept.id])
+
+        let keptData = try await store.data(for: kept, sessionID: sessionID)
+        XCTAssertEqual(keptData, Data("text".utf8))
+        do {
+            _ = try await store.data(for: orphan, sessionID: sessionID)
+            XCTFail("Expected orphan removal")
+        } catch {
+            XCTAssertEqual(error as? DSHWorkspaceError, .attachmentMissing)
+        }
     }
 
     func testMCPClientInitializesPagesToolsAndPreservesSessionHeaders() async throws {
@@ -371,6 +468,60 @@ final class DSHNativeCoreTests: XCTestCase {
         let calls = await host.calls()
         XCTAssertEqual(calls.boots, 1)
         XCTAssertEqual(calls.commands, ["pwd", "ls"])
+    }
+
+    func testAttachmentStagesIntoGuestOnlyWhenToolExecutes() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DSHAttachmentStage-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = FileManager.default.temporaryDirectory.appendingPathComponent("stage-\(UUID().uuidString).bin")
+        defer { try? FileManager.default.removeItem(at: source) }
+        try Data([0, 1, 2, 3]).write(to: source)
+        let workspace = DSHWorkspaceStore(directory: directory)
+        let sessionID = UUID()
+        let attachment = try await workspace.importFile(at: source, sessionID: sessionID)
+        let host = FakeGuestHost()
+        let manager = DSHLazyGuestManager(host: host)
+        let context = DSHActiveWorkspaceContext(sessionID: sessionID)
+        let tool = DSHStageAttachmentTool(manager: manager, workspace: workspace, context: context)
+        let initialCalls = await host.calls()
+        XCTAssertEqual(initialCalls.boots, 0)
+
+        let result = try await tool.execute(arguments: .object(["attachment_id": .string(attachment.id.uuidString)]))
+
+        let finalCalls = await host.calls()
+        XCTAssertEqual(finalCalls.boots, 1)
+        XCTAssertTrue(finalCalls.writes.first?.path.contains(attachment.id.uuidString) == true)
+        XCTAssertEqual(finalCalls.writes.first?.data, Data([0, 1, 2, 3]))
+        XCTAssertTrue(finalCalls.commands.isEmpty)
+        guard case .object(let values) = result else { return XCTFail("Expected object") }
+        XCTAssertEqual(values["bytes"], .number(4))
+    }
+
+    func testAttachmentStagingCannotReadAnotherSession() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DSHAttachmentIsolation-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = FileManager.default.temporaryDirectory.appendingPathComponent("isolated-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: source) }
+        try Data("secret".utf8).write(to: source)
+        let workspace = DSHWorkspaceStore(directory: directory)
+        let attachment = try await workspace.importFile(at: source, sessionID: UUID())
+        let host = FakeGuestHost()
+        let tool = DSHStageAttachmentTool(
+            manager: DSHLazyGuestManager(host: host),
+            workspace: workspace,
+            context: DSHActiveWorkspaceContext(sessionID: UUID())
+        )
+
+        do {
+            _ = try await tool.execute(arguments: .object(["attachment_id": .string(attachment.id.uuidString)]))
+            XCTFail("Expected session isolation")
+        } catch {
+            XCTAssertEqual(error as? DSHWorkspaceError, .attachmentMissing)
+        }
+        let calls = await host.calls()
+        XCTAssertEqual(calls.boots, 0)
     }
 
     func testConcurrentGuestReadinessCoalescesBoot() async throws {
@@ -599,6 +750,7 @@ private struct FixedApproval: DSHToolApprovalPolicy {
 private actor FakeGuestHost: DSHGuestHost {
     private var bootCount = 0
     private var commands: [String] = []
+    private var writes: [(path: String, data: Data)] = []
     private let bootDelayNanoseconds: UInt64
 
     init(bootDelayNanoseconds: UInt64 = 0) { self.bootDelayNanoseconds = bootDelayNanoseconds }
@@ -610,7 +762,13 @@ private actor FakeGuestHost: DSHGuestHost {
         commands.append(command)
         return .object(["exit_code": .number(0), "stdout": .string(command)])
     }
-    func calls() -> (boots: Int, commands: [String]) { (bootCount, commands) }
+    func write(data: Data, to path: String, timeout: TimeInterval) async throws -> DSHJSONValue {
+        writes.append((path, data))
+        return .object(["exit_code": .number(0)])
+    }
+    func calls() -> (boots: Int, commands: [String], writes: [(path: String, data: Data)]) {
+        (bootCount, commands, writes)
+    }
 }
 
 private struct FakeMCPResponse: Sendable {

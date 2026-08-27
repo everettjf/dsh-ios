@@ -45,6 +45,31 @@ enum DSHMessageRole: String, Codable, Sendable {
     case tool
 }
 
+struct DSHAttachment: Codable, Equatable, Identifiable, Sendable {
+    let id: UUID
+    let name: String
+    let mediaType: String
+    let byteCount: Int
+    let createdAt: Date
+    let extractedText: String?
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        mediaType: String,
+        byteCount: Int,
+        createdAt: Date = Date(),
+        extractedText: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.mediaType = mediaType
+        self.byteCount = byteCount
+        self.createdAt = createdAt
+        self.extractedText = extractedText
+    }
+}
+
 struct DSHToolCall: Codable, Equatable, Identifiable, Sendable {
     let id: String
     let name: String
@@ -58,6 +83,7 @@ struct DSHChatMessage: Codable, Equatable, Identifiable, Sendable {
     var reasoningContent: String?
     var toolCalls: [DSHToolCall]
     var toolCallID: String?
+    var attachments: [DSHAttachment]
 
     init(
         id: UUID = UUID(),
@@ -65,7 +91,8 @@ struct DSHChatMessage: Codable, Equatable, Identifiable, Sendable {
         content: String? = nil,
         reasoningContent: String? = nil,
         toolCalls: [DSHToolCall] = [],
-        toolCallID: String? = nil
+        toolCallID: String? = nil,
+        attachments: [DSHAttachment] = []
     ) {
         self.id = id
         self.role = role
@@ -73,6 +100,22 @@ struct DSHChatMessage: Codable, Equatable, Identifiable, Sendable {
         self.reasoningContent = reasoningContent
         self.toolCalls = toolCalls
         self.toolCallID = toolCallID
+        self.attachments = attachments
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, role, content, reasoningContent, toolCalls, toolCallID, attachments
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        role = try values.decode(DSHMessageRole.self, forKey: .role)
+        content = try values.decodeIfPresent(String.self, forKey: .content)
+        reasoningContent = try values.decodeIfPresent(String.self, forKey: .reasoningContent)
+        toolCalls = try values.decodeIfPresent([DSHToolCall].self, forKey: .toolCalls) ?? []
+        toolCallID = try values.decodeIfPresent(String.self, forKey: .toolCallID)
+        attachments = try values.decodeIfPresent([DSHAttachment].self, forKey: .attachments) ?? []
     }
 }
 

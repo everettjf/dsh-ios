@@ -8,6 +8,10 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)executeCommand:(NSString *)command
                 timeout:(NSTimeInterval)timeout
              completion:(void (^)(NSData *jsonResult))completion;
++ (void)writeData:(NSData *)data
+            toPath:(NSString *)path
+           timeout:(NSTimeInterval)timeout
+        completion:(void (^)(NSData *jsonResult))completion;
 @end
 
 NS_ASSUME_NONNULL_END

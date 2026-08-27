@@ -45,8 +45,21 @@ struct DSHContextPolicy: Equatable, Sendable {
             selected.append(group)
             used += cost
         }
-        let history = selected.reversed().flatMap { $0 }
+        let history = selected.reversed().flatMap { $0 }.map(enrichingAttachments)
         return system.map { [$0] + history } ?? history
+    }
+
+    private func enrichingAttachments(_ message: DSHChatMessage) -> DSHChatMessage {
+        guard message.role == .user, !message.attachments.isEmpty else { return message }
+        var value = message
+        let sections = message.attachments.map { attachment in
+            var section = "[Attachment: \(attachment.name); id=\(attachment.id.uuidString); type=\(attachment.mediaType); bytes=\(attachment.byteCount)]"
+            if let text = attachment.extractedText { section += "\n\(text)\n[End attachment]" }
+            else { section += "\n[Binary attachment; use an available file or Linux tool if its contents are needed.]" }
+            return section
+        }
+        value.content = ([message.content ?? ""] + sections).joined(separator: "\n\n")
+        return value
     }
 
     private func turnGroups(_ messages: [DSHChatMessage]) -> [[DSHChatMessage]] {
@@ -62,6 +75,7 @@ struct DSHContextPolicy: Equatable, Sendable {
         guard let message else { return 0 }
         let characters = (message.content?.count ?? 0) + (message.reasoningContent?.count ?? 0)
             + message.toolCalls.reduce(0) { $0 + $1.name.count + $1.arguments.count }
+            + message.attachments.reduce(0) { $0 + $1.name.count + ($1.extractedText?.count ?? 0) }
         return max(4, (characters + 3) / 4 + 8)
     }
 }
@@ -113,11 +127,12 @@ actor DSHAgentRuntime {
     }
 
     @discardableResult
-    func send(_ prompt: String) async throws -> DSHAgentSnapshot {
+    func send(_ prompt: String, attachments: [DSHAttachment] = []) async throws -> DSHAgentSnapshot {
         guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !prompt.isEmpty else { throw DSHAgentRuntimeError.emptyPrompt }
-        messages.append(.init(role: .user, content: prompt))
+        guard !prompt.isEmpty || !attachments.isEmpty else { throw DSHAgentRuntimeError.emptyPrompt }
+        let content = prompt.isEmpty ? "Please review the attached file(s)." : prompt
+        messages.append(.init(role: .user, content: content, attachments: attachments))
         return try await generateResponse()
     }
 

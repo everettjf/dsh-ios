@@ -13,6 +13,10 @@ final class DSHAgentViewModel {
     var mcpStatuses: [DSHMCPServerStatus] = []
     var sessions: [DSHSessionRecord] = []
     var isShowingSessions = false
+    var isImportingAttachments = false
+    var pendingAttachments: [DSHAttachment] = []
+    var attachmentError: String?
+    var hasRestoredSessions = false
 
     @ObservationIgnored private var runtime: DSHAgentRuntime
     @ObservationIgnored private var observationTask: Task<Void, Never>?
@@ -20,6 +24,8 @@ final class DSHAgentViewModel {
     @ObservationIgnored private var mcpTask: Task<Void, Never>?
     @ObservationIgnored private var persistenceTask: Task<Void, Never>?
     @ObservationIgnored private let sessionStore: DSHSessionStore
+    @ObservationIgnored private let workspaceStore: DSHWorkspaceStore
+    @ObservationIgnored private let workspaceContext: DSHActiveWorkspaceContext
     @ObservationIgnored private let toolRegistry: DSHToolRegistry
     @ObservationIgnored private let mcpManager: DSHMCPServerManager
     @ObservationIgnored private var sessionID: UUID
@@ -29,16 +35,20 @@ final class DSHAgentViewModel {
 
     init(
         configuration: DSHAgentConfiguration = DSHAgentConfigurationStore.load(),
-        sessionStore: DSHSessionStore = DSHSessionStore()
+        sessionStore: DSHSessionStore = DSHSessionStore(),
+        workspaceStore: DSHWorkspaceStore = DSHWorkspaceStore()
     ) {
         self.configuration = configuration
         self.sessionStore = sessionStore
+        self.workspaceStore = workspaceStore
         if let value = UserDefaults.standard.string(forKey: Self.currentSessionKey), let id = UUID(uuidString: value) {
             sessionID = id
         } else {
             sessionID = UUID()
         }
-        let registry = Self.makeToolRegistry()
+        let context = DSHActiveWorkspaceContext(sessionID: sessionID)
+        workspaceContext = context
+        let registry = Self.makeToolRegistry(workspace: workspaceStore, context: context)
         toolRegistry = registry
         mcpManager = DSHMCPServerManager(registry: registry)
         self.runtime = Self.makeRuntime(configuration, messages: [], toolRegistry: registry)
@@ -66,10 +76,12 @@ final class DSHAgentViewModel {
             return
         }
         let prompt = draft
+        let attachments = pendingAttachments
         draft = ""
+        pendingAttachments = []
         sendTask = Task {
             do {
-                _ = try await runtime.send(prompt)
+                _ = try await runtime.send(prompt, attachments: attachments)
             } catch is CancellationError {
                 // Cancellation is an expected result of leaving the screen.
             } catch {
@@ -80,6 +92,31 @@ final class DSHAgentViewModel {
 
     func stop() {
         sendTask?.cancel()
+    }
+
+    func importAttachments(_ urls: [URL]) {
+        let targetSessionID = sessionID
+        Task {
+            var imported: [DSHAttachment] = []
+            do {
+                for url in urls { imported.append(try await workspaceStore.importFile(at: url, sessionID: targetSessionID)) }
+                guard sessionID == targetSessionID else {
+                    for attachment in imported { try? await workspaceStore.delete(attachment, sessionID: targetSessionID) }
+                    return
+                }
+                pendingAttachments.append(contentsOf: imported)
+                attachmentError = nil
+            } catch {
+                for attachment in imported { try? await workspaceStore.delete(attachment, sessionID: targetSessionID) }
+                attachmentError = error.localizedDescription
+            }
+        }
+    }
+
+    func removePendingAttachment(_ attachment: DSHAttachment) {
+        let targetSessionID = sessionID
+        pendingAttachments.removeAll { $0.id == attachment.id }
+        Task { try? await workspaceStore.delete(attachment, sessionID: targetSessionID) }
     }
 
     func persistForLifecycle() {
@@ -165,6 +202,7 @@ final class DSHAgentViewModel {
     func deleteSession(_ id: UUID) {
         Task {
             try? await sessionStore.delete(id: id)
+            try? await workspaceStore.deleteSession(id)
             if id == sessionID { await createNewSession(persistCurrent: false) }
             else { await reloadSessionList() }
         }
@@ -173,10 +211,13 @@ final class DSHAgentViewModel {
     private func createNewSession(persistCurrent: Bool = true) async {
         persistenceTask?.cancel()
         if persistCurrent, !snapshot.messages.isEmpty { await persist(snapshot) }
+        await discardPendingAttachments()
         observationTask?.cancel()
         sendTask?.cancel()
         sessionID = UUID()
+        await workspaceContext.select(sessionID)
         createdAt = Date()
+        pendingAttachments = []
         UserDefaults.standard.set(sessionID.uuidString, forKey: Self.currentSessionKey)
         runtime = Self.makeRuntime(configuration, messages: [], toolRegistry: toolRegistry)
         snapshot = .init(messages: [], phase: .idle, usage: nil)
@@ -198,7 +239,12 @@ final class DSHAgentViewModel {
     }
 
     private func restoreSessions() async {
+        defer { hasRestoredSessions = true }
         await reloadSessionList()
+        let referencedAttachments = Set(
+            sessions.flatMap(\.messages).flatMap(\.attachments).map(\.id)
+        )
+        try? await workspaceStore.pruneOrphans(referencedAttachmentIDs: referencedAttachments)
         guard let record = try? await sessionStore.load(id: sessionID) else {
             UserDefaults.standard.set(sessionID.uuidString, forKey: Self.currentSessionKey)
             return
@@ -262,10 +308,13 @@ final class DSHAgentViewModel {
         }
         persistenceTask?.cancel()
         if !snapshot.messages.isEmpty { await persist(snapshot) }
+        await discardPendingAttachments()
         sendTask?.cancel()
         observationTask?.cancel()
         sessionID = id
+        await workspaceContext.select(id)
         createdAt = record.createdAt
+        pendingAttachments = []
         UserDefaults.standard.set(id.uuidString, forKey: Self.currentSessionKey)
         let restoredPhase: DSHAgentPhase = record.turnState == .running
             ? .failed(message: "The previous response was interrupted when the app stopped. Retry or continue when ready.")
@@ -279,6 +328,12 @@ final class DSHAgentViewModel {
 
     private func reloadSessionList() async {
         sessions = (try? await sessionStore.list()) ?? []
+    }
+
+    private func discardPendingAttachments() async {
+        let attachments = pendingAttachments
+        pendingAttachments = []
+        for attachment in attachments { try? await workspaceStore.delete(attachment, sessionID: sessionID) }
     }
 
     private static func turnState(_ phase: DSHAgentPhase) -> DSHSessionTurnState {
@@ -307,7 +362,10 @@ final class DSHAgentViewModel {
         )
     }
 
-    private static func makeToolRegistry() -> DSHToolRegistry {
+    private static func makeToolRegistry(
+        workspace: DSHWorkspaceStore,
+        context: DSHActiveWorkspaceContext
+    ) -> DSHToolRegistry {
         let guest = DSHLazyGuestManager()
         let authorization = DSHDefaultsToolAuthorizationPolicy()
         let deviceInfo = DSHGovernedTool(
@@ -366,6 +424,7 @@ final class DSHAgentViewModel {
         }
         return DSHToolRegistry([
                 deviceInfo, devicePower, location, contacts, calendar, reminders, health,
+                DSHStageAttachmentTool(manager: guest, workspace: workspace, context: context),
                 DSHBashTool(manager: guest)
             ] + nativeWrites)
     }

@@ -17,6 +17,7 @@
 #import <HealthKit/HealthKit.h>
 #import "DSHMockLLMServer.h"
 #import "DSHBootCoordinator.h"
+#import "DSHGuestRuntime.h"
 
 @interface DSHGuestIntegrationTests : XCTestCase
 @end
@@ -75,6 +76,31 @@
     }];
     XCTAssertGreaterThan(pid, 0);
     [self waitForExpectations:@[done] timeout:180];
+}
+
+- (void)testBinaryDataStreamsIntoGuestWithoutEnteringCommandArguments {
+    [self waitForReady];
+    NSMutableData *payload = [NSMutableData dataWithLength:1024 * 1024];
+    uint8_t *bytes = payload.mutableBytes;
+    for (NSUInteger index = 0; index < payload.length; index++) bytes[index] = (uint8_t)(index % 251);
+    NSString *path = [NSString stringWithFormat:@"/root/workspace/attachments/%@", NSUUID.UUID.UUIDString];
+    XCTestExpectation *written = [self expectationWithDescription:@"binary attachment written"];
+    [DSHGuestRuntime writeData:payload toPath:path timeout:60 completion:^(NSData *jsonData) {
+        NSDictionary *result = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
+        XCTAssertEqual([result[@"exit_code"] integerValue], 0, @"write failed: %@", result);
+        [written fulfill];
+    }];
+    [self waitForExpectations:@[written] timeout:90];
+
+    NSString *command = [NSString stringWithFormat:
+        @"bytes=$(wc -c < '%@'); rm -f '%@'; [ \"$bytes\" -eq %lu ]",
+        path, path, (unsigned long)payload.length];
+    XCTestExpectation *verified = [self expectationWithDescription:@"binary attachment verified"];
+    [ISHShellExecutor executeCommand:command lineCallback:nil completion:^(ISHShellExecutionResult *result) {
+        XCTAssertEqual(result.exitCode, 0, @"binary payload size mismatch: %@ %@", result.output, result.errorOutput);
+        [verified fulfill];
+    }];
+    [self waitForExpectations:@[verified] timeout:60];
 }
 
 - (void)testBundledRootImageIsTheInstalledOne {

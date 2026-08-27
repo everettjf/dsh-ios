@@ -23,6 +23,7 @@
     XCTAssertTrue([self.app.navigationBars[@"DeepSeek"] waitForExistenceWithTimeout:5]);
     XCTAssertTrue([self.app.buttons[@"dsh.native.settings"] waitForExistenceWithTimeout:2]);
     XCTAssertTrue([self.app.textFields[@"dsh.native.composer"] waitForExistenceWithTimeout:2]);
+    XCTAssertTrue([self.app.buttons[@"dsh.native.attach"] waitForExistenceWithTimeout:2]);
     XCTAssertEqual(self.app.webViews.count, 0u, @"the primary agent UI must be native");
     XCTAssertFalse(self.app.staticTexts[@"dsh.overlay.message"].exists, @"launch must not wait for Linux");
     [self attachScreenshot:@"01-native-agent"];

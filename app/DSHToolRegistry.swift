@@ -6,6 +6,7 @@ enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
     case invalidArguments(String)
     case disabled(String)
     case permissionDenied(String)
+    case executionFailed(String)
     case stepLimitExceeded
 
     var errorDescription: String? {
@@ -14,6 +15,7 @@ enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
         case .invalidArguments(let message): return "Invalid tool arguments: \(message)"
         case .disabled(let message): return message
         case .permissionDenied(let message): return message
+        case .executionFailed(let message): return message
         case .stepLimitExceeded: return "The agent exceeded the tool step limit."
         }
     }

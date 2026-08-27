@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct DSHNativeRootView: View {
     @State private var model = DSHAgentViewModel()
@@ -36,6 +37,24 @@ struct DSHNativeRootView: View {
             }
             .sheet(isPresented: $model.isShowingSettings) { settingsView }
             .sheet(isPresented: $model.isShowingSessions) { SessionBrowserView(model: model) }
+            .fileImporter(
+                isPresented: $model.isImportingAttachments,
+                allowedContentTypes: [.data],
+                allowsMultipleSelection: true
+            ) { result in
+                switch result {
+                case .success(let urls): model.importAttachments(urls)
+                case .failure(let error): model.attachmentError = error.localizedDescription
+                }
+            }
+            .alert("Attachment Error", isPresented: Binding(
+                get: { model.attachmentError != nil },
+                set: { if !$0 { model.attachmentError = nil } }
+            )) {
+                Button("OK", role: .cancel) { model.attachmentError = nil }
+            } message: {
+                Text(model.attachmentError ?? "The attachment could not be imported.")
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active { model.persistForLifecycle() }
             }
@@ -61,29 +80,48 @@ struct DSHNativeRootView: View {
     }
 
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            TextField("Message DeepSeek", text: $model.draft, axis: .vertical)
-                .lineLimit(1...6)
-                .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("dsh.native.composer")
-            if model.isStreaming {
-                Button("Stop", systemImage: "stop.circle.fill", role: .destructive) { model.stop() }
-                    .labelStyle(.iconOnly)
-                    .font(.title2)
-                    .accessibilityIdentifier("dsh.native.stop")
-            } else {
-                Menu("Response Actions", systemImage: "ellipsis.circle") {
-                    Button("Retry Last Turn", systemImage: "arrow.counterclockwise") { model.retryLastTurn() }
-                        .disabled(!model.canRetry)
-                    Button("Continue Response", systemImage: "text.append") { model.continueResponse() }
-                        .disabled(!model.canContinue)
+        VStack(alignment: .leading, spacing: 8) {
+            if !model.pendingAttachments.isEmpty {
+                ScrollView(.horizontal) {
+                    HStack {
+                        ForEach(model.pendingAttachments) { attachment in
+                            PendingAttachmentChip(attachment: attachment) {
+                                model.removePendingAttachment(attachment)
+                            }
+                        }
+                    }
                 }
-                .labelStyle(.iconOnly)
-                Button("Send", systemImage: "arrow.up.circle.fill") { model.send() }
+                .scrollIndicators(.hidden)
+                .accessibilityIdentifier("dsh.native.pending-attachments")
+            }
+            HStack(alignment: .bottom, spacing: 10) {
+                Button("Attach File", systemImage: "paperclip") { model.isImportingAttachments = true }
                     .labelStyle(.iconOnly)
-                    .font(.title2)
-                    .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .accessibilityIdentifier("dsh.native.send")
+                    .disabled(model.isStreaming || !model.hasRestoredSessions)
+                    .accessibilityIdentifier("dsh.native.attach")
+                TextField("Message DeepSeek", text: $model.draft, axis: .vertical)
+                    .lineLimit(1...6)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("dsh.native.composer")
+                if model.isStreaming {
+                    Button("Stop", systemImage: "stop.circle.fill", role: .destructive) { model.stop() }
+                        .labelStyle(.iconOnly)
+                        .font(.title2)
+                        .accessibilityIdentifier("dsh.native.stop")
+                } else {
+                    Menu("Response Actions", systemImage: "ellipsis.circle") {
+                        Button("Retry Last Turn", systemImage: "arrow.counterclockwise") { model.retryLastTurn() }
+                            .disabled(!model.canRetry)
+                        Button("Continue Response", systemImage: "text.append") { model.continueResponse() }
+                            .disabled(!model.canContinue)
+                    }
+                    .labelStyle(.iconOnly)
+                    Button("Send", systemImage: "arrow.up.circle.fill") { model.send() }
+                        .labelStyle(.iconOnly)
+                        .font(.title2)
+                        .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.pendingAttachments.isEmpty)
+                        .accessibilityIdentifier("dsh.native.send")
+                }
             }
         }
         .padding()
@@ -297,6 +335,16 @@ private struct MessageBubble: View {
             }
             Text(message.content ?? (message.role == .assistant ? "…" : ""))
                 .textSelection(.enabled)
+            if !message.attachments.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(message.attachments) { attachment in
+                        Label(attachment.name, systemImage: "doc")
+                            .font(.caption)
+                            .lineLimit(1)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
             if !message.toolCalls.isEmpty {
                 Text("Requested \(message.toolCalls.count) tool call(s)")
                     .font(.caption)
@@ -308,6 +356,26 @@ private struct MessageBubble: View {
         .background(message.role == .user ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .accessibilityIdentifier("dsh.native.message.\(message.role.rawValue)")
+    }
+}
+
+private struct PendingAttachmentChip: View {
+    let attachment: DSHAttachment
+    let remove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Label(attachment.name, systemImage: "doc")
+                .lineLimit(1)
+            Button("Remove \(attachment.name)", systemImage: "xmark.circle.fill", role: .destructive, action: remove)
+                .labelStyle(.iconOnly)
+        }
+        .font(.caption)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.secondary.opacity(0.12))
+        .clipShape(.capsule)
+        .accessibilityElement(children: .contain)
     }
 }
 

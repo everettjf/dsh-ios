@@ -15,6 +15,15 @@
 #include "fs/devices.h"
 #include "fs/real.h"
 
+@interface ISHShellExecutor ()
++ (int)executeExecutable:(NSString *)executable
+               arguments:(nullable NSArray<NSString *> *)arguments
+             environment:(nullable NSDictionary<NSString *, NSString *> *)environment
+               inputData:(nullable NSData *)inputData
+            lineCallback:(nullable ISHShellLineCallback)lineCallback
+              completion:(nullable ISHShellCompletionCallback)completion;
+@end
+
 #pragma mark - Result Implementation
 
 @interface ISHShellExecutionResult ()
@@ -130,6 +139,20 @@ static dispatch_once_t _onceToken;
              environment:(NSDictionary<NSString *, NSString *> *)environment
             lineCallback:(ISHShellLineCallback)lineCallback
               completion:(ISHShellCompletionCallback)completion {
+    return [self executeExecutable:executable
+                         arguments:arguments
+                       environment:environment
+                         inputData:nil
+                      lineCallback:lineCallback
+                        completion:completion];
+}
+
++ (int)executeExecutable:(NSString *)executable
+               arguments:(NSArray<NSString *> *)arguments
+             environment:(NSDictionary<NSString *, NSString *> *)environment
+               inputData:(NSData *)inputData
+            lineCallback:(ISHShellLineCallback)lineCallback
+              completion:(ISHShellCompletionCallback)completion {
 
     ISHShellExecutionContext *ctx = [[ISHShellExecutionContext alloc] init];
     ctx.lineCallback = lineCallback;
@@ -161,10 +184,25 @@ static dispatch_once_t _onceToken;
 
     struct task *task = current;
 
-    // Setup stdin as /dev/null
+    // Setup stdin from an anonymous temporary file for binary input. A file is
+    // used instead of a pipe so multi-megabyte input cannot block app threads
+    // while the guest is starting.
     struct fd *stdin_fd = adhoc_fd_create(&realfs_fdops);
     if (stdin_fd) {
-        stdin_fd->real_fd = open("/dev/null", O_RDONLY);
+        if (inputData) {
+            FILE *input = tmpfile();
+            if (!input || fwrite(inputData.bytes, 1, inputData.length, input) != inputData.length) {
+                if (input) fclose(input);
+                current = saved_current;
+                [ctx cleanup];
+                return ISHShellExecutorErrorProcessCreationFailed;
+            }
+            rewind(input);
+            stdin_fd->real_fd = dup(fileno(input));
+            fclose(input);
+        } else {
+            stdin_fd->real_fd = open("/dev/null", O_RDONLY);
+        }
         task->files->files[0] = stdin_fd;
     }
 
@@ -269,6 +307,13 @@ static dispatch_once_t _onceToken;
 + (ISHShellExecutionResult *)executeCommandSync:(NSString *)command
                                         timeout:(NSTimeInterval)timeout
                                    lineCallback:(ISHShellLineCallback)lineCallback {
+    return [self executeCommandSync:command inputData:nil timeout:timeout lineCallback:lineCallback];
+}
+
++ (ISHShellExecutionResult *)executeCommandSync:(NSString *)command
+                                      inputData:(NSData *)inputData
+                                        timeout:(NSTimeInterval)timeout
+                                   lineCallback:(ISHShellLineCallback)lineCallback {
 
     ISHShellExecutionContext *ctx = [[ISHShellExecutionContext alloc] init];
     ctx.lineCallback = lineCallback;
@@ -277,9 +322,12 @@ static dispatch_once_t _onceToken;
 
     __block ISHShellExecutionResult *result = nil;
 
-    int pid = [self executeCommand:command
-                      lineCallback:lineCallback
-                        completion:^(ISHShellExecutionResult *execResult) {
+    int pid = [self executeExecutable:@"/bin/sh"
+                            arguments:@[@"-c", command]
+                          environment:nil
+                            inputData:inputData
+                         lineCallback:lineCallback
+                           completion:^(ISHShellExecutionResult *execResult) {
         result = execResult;
         dispatch_semaphore_signal(ctx.waitSemaphore);
     }];
