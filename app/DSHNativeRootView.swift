@@ -83,6 +83,37 @@ struct DSHNativeRootView: View {
                         .textInputAutocapitalization(.never)
                         .accessibilityIdentifier("dsh.native.model")
                 }
+                Section("MCP Servers") {
+                    ForEach($model.mcpConfigurations) { $server in
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                TextField("Name", text: $server.name)
+                                    .textInputAutocapitalization(.never)
+                                Toggle("Enabled", isOn: $server.isEnabled).labelsHidden()
+                                Button("Remove", systemImage: "trash", role: .destructive) {
+                                    model.mcpConfigurations.removeAll { $0.id == server.id }
+                                }
+                                .labelStyle(.iconOnly)
+                            }
+                            TextField("HTTPS endpoint", text: $server.endpoint)
+                                .textInputAutocapitalization(.never)
+                                .keyboardType(.URL)
+                            SecureField("Bearer token (optional)", text: $server.bearerToken)
+                                .textInputAutocapitalization(.never)
+                            if let status = model.mcpStatuses.first(where: { $0.id == server.id }) {
+                                Text(Self.mcpStatusText(status.state))
+                                    .font(.caption)
+                                    .foregroundStyle(Self.mcpStatusColor(status.state))
+                            }
+                        }
+                        .accessibilityElement(children: .contain)
+                    }
+                    Button("Add MCP Server", systemImage: "plus") {
+                        model.mcpConfigurations.append(.init(name: "server", endpoint: "https://"))
+                    }
+                    Button("Reconnect", systemImage: "arrow.clockwise") { model.refreshMCPServers() }
+                        .disabled(model.mcpConfigurations.isEmpty)
+                }
                 if let error = model.configurationError {
                     Section { Text(error).foregroundStyle(.red) }
                 }
@@ -97,6 +128,23 @@ struct DSHNativeRootView: View {
                         .accessibilityIdentifier("dsh.native.settings.save")
                 }
             }
+        }
+    }
+
+    private static func mcpStatusText(_ state: DSHMCPConnectionState) -> String {
+        switch state {
+        case .disabled: return "Disabled"
+        case .connecting: return "Connecting…"
+        case .connected(let count): return "Connected · \(count) tool(s)"
+        case .failed(let message): return "Connection failed: \(message)"
+        }
+    }
+
+    private static func mcpStatusColor(_ state: DSHMCPConnectionState) -> Color {
+        switch state {
+        case .connected: return .green
+        case .failed: return .red
+        case .disabled, .connecting: return .secondary
         }
     }
 }

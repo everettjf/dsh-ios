@@ -24,19 +24,28 @@ protocol DSHNativeTool: Sendable {
     func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue
 }
 
-struct DSHToolRegistry: Sendable {
-    private let tools: [String: any DSHNativeTool]
+final class DSHToolRegistry: @unchecked Sendable {
+    private let lock = NSLock()
+    private var tools: [String: any DSHNativeTool]
 
     init(_ tools: [any DSHNativeTool] = []) {
         self.tools = Dictionary(uniqueKeysWithValues: tools.map { ($0.definition.name, $0) })
     }
 
     var definitions: [DSHToolDefinition] {
-        tools.values.map(\.definition).sorted { $0.name < $1.name }
+        lock.withLock { tools.values.map(\.definition).sorted { $0.name < $1.name } }
+    }
+
+    func replaceTools(withPrefix prefix: String, with replacements: [any DSHNativeTool]) {
+        lock.withLock {
+            tools = tools.filter { !$0.key.hasPrefix(prefix) }
+            for tool in replacements { tools[tool.definition.name] = tool }
+        }
     }
 
     func execute(_ call: DSHToolCall) async -> String {
-        guard let tool = tools[call.name] else {
+        let tool = lock.withLock { tools[call.name] }
+        guard let tool else {
             return encodeError(DSHToolError.unknownTool(call.name))
         }
         do {
@@ -53,7 +62,7 @@ struct DSHToolRegistry: Sendable {
                     throw DSHToolError.invalidArguments("Expected a JSON value.")
                 }
             }
-            return try encode(["ok": .bool(true), "result": try await tool.execute(arguments: arguments)])
+            return encode(["ok": .bool(true), "result": try await tool.execute(arguments: arguments)])
         } catch {
             return encodeError(error)
         }

@@ -221,7 +221,7 @@ final class DSHNativeCoreTests: XCTestCase {
                 "tools": .array([])
             ])])
         ])
-        let client = DSHMCPClient(endpoint: endpoint, transport: transport)
+        let client = DSHMCPClient(endpoint: endpoint, headers: ["Authorization": "Bearer secret-token"], transport: transport)
 
         try await client.connect()
         let tools = try await client.listTools()
@@ -230,6 +230,7 @@ final class DSHNativeCoreTests: XCTestCase {
         let requests = await transport.requests
         XCTAssertEqual(requests.count, 4)
         XCTAssertNil(requests[0].value(forHTTPHeaderField: "MCP-Protocol-Version"))
+        XCTAssertEqual(requests[0].value(forHTTPHeaderField: "Authorization"), "Bearer secret-token")
         XCTAssertEqual(requests[1].value(forHTTPHeaderField: "MCP-Session-Id"), "session-1")
         XCTAssertEqual(requests[2].value(forHTTPHeaderField: "MCP-Protocol-Version"), DSHMCPClient.protocolVersion)
         let lastBody = try XCTUnwrap(requests[3].httpBody)
@@ -256,6 +257,16 @@ final class DSHNativeCoreTests: XCTestCase {
 
         guard case .object(let object) = result else { return XCTFail("Expected object result") }
         XCTAssertNotNil(object["content"])
+    }
+
+    func testToolRegistryCanAtomicallyRefreshOnlyMCPTools() async {
+        let registry = DSHToolRegistry([EchoTool()])
+        registry.replaceTools(withPrefix: "mcp__", with: [NamedTool(name: "mcp__one__search")])
+        XCTAssertEqual(registry.definitions.map(\.name), ["echo", "mcp__one__search"])
+        registry.replaceTools(withPrefix: "mcp__", with: [NamedTool(name: "mcp__two__fetch")])
+        XCTAssertEqual(registry.definitions.map(\.name), ["echo", "mcp__two__fetch"])
+        let stale = await registry.execute(.init(id: "1", name: "mcp__one__search", arguments: "{}"))
+        XCTAssertTrue(stale.contains("Unknown tool"))
     }
 
     func testLazyGuestBootsOnlyOnFirstCommand() async throws {
@@ -560,6 +571,12 @@ private struct EchoTool: DSHNativeTool {
         }
         return .object(["text": .string(text)])
     }
+}
+
+private struct NamedTool: DSHNativeTool {
+    let definition: DSHToolDefinition
+    init(name: String) { definition = .init(name: name, description: "Test", parameters: .object(["type": .string("object")])) }
+    func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue { .object(["ok": .bool(true)]) }
 }
 
 private actor SequencedModelState {

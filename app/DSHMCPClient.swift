@@ -24,7 +24,16 @@ protocol DSHMCPTransport: Sendable {
 
 struct DSHURLSessionMCPTransport: DSHMCPTransport {
     let session: URLSession
-    init(session: URLSession = .shared) { self.session = session }
+    init(session: URLSession? = nil) {
+        if let session {
+            self.session = session
+        } else {
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.timeoutIntervalForRequest = 15
+            configuration.timeoutIntervalForResource = 30
+            self.session = URLSession(configuration: configuration)
+        }
+    }
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let (data, response) = try await session.data(for: request)
@@ -44,12 +53,14 @@ actor DSHMCPClient {
 
     private let endpoint: URL
     private let transport: any DSHMCPTransport
+    private let headers: [String: String]
     private var sessionID: String?
     private var negotiatedVersion: String?
     private var nextID = 1
 
-    init(endpoint: URL, transport: any DSHMCPTransport = DSHURLSessionMCPTransport()) {
+    init(endpoint: URL, headers: [String: String] = [:], transport: any DSHMCPTransport = DSHURLSessionMCPTransport()) {
         self.endpoint = endpoint
+        self.headers = headers
         self.transport = transport
     }
 
@@ -102,6 +113,19 @@ actor DSHMCPClient {
         )
     }
 
+    func disconnect() async {
+        guard negotiatedVersion != nil else { return }
+        if sessionID != nil {
+            var request = URLRequest(url: endpoint)
+            request.httpMethod = "DELETE"
+            for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
+            if let sessionID { request.setValue(sessionID, forHTTPHeaderField: "MCP-Session-Id") }
+            _ = try? await transport.send(request)
+        }
+        sessionID = nil
+        negotiatedVersion = nil
+    }
+
     private func request(
         method: String,
         params: DSHJSONValue,
@@ -143,6 +167,7 @@ actor DSHMCPClient {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json, text/event-stream", forHTTPHeaderField: "Accept")
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
         if let version = negotiatedVersion {
             request.setValue(version, forHTTPHeaderField: "MCP-Protocol-Version")
         }

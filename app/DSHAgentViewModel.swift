@@ -9,11 +9,16 @@ final class DSHAgentViewModel {
     var configuration: DSHAgentConfiguration
     var isShowingSettings = false
     var configurationError: String?
+    var mcpConfigurations = DSHMCPServerConfigurationStore.load()
+    var mcpStatuses: [DSHMCPServerStatus] = []
 
     @ObservationIgnored private var runtime: DSHAgentRuntime
     @ObservationIgnored private var observationTask: Task<Void, Never>?
     @ObservationIgnored private var sendTask: Task<Void, Never>?
+    @ObservationIgnored private var mcpTask: Task<Void, Never>?
     @ObservationIgnored private let sessionStore: DSHSessionStore
+    @ObservationIgnored private let toolRegistry: DSHToolRegistry
+    @ObservationIgnored private let mcpManager: DSHMCPServerManager
     @ObservationIgnored private var sessionID: UUID
     @ObservationIgnored private var createdAt = Date()
 
@@ -30,9 +35,13 @@ final class DSHAgentViewModel {
         } else {
             sessionID = UUID()
         }
-        self.runtime = Self.makeRuntime(configuration, messages: [])
+        let registry = Self.makeToolRegistry()
+        toolRegistry = registry
+        mcpManager = DSHMCPServerManager(registry: registry)
+        self.runtime = Self.makeRuntime(configuration, messages: [], toolRegistry: registry)
         observeRuntime()
         Task { await restoreCurrentSession() }
+        refreshMCPServers()
     }
 
     var isConfigured: Bool {
@@ -65,15 +74,35 @@ final class DSHAgentViewModel {
     func saveConfiguration() {
         do {
             try DSHAgentConfigurationStore.save(configuration)
+            try DSHMCPServerConfigurationStore.save(mcpConfigurations)
             configurationError = nil
             observationTask?.cancel()
             sendTask?.cancel()
-            runtime = Self.makeRuntime(configuration, messages: snapshot.messages)
+            runtime = Self.makeRuntime(configuration, messages: snapshot.messages, toolRegistry: toolRegistry)
             snapshot = .init(messages: [], phase: .idle, usage: nil)
             observeRuntime()
+            refreshMCPServers()
             isShowingSettings = false
         } catch {
             configurationError = error.localizedDescription
+        }
+    }
+
+    func saveMCPConfiguration() {
+        do {
+            try DSHMCPServerConfigurationStore.save(mcpConfigurations)
+            configurationError = nil
+            refreshMCPServers()
+        } catch {
+            configurationError = error.localizedDescription
+        }
+    }
+
+    func refreshMCPServers() {
+        mcpTask?.cancel()
+        let configurations = mcpConfigurations
+        mcpTask = Task {
+            mcpStatuses = await mcpManager.refresh(configurations)
         }
     }
 
@@ -83,7 +112,7 @@ final class DSHAgentViewModel {
         sessionID = UUID()
         createdAt = Date()
         UserDefaults.standard.set(sessionID.uuidString, forKey: Self.currentSessionKey)
-        runtime = Self.makeRuntime(configuration, messages: [])
+        runtime = Self.makeRuntime(configuration, messages: [], toolRegistry: toolRegistry)
         snapshot = .init(messages: [], phase: .idle, usage: nil)
         observeRuntime()
     }
@@ -115,7 +144,7 @@ final class DSHAgentViewModel {
         observationTask?.cancel()
         createdAt = record.createdAt
         snapshot = .init(messages: record.messages, phase: .idle, usage: nil)
-        runtime = Self.makeRuntime(configuration, messages: record.messages)
+        runtime = Self.makeRuntime(configuration, messages: record.messages, toolRegistry: toolRegistry)
         observeRuntime()
     }
 
@@ -135,10 +164,21 @@ final class DSHAgentViewModel {
 
     private static func makeRuntime(
         _ configuration: DSHAgentConfiguration,
-        messages: [DSHChatMessage]
+        messages: [DSHChatMessage],
+        toolRegistry: DSHToolRegistry
     ) -> DSHAgentRuntime {
         let endpoint = URL(string: configuration.endpoint) ?? URL(string: DSHAgentConfiguration.defaultEndpoint)!
         let client = DSHOpenAICompatibleClient(baseURL: endpoint, apiKey: configuration.apiKey)
+        return DSHAgentRuntime(
+            client: client,
+            model: configuration.model,
+            systemPrompt: "You are a fast, capable iOS assistant. Use native tools when appropriate.",
+            messages: messages,
+            toolRegistry: toolRegistry
+        )
+    }
+
+    private static func makeToolRegistry() -> DSHToolRegistry {
         let guest = DSHLazyGuestManager()
         let authorization = DSHDefaultsToolAuthorizationPolicy()
         let deviceInfo = DSHGovernedTool(
@@ -195,15 +235,9 @@ final class DSHAgentViewModel {
                 authorization: authorization
             )
         }
-        return DSHAgentRuntime(
-            client: client,
-            model: configuration.model,
-            systemPrompt: "You are a fast, capable iOS assistant. Use native tools when appropriate.",
-            messages: messages,
-            toolRegistry: DSHToolRegistry([
+        return DSHToolRegistry([
                 deviceInfo, devicePower, location, contacts, calendar, reminders, health,
                 DSHBashTool(manager: guest)
             ] + nativeWrites)
-        )
     }
 }
