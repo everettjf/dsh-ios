@@ -306,3 +306,6 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 
 整个过程在当前 `rewrite-deepseek-harness-with-swift` 分支持续开发，采用前进式
 迁移，不为旧 Node.js Web Harness 增加新的兼容层。
+
+Phase 0 的权威逐文件清单见 [Swift Harness Kit module
+inventory](swift-harness-kit-module-inventory.md)。

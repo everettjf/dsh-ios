@@ -215,6 +215,9 @@ Every step on this branch must leave Dashros buildable, tested, committed, and
 pushed. Extraction commits should be small enough that API and ownership
 changes remain reviewable even though the product migration is forward-only.
 
+The authoritative Phase 0 ownership audit is maintained in [the module
+inventory](swift-harness-kit-module-inventory.md).
+
 ## Naming gate
 
 `Swift Harness Kit` is a good descriptive internal program name, but a weak
