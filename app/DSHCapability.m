@@ -9,6 +9,13 @@
 NSNotificationName const DSHCapabilityRegistryDidChangeNotification = @"DSHCapabilityRegistryDidChangeNotification";
 static NSString *const kEnabledPrefix = @"DSHCapabilityEnabled.";
 
+static BOOL DSHIsRunningUnitTests(void) {
+    // DSHTests is injected into the real app process. Persisting its switch
+    // changes would therefore leak into the developer build and, because both
+    // builds share a bundle identifier, survive a later TestFlight install.
+    return NSClassFromString(@"XCTestCase") != nil;
+}
+
 void DSHRunOnMainSync(dispatch_block_t block) {
     if (NSThread.isMainThread)
         block();
@@ -50,6 +57,7 @@ NSString *DSHCapabilityStateName(DSHCapabilityState state) {
 @interface DSHCapabilityRegistry ()
 @property (nonatomic) NSMutableArray<DSHCapability *> *ordered;
 @property (nonatomic) NSMutableDictionary<NSString *, DSHCapability *> *byIdentifier;
+@property (nonatomic) NSMutableDictionary<NSString *, NSNumber *> *testingEnabledOverrides;
 @end
 
 @implementation DSHCapabilityRegistry
@@ -68,6 +76,7 @@ NSString *DSHCapabilityStateName(DSHCapabilityState state) {
     if (self = [super init]) {
         _ordered = [NSMutableArray array];
         _byIdentifier = [NSMutableDictionary dictionary];
+        _testingEnabledOverrides = [NSMutableDictionary dictionary];
     }
     return self;
 }
@@ -106,12 +115,25 @@ NSString *DSHCapabilityStateName(DSHCapabilityState state) {
     if (capability == nil || !capability.available)
         return NO;
     NSString *key = [kEnabledPrefix stringByAppendingString:identifier];
+    if (DSHIsRunningUnitTests()) {
+        @synchronized (self) {
+            NSNumber *override = self.testingEnabledOverrides[identifier];
+            if (override != nil)
+                return override.boolValue;
+        }
+    }
     NSNumber *stored = [NSUserDefaults.standardUserDefaults objectForKey:key];
     return stored != nil ? stored.boolValue : capability.enabledByDefault;
 }
 
 - (void)setEnabled:(BOOL)enabled forIdentifier:(NSString *)identifier {
-    [NSUserDefaults.standardUserDefaults setBool:enabled forKey:[kEnabledPrefix stringByAppendingString:identifier]];
+    if (DSHIsRunningUnitTests()) {
+        @synchronized (self) {
+            self.testingEnabledOverrides[identifier] = @(enabled);
+        }
+    } else {
+        [NSUserDefaults.standardUserDefaults setBool:enabled forKey:[kEnabledPrefix stringByAppendingString:identifier]];
+    }
     dispatch_async(dispatch_get_main_queue(), ^{
         [NSNotificationCenter.defaultCenter postNotificationName:DSHCapabilityRegistryDidChangeNotification object:self];
     });
@@ -150,8 +172,7 @@ NSString *DSHCapabilityStateName(DSHCapabilityState state) {
 
 - (void)resetForTesting {
     @synchronized (self) {
-        for (DSHCapability *capability in self.ordered)
-            [NSUserDefaults.standardUserDefaults removeObjectForKey:[kEnabledPrefix stringByAppendingString:capability.identifier]];
+        [self.testingEnabledOverrides removeAllObjects];
         [self.ordered removeAllObjects];
         [self.byIdentifier removeAllObjects];
     }

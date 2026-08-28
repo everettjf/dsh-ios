@@ -20,6 +20,21 @@
 
 @implementation DSHHostBridgeTests
 
+- (void)testUnitTestCapabilityChangesNeverPersistIntoTheInstalledApp {
+    NSString *key = @"DSHCapabilityEnabled.device.info";
+    NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
+    id original = [defaults objectForKey:key];
+    [defaults removeObjectForKey:key];
+
+    [DSHCapabilityRegistry.shared setEnabled:NO forIdentifier:@"device.info"];
+    XCTAssertNil([defaults objectForKey:key], @"unit tests must use an in-memory capability override");
+
+    if (original != nil)
+        [defaults setObject:original forKey:key];
+    else
+        [defaults removeObjectForKey:key];
+}
+
 - (void)setUp {
     [super setUp];
     self.bridge = [DSHHostBridge new];   // a private instance, not the shared one
