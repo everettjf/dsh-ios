@@ -1,0 +1,160 @@
+import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+import Testing
+@testable import AgentMCP
+import AgentRuntime
+
+@Suite("AgentMCP")
+struct AgentMCPTests {
+    @Test("initialization, pagination, and negotiated headers")
+    func initializationAndPagination() async throws {
+        let endpoint = try #require(URL(string: "https://example.test/mcp"))
+        let transport = FakeTransport(responses: [
+            .json(200, rpcResult(id: 1, result: .object([
+                "protocolVersion": .string(DSHMCPClient.protocolVersion),
+                "capabilities": .object(["tools": .object([:])]),
+                "serverInfo": .object(["name": .string("test"), "version": .string("1")])
+            ])), headers: ["MCP-Session-Id": "session-1"]),
+            .empty(202),
+            .json(200, rpcResult(id: 2, result: .object([
+                "tools": .array([.object([
+                    "name": .string("weather"),
+                    "description": .string("Get weather"),
+                    "inputSchema": .object(["type": .string("object")])
+                ])]),
+                "nextCursor": .string("page-2")
+            ]))),
+            .json(200, rpcResult(id: 3, result: .object(["tools": .array([])])))
+        ])
+        let client = DSHMCPClient(endpoint: endpoint, headers: ["Authorization": "Bearer secret"], transport: transport)
+
+        try await client.connect()
+        let tools = try await client.listTools()
+
+        #expect(tools.map(\.name) == ["weather"])
+        let requests = await transport.recordedRequests()
+        #expect(requests.count == 4)
+        #expect(requests[0].value(forHTTPHeaderField: "MCP-Protocol-Version") == nil)
+        #expect(requests[0].value(forHTTPHeaderField: "Authorization") == "Bearer secret")
+        #expect(requests[1].value(forHTTPHeaderField: "MCP-Session-Id") == "session-1")
+        #expect(requests[2].value(forHTTPHeaderField: "MCP-Protocol-Version") == DSHMCPClient.protocolVersion)
+        #expect(String(decoding: try #require(requests[3].httpBody), as: UTF8.self).contains("page-2"))
+    }
+
+    @Test("SSE tool results are decoded")
+    func sseToolResult() async throws {
+        let endpoint = try #require(URL(string: "https://example.test/mcp"))
+        let transport = FakeTransport(responses: [
+            .json(200, rpcResult(id: 1, result: initializationResult())),
+            .empty(202),
+            .sse(200, rpcResult(id: 2, result: .object([
+                "content": .array([.object(["type": .string("text"), "text": .string("sunny")])])
+            ])))
+        ])
+        let client = DSHMCPClient(endpoint: endpoint, transport: transport)
+        try await client.connect()
+
+        let result = try await client.callTool(name: "weather", arguments: .object(["city": .string("LA")]))
+
+        guard case .object(let object) = result else {
+            Issue.record("Expected an object result")
+            return
+        }
+        #expect(object["content"] != nil)
+    }
+
+    @Test("requests before initialization fail deterministically")
+    func requiresInitialization() async throws {
+        let endpoint = try #require(URL(string: "https://example.test/mcp"))
+        let client = DSHMCPClient(endpoint: endpoint, transport: FakeTransport(responses: []))
+
+        await #expect(throws: DSHMCPError.notInitialized) { try await client.listTools() }
+        await #expect(throws: DSHMCPError.notInitialized) {
+            try await client.callTool(name: "weather", arguments: .object([:]))
+        }
+    }
+
+    @Test("unsupported protocol versions are rejected")
+    func rejectsUnsupportedProtocol() async throws {
+        let endpoint = try #require(URL(string: "https://example.test/mcp"))
+        let transport = FakeTransport(responses: [
+            .json(200, rpcResult(id: 1, result: .object([
+                "protocolVersion": .string("1900-01-01"),
+                "capabilities": .object([:]),
+                "serverInfo": .object(["name": .string("old"), "version": .string("1")])
+            ])))
+        ])
+        let client = DSHMCPClient(endpoint: endpoint, transport: transport)
+
+        await #expect(throws: DSHMCPError.unsupportedProtocol("1900-01-01")) { try await client.connect() }
+    }
+
+    @Test("tool adapters use namespaced names")
+    func namespacedToolName() async throws {
+        let endpoint = try #require(URL(string: "https://example.test/mcp"))
+        let client = DSHMCPClient(endpoint: endpoint, transport: FakeTransport(responses: []))
+        let tool = DSHMCPTool(
+            serverName: "weather-service",
+            description: .init(name: "forecast", description: "Forecast", inputSchema: .object(["type": .string("object")])),
+            client: client
+        )
+
+        #expect(tool.definition.name == "mcp__weather-service__forecast")
+    }
+}
+
+private func initializationResult() -> DSHJSONValue {
+    .object([
+        "protocolVersion": .string(DSHMCPClient.protocolVersion),
+        "capabilities": .object([:]),
+        "serverInfo": .object(["name": .string("test"), "version": .string("1")])
+    ])
+}
+
+private func rpcResult(id: Double, result: DSHJSONValue) -> [String: DSHJSONValue] {
+    ["jsonrpc": .string("2.0"), "id": .number(id), "result": result]
+}
+
+private struct FakeResponse: Sendable {
+    let status: Int
+    let data: Data
+    let headers: [String: String]
+
+    static func json(_ status: Int, _ object: [String: DSHJSONValue], headers: [String: String] = [:]) -> Self {
+        .init(
+            status: status,
+            data: try! JSONEncoder().encode(DSHJSONValue.object(object)),
+            headers: headers.merging(["Content-Type": "application/json"]) { first, _ in first }
+        )
+    }
+
+    static func sse(_ status: Int, _ object: [String: DSHJSONValue]) -> Self {
+        let json = String(decoding: try! JSONEncoder().encode(DSHJSONValue.object(object)), as: UTF8.self)
+        return .init(status: status, data: Data("data: \(json)\n\n".utf8), headers: ["Content-Type": "text/event-stream"])
+    }
+
+    static func empty(_ status: Int) -> Self { .init(status: status, data: Data(), headers: [:]) }
+}
+
+private actor FakeTransport: DSHMCPTransport {
+    private var responses: [FakeResponse]
+    private var requests: [URLRequest] = []
+
+    init(responses: [FakeResponse]) { self.responses = responses }
+
+    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        requests.append(request)
+        let response = responses.removeFirst()
+        let http = try #require(HTTPURLResponse(
+            url: request.url!,
+            statusCode: response.status,
+            httpVersion: "HTTP/1.1",
+            headerFields: response.headers
+        ))
+        return (response.data, http)
+    }
+
+    func recordedRequests() -> [URLRequest] { requests }
+}

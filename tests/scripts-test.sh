@@ -32,7 +32,7 @@ second_project=$(shasum -a 256 DSH.xcodeproj/project.pbxproj DSH.xcodeproj/xcsha
 
 printf 'ok  scripts: deterministic Xcode project generation\n'
 
-for module in AgentRuntime AgentProviders AgentTools AgentStorage; do
+for module in AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP; do
   [ -d "Packages/SwiftHarnessKit/Sources/$module" ] || {
     echo "not ok: missing Swift package module $module" >&2
     exit 1

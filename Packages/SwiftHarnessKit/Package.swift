@@ -11,16 +11,19 @@ let package = Package(
         .library(name: "AgentRuntime", targets: ["AgentRuntime"]),
         .library(name: "AgentProviders", targets: ["AgentProviders"]),
         .library(name: "AgentTools", targets: ["AgentTools"]),
-        .library(name: "AgentStorage", targets: ["AgentStorage"])
+        .library(name: "AgentStorage", targets: ["AgentStorage"]),
+        .library(name: "AgentMCP", targets: ["AgentMCP"])
     ],
     targets: [
         .target(name: "AgentRuntime"),
         .target(name: "AgentProviders", dependencies: ["AgentRuntime"]),
         .target(name: "AgentTools", dependencies: ["AgentRuntime"]),
         .target(name: "AgentStorage", dependencies: ["AgentRuntime"]),
+        .target(name: "AgentMCP", dependencies: ["AgentRuntime", "AgentProviders", "AgentTools"]),
         .testTarget(name: "AgentRuntimeTests", dependencies: ["AgentRuntime", "AgentTools"]),
         .testTarget(name: "AgentProvidersTests", dependencies: ["AgentRuntime", "AgentProviders"]),
         .testTarget(name: "AgentToolsTests", dependencies: ["AgentRuntime", "AgentTools"]),
-        .testTarget(name: "AgentStorageTests", dependencies: ["AgentRuntime", "AgentStorage"])
+        .testTarget(name: "AgentStorageTests", dependencies: ["AgentRuntime", "AgentStorage"]),
+        .testTarget(name: "AgentMCPTests", dependencies: ["AgentRuntime", "AgentProviders", "AgentTools", "AgentMCP"])
     ]
 )

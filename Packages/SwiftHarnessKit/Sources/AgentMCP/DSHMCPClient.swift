@@ -1,13 +1,22 @@
 import Foundation
+#if canImport(AgentRuntime)
+import AgentRuntime
+#endif
+#if canImport(AgentProviders)
+import AgentProviders
+#endif
+#if canImport(AgentTools)
+import AgentTools
+#endif
 
-enum DSHMCPError: Error, LocalizedError, Equatable, Sendable {
+public enum DSHMCPError: Error, LocalizedError, Equatable, Sendable, DSHAgentErrorCategorizing {
     case invalidResponse
     case httpStatus(Int)
     case protocolError(Int, String)
     case unsupportedProtocol(String)
     case notInitialized
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidResponse: return "The MCP server returned an invalid response."
         case .httpStatus(let status): return "The MCP server returned HTTP \(status)."
@@ -16,15 +25,17 @@ enum DSHMCPError: Error, LocalizedError, Equatable, Sendable {
         case .notInitialized: return "The MCP connection has not been initialized."
         }
     }
+
+    public var agentErrorCategory: String { "mcp_error" }
 }
 
-protocol DSHMCPTransport: Sendable {
+public protocol DSHMCPTransport: Sendable {
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse)
 }
 
-struct DSHURLSessionMCPTransport: DSHMCPTransport {
+public struct DSHURLSessionMCPTransport: DSHMCPTransport {
     let session: URLSession
-    init(session: URLSession? = nil) {
+    public init(session: URLSession? = nil) {
         if let session {
             self.session = session
         } else {
@@ -35,21 +46,27 @@ struct DSHURLSessionMCPTransport: DSHMCPTransport {
         }
     }
 
-    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+    public func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let (data, response) = try await session.data(for: request)
         guard let response = response as? HTTPURLResponse else { throw DSHMCPError.invalidResponse }
         return (data, response)
     }
 }
 
-struct DSHMCPToolDescription: Equatable, Sendable {
-    let name: String
-    let description: String
-    let inputSchema: DSHJSONValue
+public struct DSHMCPToolDescription: Equatable, Sendable {
+    public let name: String
+    public let description: String
+    public let inputSchema: DSHJSONValue
+
+    public init(name: String, description: String, inputSchema: DSHJSONValue) {
+        self.name = name
+        self.description = description
+        self.inputSchema = inputSchema
+    }
 }
 
-actor DSHMCPClient {
-    static let protocolVersion = "2025-11-25"
+public actor DSHMCPClient {
+    public static let protocolVersion = "2025-11-25"
 
     private let endpoint: URL
     private let transport: any DSHMCPTransport
@@ -58,13 +75,13 @@ actor DSHMCPClient {
     private var negotiatedVersion: String?
     private var nextID = 1
 
-    init(endpoint: URL, headers: [String: String] = [:], transport: any DSHMCPTransport = DSHURLSessionMCPTransport()) {
+    public init(endpoint: URL, headers: [String: String] = [:], transport: any DSHMCPTransport = DSHURLSessionMCPTransport()) {
         self.endpoint = endpoint
         self.headers = headers
         self.transport = transport
     }
 
-    func connect() async throws {
+    public func connect() async throws {
         let result = try await request(
             method: "initialize",
             params: .object([
@@ -83,7 +100,7 @@ actor DSHMCPClient {
         try await notification(method: "notifications/initialized")
     }
 
-    func listTools() async throws -> [DSHMCPToolDescription] {
+    public func listTools() async throws -> [DSHMCPToolDescription] {
         guard negotiatedVersion != nil else { throw DSHMCPError.notInitialized }
         var cursor: String?
         var output: [DSHMCPToolDescription] = []
@@ -105,7 +122,7 @@ actor DSHMCPClient {
         return output
     }
 
-    func callTool(name: String, arguments: DSHJSONValue) async throws -> DSHJSONValue {
+    public func callTool(name: String, arguments: DSHJSONValue) async throws -> DSHJSONValue {
         guard negotiatedVersion != nil else { throw DSHMCPError.notInitialized }
         return try await request(
             method: "tools/call",
@@ -113,7 +130,7 @@ actor DSHMCPClient {
         )
     }
 
-    func disconnect() async {
+    public func disconnect() async {
         guard negotiatedVersion != nil else { return }
         if sessionID != nil {
             var request = URLRequest(url: endpoint)
@@ -188,12 +205,12 @@ actor DSHMCPClient {
     }
 }
 
-struct DSHMCPTool: DSHNativeTool {
-    let definition: DSHToolDefinition
+public struct DSHMCPTool: DSHNativeTool {
+    public let definition: DSHToolDefinition
     private let remoteName: String
     private let client: DSHMCPClient
 
-    init(serverName: String, description: DSHMCPToolDescription, client: DSHMCPClient) {
+    public init(serverName: String, description: DSHMCPToolDescription, client: DSHMCPClient) {
         remoteName = description.name
         self.client = client
         definition = .init(
@@ -203,7 +220,7 @@ struct DSHMCPTool: DSHNativeTool {
         )
     }
 
-    func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue {
+    public func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue {
         try await client.callTool(name: remoteName, arguments: arguments)
     }
 }

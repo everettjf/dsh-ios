@@ -1,13 +1,15 @@
 import Foundation
 
-enum DSHSSEDecoderError: Error, Equatable {
+public enum DSHSSEDecoderError: Error, Equatable {
     case invalidUTF8
 }
 
-struct DSHSSEDecoder: Sendable {
+public struct DSHSSEDecoder: Sendable {
     private var buffer = Data()
 
-    mutating func append(_ data: Data) throws -> [String] {
+    public init() {}
+
+    public mutating func append(_ data: Data) throws -> [String] {
         buffer.append(data)
         var events: [String] = []
 
