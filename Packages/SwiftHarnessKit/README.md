@@ -18,18 +18,18 @@ SHOS. The package currently exposes seven products:
 import AgentRuntime
 import AgentProviders
 
-let provider = DSHOpenAICompatibleClient(
+let provider = OpenAICompatibleProvider(
     baseURL: URL(string: "https://api.deepseek.com/v1")!,
     apiKey: key
 )
-let agent = DSHAgentRuntime(client: provider, model: "deepseek-chat")
+let agent = HarnessAgent(client: provider, model: "deepseek-chat")
 let result = try await agent.send("Hello")
 ```
 
-The `DSH` type prefix is retained during the first extraction phase so SHOS
-can migrate without a second implementation. A later API stabilization pass
-will introduce final unprefixed names with source-compatible deprecations where
-appropriate.
+Version `0.1.0` introduces the supported unprefixed API vocabulary. The original
+`DSH*` declarations remain source-compatible throughout the 0.x migration, but
+new hosts should use the names shown above. See [API evolution](API_EVOLUTION.md)
+for the compatibility and persistence policy.
 
 Run the package suite independently of Xcode and iSH:
 

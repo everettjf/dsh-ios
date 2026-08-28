@@ -1,0 +1,10 @@
+public typealias ToolError = DSHToolError
+public typealias AgentTool = DSHNativeTool
+public typealias ToolRegistry = DSHToolRegistry
+public typealias ToolPermissionGate = DSHToolPermissionGate
+public typealias ToolPermission = DSHToolPermission
+public typealias ToolAuthorizationDecision = DSHToolAuthorizationDecision
+public typealias ToolAuthorizationPolicy = DSHToolAuthorizationPolicy
+public typealias ToolAuditSink = DSHToolAuditSink
+public typealias NoopToolAuditSink = DSHNoopToolAuditSink
+public typealias GovernedTool = DSHGovernedTool

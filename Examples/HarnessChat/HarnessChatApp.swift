@@ -14,7 +14,7 @@ struct HarnessChatApp: App {
 
 @MainActor
 private final class HarnessChatModel: ObservableObject {
-    @Published var messages: [DSHChatMessage] = []
+    @Published var messages: [ChatMessage] = []
     @Published var draft = ""
     @Published var endpoint = "https://api.deepseek.com/v1"
     @Published var model = "deepseek-chat"
@@ -23,7 +23,7 @@ private final class HarnessChatModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let sessionID = UUID(uuidString: "A7518468-1038-4CB4-8385-C0BFA8B52C67")!
-    private let store = DSHSessionStore()
+    private let store = SessionStore()
     private var responseTask: Task<Void, Never>?
     private var updatesTask: Task<Void, Never>?
 
@@ -59,14 +59,14 @@ private final class HarnessChatModel: ObservableObject {
 
     func stop() { responseTask?.cancel(); responseTask = nil }
 
-    private func makeRuntime() -> DSHAgentRuntime {
+    private func makeRuntime() -> HarnessAgent {
         let url = URL(string: endpoint) ?? URL(string: "https://api.deepseek.com/v1")!
-        let tools = DSHToolRegistry([
+        let tools = ToolRegistry([
             ExampleEchoTool(),
-            DSHDeviceInformationTool(provider: ExampleDeviceProvider())
+            DeviceInformationTool(provider: ExampleDeviceProvider())
         ])
-        return DSHAgentRuntime(
-            client: DSHOpenAICompatibleClient(baseURL: url, apiKey: apiKey),
+        return HarnessAgent(
+            client: OpenAICompatibleProvider(baseURL: url, apiKey: apiKey),
             model: model,
             systemPrompt: "You are a concise assistant. Use tools when useful.",
             messages: messages,
@@ -78,30 +78,30 @@ private final class HarnessChatModel: ObservableObject {
         messages = (try? await store.load(id: sessionID))?.messages ?? []
     }
 
-    private func persist(_ messages: [DSHChatMessage]) async {
+    private func persist(_ messages: [ChatMessage]) async {
         let now = Date()
         let title = messages.first(where: { $0.role == .user })?.content.map { String($0.prefix(60)) } ?? "Conversation"
         try? await store.save(.init(id: sessionID, title: title, messages: messages, createdAt: now, updatedAt: now))
     }
 }
 
-private struct ExampleEchoTool: DSHNativeTool {
-    let definition = DSHToolDefinition(
+private struct ExampleEchoTool: AgentTool {
+    let definition = ToolDefinition(
         name: "echo",
         description: "Echo text to demonstrate a custom Swift tool.",
         parameters: .object(["type": .string("object"), "properties": .object(["text": .object(["type": .string("string")])]), "required": .array([.string("text")])])
     )
 
-    func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue {
+    func execute(arguments: JSONValue) async throws -> JSONValue {
         guard case .object(let values) = arguments, case .string(let text) = values["text"] else {
-            throw DSHToolError.invalidArguments("text is required.")
+            throw ToolError.invalidArguments("text is required.")
         }
         return .object(["text": .string(text)])
     }
 }
 
-private struct ExampleDeviceProvider: DSHDeviceInformationProviding {
-    func information() async -> DSHDeviceInformation {
+private struct ExampleDeviceProvider: DeviceInformationProviding {
+    func information() async -> DeviceInformation {
         await MainActor.run {
             let device = UIDevice.current
             return .init(device: device.model, systemName: device.systemName, systemVersion: device.systemVersion, localeIdentifier: Locale.current.identifier)

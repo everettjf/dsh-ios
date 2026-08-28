@@ -1,0 +1,13 @@
+public typealias AppleRouteExecuting = DSHAppleRouteExecuting
+public typealias AppleReadToolKind = DSHAppleReadToolKind
+public typealias AppleReadTool = DSHAppleReadTool
+public typealias AppleWriteToolKind = DSHAppleWriteToolKind
+public typealias AppleWriteTool = DSHAppleWriteTool
+public typealias DeviceInformation = DSHDeviceInformation
+public typealias BatteryState = DSHBatteryState
+public typealias ThermalState = DSHThermalState
+public typealias DevicePower = DSHDevicePower
+public typealias DeviceInformationProviding = DSHDeviceInformationProviding
+public typealias DevicePowerProviding = DSHDevicePowerProviding
+public typealias DeviceInformationTool = DSHDeviceInformationTool
+public typealias DevicePowerTool = DSHDevicePowerTool

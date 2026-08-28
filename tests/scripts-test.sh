@@ -46,6 +46,25 @@ fi
 
 printf 'ok  scripts: AgentRuntime dependency boundary\n'
 
+[ "$(tr -d '[:space:]' < Packages/SwiftHarnessKit/VERSION)" = '0.1.0' ] || {
+  echo 'not ok: SwiftHarnessKit VERSION must be 0.1.0' >&2
+  exit 1
+}
+for symbol in HarnessAgent ModelProvider ChatMessage AgentSnapshot; do
+  rg -q "public typealias ${symbol} =" Packages/SwiftHarnessKit/Sources/AgentRuntime/PublicAPI.swift || {
+    echo "not ok: missing stable public symbol $symbol" >&2
+    exit 1
+  }
+done
+for file in API_EVOLUTION.md Sources/AgentRuntime/AgentRuntime.docc/AgentRuntime.md; do
+  [ -f "Packages/SwiftHarnessKit/$file" ] || {
+    echo "not ok: missing SwiftHarnessKit API documentation $file" >&2
+    exit 1
+  }
+done
+
+printf 'ok  scripts: SwiftHarnessKit 0.1 API contract\n'
+
 if ! rg -q 'XCLocalSwiftPackageReference "SwiftHarnessKit"' DSH.xcodeproj/project.pbxproj; then
   echo 'not ok: SHOS does not reference the local SwiftHarnessKit package' >&2
   exit 1

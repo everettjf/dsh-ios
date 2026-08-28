@@ -59,6 +59,17 @@ let package = Package(
                 "AgentMCP",
                 .product(name: "MCP", package: "swift-sdk")
             ]
+        ),
+        .testTarget(
+            name: "PublicAPITests",
+            dependencies: [
+                "AgentRuntime",
+                "AgentProviders",
+                "AgentTools",
+                "AgentStorage",
+                "AgentAppleTools",
+                "AgentMCP"
+            ]
         )
     ]
 )
