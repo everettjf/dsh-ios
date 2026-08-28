@@ -176,3 +176,9 @@ enum DSHModelEvent: Equatable, Sendable {
 protocol DSHModelClient: Sendable {
     func stream(request: DSHCompletionRequest) -> AsyncThrowingStream<DSHModelEvent, Error>
 }
+
+/// Lets providers expose a stable, privacy-safe error category without making
+/// AgentRuntime depend on a concrete transport implementation.
+protocol DSHAgentErrorCategorizing: Error {
+    var agentErrorCategory: String { get }
+}

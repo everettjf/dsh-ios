@@ -10,22 +10,6 @@ struct DSHNoopAgentTelemetry: DSHAgentTelemetry {
     func finished(source: String, name: String, detail: String, result: String, outcome: String, duration: TimeInterval, correlationID: String) async { }
 }
 
-struct DSHActivityAgentTelemetry: DSHAgentTelemetry, @unchecked Sendable {
-    func started(source: String, name: String, detail: String, correlationID: String) async {
-        DSHNativeToolAudit.recordStarted(withSource: source, name: name, detail: detail, correlationID: correlationID)
-    }
-
-    func finished(
-        source: String, name: String, detail: String, result: String, outcome: String,
-        duration: TimeInterval, correlationID: String
-    ) async {
-        DSHNativeToolAudit.recordFinished(
-            withSource: source, name: name, detail: detail, result: result,
-            outcome: outcome, duration: duration, correlationID: correlationID
-        )
-    }
-}
-
 enum DSHAgentPhase: Equatable, Sendable {
     case idle
     case streaming(step: Int)
@@ -310,14 +294,7 @@ actor DSHAgentRuntime {
 
     static func errorCategory(_ error: Error) -> String {
         if error is CancellationError { return "cancelled" }
-        if let error = error as? DSHModelClientError {
-            switch error {
-            case .invalidEndpoint: return "invalid_endpoint"
-            case .invalidResponse: return "invalid_response"
-            case .httpStatus(let status, _): return "http_\(status)"
-            case .malformedEvent: return "malformed_stream"
-            }
-        }
+        if let error = error as? any DSHAgentErrorCategorizing { return error.agentErrorCategory }
         if let error = error as? URLError {
             switch error.code {
             case .notConnectedToInternet, .networkConnectionLost: return "offline"

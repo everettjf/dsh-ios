@@ -12,6 +12,23 @@
 # Requires the `xcodeproj` gem (ships with CocoaPods).
 require 'xcodeproj'
 require 'pathname'
+require 'digest'
+
+# xcodeproj normally assigns random object IDs, which made every test/release
+# regeneration rewrite almost the entire project. A stable sequence keeps the
+# generated project reviewable and makes idempotence testable.
+class Xcodeproj::Project
+  def generate_uuid
+    @dsh_uuid_sequence ||= 0
+    loop do
+      value = Digest::SHA256.hexdigest("dashros-xcode-object-#{@dsh_uuid_sequence}").upcase[0, 24]
+      @dsh_uuid_sequence += 1
+      next if generated_uuids.include?(value) || objects_by_uuid.key?(value)
+      generated_uuids << value
+      return value
+    end
+  end
+end
 
 HERE = Pathname.new(__FILE__).expand_path.dirname
 ROOT = HERE.parent                                   # repo root

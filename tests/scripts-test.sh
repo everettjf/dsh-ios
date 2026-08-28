@@ -18,3 +18,16 @@ actual=$(DSH_SIMULATOR_LIST_FILE="$fixture" scripts/pick-simulator.sh)
 }
 
 printf 'ok  scripts: simulator names with parenthesized models\n'
+
+# Project generation must be byte-for-byte idempotent. Random PBX object IDs
+# create thousand-line diffs during ordinary tests and releases.
+ruby scripts/gen-xcode-project.rb >/dev/null
+first_project=$(shasum -a 256 DSH.xcodeproj/project.pbxproj DSH.xcodeproj/xcshareddata/xcschemes/DSH.xcscheme)
+ruby scripts/gen-xcode-project.rb >/dev/null
+second_project=$(shasum -a 256 DSH.xcodeproj/project.pbxproj DSH.xcodeproj/xcshareddata/xcschemes/DSH.xcscheme)
+[ "$first_project" = "$second_project" ] || {
+  echo 'not ok: generated Xcode project is not deterministic' >&2
+  exit 1
+}
+
+printf 'ok  scripts: deterministic Xcode project generation\n'

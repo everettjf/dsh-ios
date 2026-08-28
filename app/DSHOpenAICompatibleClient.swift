@@ -1,6 +1,6 @@
 import Foundation
 
-enum DSHModelClientError: Error, LocalizedError, Equatable {
+enum DSHModelClientError: Error, LocalizedError, Equatable, DSHAgentErrorCategorizing {
     case invalidEndpoint
     case invalidResponse
     case httpStatus(Int, String)
@@ -12,6 +12,15 @@ enum DSHModelClientError: Error, LocalizedError, Equatable {
         case .invalidResponse: return "The model server returned an invalid response."
         case .httpStatus(let status, let message): return "Model request failed (HTTP \(status)): \(message)"
         case .malformedEvent: return "The model stream contained an invalid event."
+        }
+    }
+
+    var agentErrorCategory: String {
+        switch self {
+        case .invalidEndpoint: return "invalid_endpoint"
+        case .invalidResponse: return "invalid_response"
+        case .httpStatus(let status, _): return "http_\(status)"
+        case .malformedEvent: return "malformed_stream"
         }
     }
 }
