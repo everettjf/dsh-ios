@@ -18,9 +18,9 @@ struct DSHNativeRootView: View {
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
                             .accessibilityHidden(true)
-                        Text("DeepSeek Agent")
+                        Text("Dashros")
                             .font(.title2.bold())
-                        Text(model.isConfigured ? "Ask anything to begin." : "Add your DeepSeek API key to begin.")
+                        Text(model.isConfigured ? "Ask anything to begin." : "Add a model API key to begin.")
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
@@ -37,7 +37,7 @@ struct DSHNativeRootView: View {
                 }
                 .background(.bar)
             }
-            .navigationTitle("DeepSeek")
+            .navigationTitle("Dashros")
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button("Conversations", systemImage: "sidebar.left") { model.isShowingSessions = true }
@@ -94,12 +94,17 @@ struct DSHNativeRootView: View {
                         MessageBubble(message: message)
                             .id(message.id)
                     }
+                    Color.clear
+                        .frame(height: 1)
+                        .id(Self.messageListBottomID)
                 }
                 .padding()
             }
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: model.snapshot.messages) { messages in
-                if let id = messages.last?.id { proxy.scrollTo(id, anchor: .bottom) }
+            .contentShape(Rectangle())
+            .onTapGesture { isComposerFocused = false }
+            .onChange(of: model.snapshot.messages) { _ in
+                proxy.scrollTo(Self.messageListBottomID, anchor: .bottom)
             }
             .accessibilityIdentifier("dsh.native.messages")
         }
@@ -125,7 +130,7 @@ struct DSHNativeRootView: View {
                     .labelStyle(.iconOnly)
                     .disabled(model.isStreaming || !model.hasRestoredSessions)
                     .accessibilityIdentifier("dsh.native.attach")
-                TextField("Message DeepSeek", text: $model.draft, axis: .vertical)
+                TextField("Message Dashros", text: $model.draft, axis: .vertical)
                     .lineLimit(1...6)
                     .focused($isComposerFocused)
                     .textFieldStyle(.plain)
@@ -134,7 +139,7 @@ struct DSHNativeRootView: View {
                     .background(.secondary.opacity(0.12), in: .rect(cornerRadius: 18))
                     .onSubmit {
                         guard !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-                        model.send()
+                        sendAndDismissKeyboard()
                     }
                     .accessibilityIdentifier("dsh.native.composer")
                 if model.isStreaming {
@@ -150,7 +155,7 @@ struct DSHNativeRootView: View {
                             .disabled(!model.canContinue)
                     }
                     .labelStyle(.iconOnly)
-                    Button("Send", systemImage: "arrow.up.circle.fill") { model.send() }
+                    Button("Send", systemImage: "arrow.up.circle.fill") { sendAndDismissKeyboard() }
                         .labelStyle(.iconOnly)
                         .font(.title2)
                         .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.pendingAttachments.isEmpty)
@@ -160,6 +165,13 @@ struct DSHNativeRootView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private static let messageListBottomID = "dsh.native.messages.bottom"
+
+    private func sendAndDismissKeyboard() {
+        model.send()
+        isComposerFocused = false
     }
 
     @ViewBuilder private var responseStatus: some View {
@@ -381,7 +393,16 @@ private struct SessionRow: View {
 private struct MessageBubble: View {
     let message: DSHChatMessage
 
+    @ViewBuilder
     var body: some View {
+        if message.role == .tool {
+            ToolResultCard(message: message)
+        } else {
+            conversationBubble
+        }
+    }
+
+    private var conversationBubble: some View {
         VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 6) {
             if let reasoning = message.reasoningContent, !reasoning.isEmpty {
                 DisclosureGroup("Reasoning") {
@@ -413,6 +434,37 @@ private struct MessageBubble: View {
         .background(message.role == .user ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .accessibilityIdentifier("dsh.native.message.\(message.role.rawValue)")
+    }
+}
+
+private struct ToolResultCard: View {
+    let message: DSHChatMessage
+    @State private var isExpanded = false
+
+    private var failed: Bool {
+        let content = message.content ?? ""
+        return content.contains("\"ok\":false") || content.localizedCaseInsensitiveContains("error")
+    }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            Text(message.content ?? "No details returned.")
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 6)
+        } label: {
+            Label(failed ? "Tool failed" : "Tool completed",
+                  systemImage: failed ? "exclamationmark.triangle" : "checkmark.circle")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(failed ? Color.orange : Color.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityIdentifier("dsh.native.message.tool")
     }
 }
 

@@ -1,6 +1,6 @@
-# DSHIOS — a Swift-native DeepSeek agent for iPhone and iPad
+# Dashros — a Swift-native agent for iPhone and iPad
 
-DSHIOS is a fast, native iOS agent built around the DeepSeek API. Swift owns the
+Dashros is a fast, native iOS agent with first-class DeepSeek support. Swift owns the
 primary UI, model streaming, turn state machine, conversations, attachments,
 permissions, native iOS tools, MCP clients, and private diagnostics.
 
@@ -10,11 +10,12 @@ conversation, editing settings, using native tools, and calling MCP do not boot
 Linux. This is a forward-only transition from the earlier `dsh web` app; DSH
 does not promise compatibility with every dsh plugin.
 
-> **Current development line:** `main` is the active Swift rewrite. The last
-> official Node.js DeepSeek Harness implementation before this rewrite is
+> **Repository lines:** `main` retains the Node.js DeepSeek Harness app. The last
+> official Node.js implementation before this rewrite is also
 > preserved at [`nodejs-harness-v1.0.10`](https://github.com/everettjf/dsh-ios/tree/nodejs-harness-v1.0.10).
 > Use that tag when you need the original `dsh web` / Node.js architecture;
-> new product work happens on the Swift-native `main` branch.
+> Swift-native Dashros and the internal **Swift Harness Kit** are developed on
+> `rewrite-deepseek-harness-with-swift`.
 
 ## Product architecture
 
@@ -57,7 +58,7 @@ Upgrades are forward-only; there is no rollback migration.
 
 ## Build and run
 
-Requirements: Apple Silicon Mac, Xcode 27, iOS/iPadOS 26 or later, Node.js 20+,
+Requirements: Apple Silicon Mac, Xcode 27, iOS/iPadOS 16 or later, Node.js 20+,
 Meson, Ninja, `lld`, and the Ruby `xcodeproj` gem.
 
 ```bash
@@ -103,7 +104,7 @@ docs/           architecture, security, migration and release acceptance
 
 Run `make project` after adding or removing Xcode source files.
 
-DSH is intentionally an iOS-native DeepSeek agent, not a byte-for-byte Swift
+Dashros is intentionally an iOS-native agent, not a byte-for-byte Swift
 port of the original harness. Its supported extension surface is the native
 tool registry plus MCP; Linux is an optional workspace capability.
 

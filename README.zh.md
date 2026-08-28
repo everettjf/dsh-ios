@@ -1,6 +1,6 @@
-# DSHIOS — iPhone / iPad 上的 Swift 原生 DeepSeek Agent
+# Dashros — iPhone / iPad 上的 Swift 原生 Agent
 
-DSHIOS 是一个快速、原生的 iOS DeepSeek agent。主界面、模型流式请求、turn/step
+Dashros 是一个快速、原生、重点优化 DeepSeek 体验的 iOS agent。主界面、模型流式请求、turn/step
 状态机、会话、附件、权限确认、iOS 原生工具、MCP 和隐私诊断都由 Swift 接管。
 
 应用仍保留 Alpine Linux guest，用于 shell、附件暂存和 Linux 专属工具；但只有
@@ -8,11 +8,11 @@ DSHIOS 是一个快速、原生的 iOS DeepSeek agent。主界面、模型流式
 MCP 都不会启动 Linux。这是从旧版 `dsh web` 向前迁移，不考虑回滚，也不承诺
 兼容所有 dsh 插件。
 
-> **当前开发主线：** `main` 是正在使用和持续开发的 Swift 重写版本。大改造前最后
+> **仓库分线：** `main` 保留 Node.js DeepSeek Harness App。大改造前最后
 > 一版官方 Node.js DeepSeek Harness 已保留在
 > [`nodejs-harness-v1.0.10`](https://github.com/everettjf/dsh-ios/tree/nodejs-harness-v1.0.10)
-> Tag。需要原来的 `dsh web` / Node.js 架构时请使用该 Tag；后续产品开发在 Swift
-> 原生的 `main` 分支继续。
+> Tag。需要原来的 `dsh web` / Node.js 架构时请使用该 Tag；Swift 原生
+> Dashros 和内部的 **Swift Harness Kit** 在 `rewrite-deepseek-harness-with-swift` 分支开发。
 
 ## 产品架构
 
@@ -48,7 +48,7 @@ Harness Kit 总体规划](docs/dashros-product-plan.zh.md)、[框架抽取计划
 
 ## 构建与运行
 
-需要 Apple Silicon Mac、Xcode 27、iOS/iPadOS 26 或更高版本、Node.js 20+、
+需要 Apple Silicon Mac、Xcode 27、iOS/iPadOS 16 或更高版本、Node.js 20+、
 Meson、Ninja、`lld` 和 Ruby `xcodeproj` gem。
 
 ```bash
@@ -89,7 +89,7 @@ scripts/        工程、rootfs、测试和发布自动化
 docs/           架构、安全、迁移与发布验收文档
 ```
 
-DSH 的目标是 iOS 原生 DeepSeek agent，而不是把原 harness 逐字节翻译为 Swift。
+Dashros 的目标是 iOS 原生 agent，而不是把原 harness 逐字节翻译为 Swift。
 受支持的扩展面是原生工具注册表和 MCP，Linux 是可选工作区能力。
 
 项目因包含 iSH 衍生模拟器而采用 GPL-3.0，详见 [LICENSE](LICENSE)。
