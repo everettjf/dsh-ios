@@ -18,3 +18,17 @@ actual=$(DSH_SIMULATOR_LIST_FILE="$fixture" scripts/pick-simulator.sh)
 }
 
 printf 'ok  scripts: simulator names with parenthesized models\n'
+
+target=$(sed -n 's/^IPHONEOS_DEPLOYMENT_TARGET = //p' app/AppDSH.xcconfig | tr -d ' ')
+[ "$target" = '16.0' ] || {
+  echo "not ok: deployment target is '$target', expected 16.0" >&2
+  exit 1
+}
+
+generated_targets=$(grep -c "new_target(.*:ios, '16.0')" scripts/gen-xcode-project.rb)
+[ "$generated_targets" = '3' ] || {
+  echo "not ok: project generator does not keep all three targets on iOS 16" >&2
+  exit 1
+}
+
+printf 'ok  scripts: app and generated test targets support iOS 16\n'
