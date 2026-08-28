@@ -1,6 +1,6 @@
-# DSH — a Swift-native DeepSeek agent for iPhone and iPad
+# DSHIOS — a Swift-native DeepSeek agent for iPhone and iPad
 
-DSH is a fast, native iOS agent built around the DeepSeek API. Swift owns the
+DSHIOS is a fast, native iOS agent built around the DeepSeek API. Swift owns the
 primary UI, model streaming, turn state machine, conversations, attachments,
 permissions, native iOS tools, MCP clients, and private diagnostics.
 

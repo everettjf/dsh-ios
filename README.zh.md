@@ -1,6 +1,6 @@
-# DSH — iPhone / iPad 上的 Swift 原生 DeepSeek Agent
+# DSHIOS — iPhone / iPad 上的 Swift 原生 DeepSeek Agent
 
-DSH 是一个快速、原生的 iOS DeepSeek agent。主界面、模型流式请求、turn/step
+DSHIOS 是一个快速、原生的 iOS DeepSeek agent。主界面、模型流式请求、turn/step
 状态机、会话、附件、权限确认、iOS 原生工具、MCP 和隐私诊断都由 Swift 接管。
 
 应用仍保留 Alpine Linux guest，用于 shell、附件暂存和 Linux 专属工具；但只有
