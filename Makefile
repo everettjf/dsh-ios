@@ -80,7 +80,7 @@ test-sim: project
 	rm -rf build/test-sim.xcresult
 	-xcrun simctl boot "$(SIM)" 2>/dev/null
 	-xcrun simctl uninstall "$(SIM)" $(BUNDLE_ID) 2>/dev/null   # start from a fresh rootfs import
-	$(XCB) -destination 'platform=iOS Simulator,name=$(SIM)' -collect-test-diagnostics never -resultBundlePath build/test-sim.xcresult test
+	$(XCB) -destination 'platform=iOS Simulator,name=$(SIM)' -derivedDataPath build/test-sim-derived -collect-test-diagnostics never -resultBundlePath build/test-sim.xcresult test
 
 test-device: project
 	rm -rf build/test-device.xcresult
