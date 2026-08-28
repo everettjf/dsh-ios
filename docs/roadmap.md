@@ -1,5 +1,10 @@
 # Swift-native agent delivery plan
 
+The current rewrite is also the incubation branch for the reusable **Swift
+Agent Kit** working program. See [the product and extraction
+plan](swift-agent-kit-plan.md) for package boundaries, licensing strategy,
+public API goals, naming constraints, and phased delivery.
+
 The Swift-native transition is implemented as a forward-only product change.
 The primary app no longer depends on booting `dsh web`; Linux is an optional,
 lazy workspace capability.
@@ -25,8 +30,9 @@ lazy workspace capability.
   the supported extension mechanisms.
 - There is no rollback migration. Native storage schemas migrate forward.
 
-Future work is incremental: real-device beta feedback, additional native tools,
-MCP interoperability fixtures, Instruments energy traces on shipping hardware,
-localization, deterministic Xcode project generation (the current generator
-rewrites object IDs), and App Store presentation. None reintroduces the old
-WebView runtime as the primary product.
+Future work now follows the Swift Agent Kit extraction plan while keeping
+DSHIOS as the buildable reference application. Real-device beta feedback,
+additional native tools, MCP interoperability fixtures, Instruments energy
+traces, localization, deterministic Xcode project generation, and App Store
+presentation remain product work. None reintroduces the old WebView runtime as
+the primary product.

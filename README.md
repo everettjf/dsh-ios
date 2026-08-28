@@ -38,8 +38,9 @@ SwiftUI app
   their capability switch and the corresponding iOS permission.
 - Remote MCP endpoints must use HTTPS; loopback HTTP is allowed for development.
 
-See [Swift-native architecture](docs/swift-native-agent.md) and
-[release acceptance](docs/release-acceptance.md) for the complete contract.
+See [Swift-native architecture](docs/swift-native-agent.md), the [Swift Agent
+Kit extraction plan](docs/swift-agent-kit-plan.md), and [release
+acceptance](docs/release-acceptance.md) for the complete contract.
 
 ## Upgrade and compatibility
 
