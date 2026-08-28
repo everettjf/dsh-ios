@@ -295,18 +295,21 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 ## 十、当前执行顺序
 
 截至 2026-08-28，Phase 0 已完成；`AgentRuntime`、`AgentProviders`、
-`AgentTools`、`AgentStorage` 和 `AgentMCP` 已成为独立 Package products，Dashros
+`AgentTools`、`AgentStorage`、`AgentMCP` 和 `AgentLinuxGuest` 已成为独立 Package products，Dashros
 已通过本地 Swift Package 链接这些模块，不再直接编译 Package 源码。`AgentMCP`
 的生产路径已采用官方 MCP Swift SDK 0.12.1，并保留内部适配层与确定性 wire
 fixtures；官方 SDK 的内存 Client/Server 端到端互操作测试也已建立。
+`AgentLinuxGuest` 已提供与 iSH 无关的 lazy host、bash、附件 staging 和审批协议；
+Dashros 中只保留 iSH runtime 与原生确认 UI 的适配器。Package 已覆盖并发启动合并、
+拒绝不启动、超时钳制与跨会话附件隔离。
 
 接下来按以下顺序继续：
 
 1. 用至少两个独立真实 MCP Server 完成 HTTP 互操作、认证、重连和取消测试。
 2. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
-3. 定义 `ExecutionBackend` 并隔离 iSH Guest，建立 `NO_LINUX_GUEST` 构建。
-4. 将 Dashros 和测试目标最低系统统一降到 iOS 16。
-5. 完成 Dashros 品牌、聊天体验、辅助功能和本地化。
+3. 建立 `NO_LINUX_GUEST` 构建，并验证产物不含 iSH、rootfs 或 Linux 工具。
+4. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
+5. 完成辅助功能和本地化（Dashros 品牌、iOS 16 与首轮聊天体验已完成）。
 6. 完成真机工具、Guest、安全、性能和 TestFlight 发行验收。
 
 整个过程在当前 `rewrite-deepseek-harness-with-swift` 分支持续开发，采用前进式

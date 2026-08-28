@@ -4,6 +4,7 @@ import AgentRuntime
 import AgentProviders
 import AgentTools
 import AgentStorage
+import AgentLinuxGuest
 import AgentMCP
 
 @MainActor
@@ -372,7 +373,7 @@ final class DSHAgentViewModel: ObservableObject {
         workspace: DSHWorkspaceStore,
         context: DSHActiveWorkspaceContext
     ) -> DSHToolRegistry {
-        let guest = DSHLazyGuestManager()
+        let guest = DSHLazyGuestManager(host: DSHSystemGuestHost())
         let authorization = DSHDefaultsToolAuthorizationPolicy()
         let audit = DSHActivityToolAuditSink()
         let deviceInfo = DSHGovernedTool(
@@ -443,7 +444,11 @@ final class DSHAgentViewModel: ObservableObject {
                     DSHStageAttachmentTool(manager: guest, workspace: workspace, context: context),
                     source: "guest", auditName: "guest.stage_attachment"
                 ),
-                DSHAuditedTool(DSHBashTool(manager: guest), source: "guest", auditName: "guest.bash")
+                DSHAuditedTool(
+                    DSHBashTool(manager: guest, approval: DSHNativeConfirmationPolicy()),
+                    source: "guest",
+                    auditName: "guest.bash"
+                )
             ] + nativeWrites)
     }
 }

@@ -5,6 +5,9 @@ import AgentRuntime
 #if canImport(AgentTools)
 import AgentTools
 #endif
+#if canImport(AgentLinuxGuest)
+import AgentLinuxGuest
+#endif
 
 /// Dashros policy adapter that combines its capability preferences with the
 /// native per-call confirmation UI. Neither concern belongs in AgentTools.

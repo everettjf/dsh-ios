@@ -157,7 +157,7 @@ dsh.frameworks_build_phase.add_file_reference(libarchive_product, true)
 swift_harness_package = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
 swift_harness_package.relative_path = 'Packages/SwiftHarnessKit'
 project.root_object.package_references << swift_harness_package
-swift_harness_products = %w[AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP].to_h do |product_name|
+swift_harness_products = %w[AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP AgentLinuxGuest].to_h do |product_name|
   dependency = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
   dependency.package = swift_harness_package
   dependency.product_name = product_name

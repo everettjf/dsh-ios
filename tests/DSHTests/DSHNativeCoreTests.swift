@@ -4,6 +4,7 @@ import AgentRuntime
 import AgentProviders
 import AgentTools
 import AgentStorage
+import AgentLinuxGuest
 import AgentMCP
 
 private struct DSHNativeRouteEnvelopeForTests: Decodable {

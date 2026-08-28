@@ -29,7 +29,7 @@ AgentStorage       sessions, workspaces and attachments
 AgentMCP           official MCP SDK adapter and tool projection
     ↑
 AgentAppleTools    Apple-framework implementations
-AgentLinuxGuest    GPL iSH implementation of ExecutionBackend
+AgentLinuxGuest    portable lazy Linux host, bash and attachment-staging contracts
 AgentUI            reusable SwiftUI components
     ↑
 Dashros            app composition, Keychain settings and product UI
@@ -51,7 +51,7 @@ module may import a higher-level module.
 | `DSHSessionStore.swift` | `AgentStorage` | Split UniformTypeIdentifiers import and file import policy if needed; expose storage protocols |
 | `DSHMCPClient.swift` | `AgentMCP` | Replace hand-written protocol layer behind adapter with official MCP Swift SDK |
 | `DSHMCPServerManager.swift` | `AgentMCP` + Dashros | Move Keychain configuration persistence to Dashros; keep connection manager in package |
-| `DSHLazyGuestManager.swift` | `AgentLinuxGuest` + `AgentTools` | Introduce iSH-free `ExecutionBackend`; keep approval contract in Tools |
+| `DSHLazyGuestManager.swift` | `AgentLinuxGuest` + Dashros adapter | Package owns the iSH-free lazy host/tools; Dashros owns iSH and native confirmation adapters |
 | `DSHNativeReadTools.swift` | `AgentAppleTools` | Keep route executor injectable; remove app singleton assumptions |
 | `DSHNativeWriteTools.swift` | `AgentAppleTools` | Keep validation before UI/system access; retain stable schemas |
 | `DSHAgentConfiguration.swift` | Dashros | Product settings and Keychain storage stay in app composition |
