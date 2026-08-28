@@ -1,6 +1,7 @@
-// DSH — DeepSeek Harness for iPad/iPhone.
-// Builds the iSH-ARM64 emulator (./ish-arm64) with a WKWebView front end and
-// a bundled Alpine + Node + dsh root filesystem (build/root.tar.gz).
+// SHOS — Swift Harness OS for iPhone and iPad.
+// The public app display name is SHOS. DSH product/bundle identifiers stay
+// stable for in-place upgrades while Swift owns the native UI and agent runtime.
+// The optional iSH64/Alpine guest is bundled by the Full target and boots lazily.
 // SRCROOT is the repo root; ISH_SRC points at the emulator sources.
 #include "../ish-arm64/app/AppARM64.xcconfig"
 

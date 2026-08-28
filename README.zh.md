@@ -1,6 +1,6 @@
-# Dashros — iPhone / iPad 上的 Swift 原生 Agent
+# SHOS — iPhone / iPad 上的 Swift 原生 Agent
 
-Dashros 是一个快速、原生、重点优化 DeepSeek 体验的 iOS agent。主界面、模型流式请求、turn/step
+SHOS（Swift Harness OS）是一个快速、原生、重点优化 DeepSeek 体验的 iOS agent。主界面、模型流式请求、turn/step
 状态机、会话、附件、权限确认、iOS 原生工具、MCP 和隐私诊断都由 Swift 接管。
 
 应用仍保留 Alpine Linux guest，用于 shell、附件暂存和 Linux 专属工具；但只有
@@ -12,7 +12,7 @@ MCP 都不会启动 Linux。这是从旧版 `dsh web` 向前迁移，不考虑�
 > 一版官方 Node.js DeepSeek Harness 已保留在
 > [`nodejs-harness-v1.0.10`](https://github.com/everettjf/dsh-ios/tree/nodejs-harness-v1.0.10)
 > Tag。需要原来的 `dsh web` / Node.js 架构时请使用该 Tag；Swift 原生
-> Dashros 和内部的 **Swift Harness Kit** 在 `rewrite-deepseek-harness-with-swift` 分支开发。
+> SHOS 和内部的 **Swift Harness Kit** 在 `rewrite-deepseek-harness-with-swift` 分支开发。
 
 ## 产品架构
 
@@ -32,8 +32,8 @@ SwiftUI App
 - 写操作逐次显示具体确认；读取仍受能力开关和 iOS 系统权限控制。
 - 远程 MCP 必须使用 HTTPS；本地开发允许 loopback HTTP。
 
-完整约定见 [Swift 原生架构](docs/swift-native-agent.md)、[Dashros 与 Swift
-Harness Kit 总体规划](docs/dashros-product-plan.zh.md)、[框架抽取计划](docs/swift-harness-kit-plan.md) 和
+完整约定见 [Swift 原生架构](docs/swift-native-agent.md)、[SHOS 与 Swift
+Harness Kit 总体规划](docs/shos-product-plan.zh.md)、[框架抽取计划](docs/swift-harness-kit-plan.md) 和
 [发布验收清单](docs/release-acceptance.md)。
 
 ## 升级与兼容性
@@ -91,7 +91,7 @@ scripts/        工程、rootfs、测试和发布自动化
 docs/           架构、安全、迁移与发布验收文档
 ```
 
-Dashros 的目标是 iOS 原生 agent，而不是把原 harness 逐字节翻译为 Swift。
+SHOS 的目标是 iOS 原生 agent，而不是把原 harness 逐字节翻译为 Swift。
 受支持的扩展面是原生工具注册表和 MCP，Linux 是可选工作区能力。
 
 项目因包含 iSH 衍生模拟器而采用 GPL-3.0，详见 [LICENSE](LICENSE)。

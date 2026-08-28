@@ -1,9 +1,8 @@
 # Swift Harness Kit module inventory
 
-This is the Phase 0 ownership baseline for extracting the reusable runtime from
-the current SHOS (DSHIOS target) implementation. It records current source
-authority, intended package ownership, known dependency violations, and the
-evidence that must remain green during extraction.
+This document began as the Phase 0 ownership baseline for extracting the
+reusable runtime from SHOS. It now records both that baseline and the verified
+completion state of the in-repository Swift Harness Kit 0.1 extraction.
 
 ## Baseline evidence
 
@@ -68,20 +67,17 @@ integration code. They are not copied into the pure Swift Core.
 Alpine rootfs belong to the separately licensed `AgentLinuxGuest` boundary.
 Their types must never appear in `AgentRuntime` public signatures.
 
-## Confirmed dependency violations to remove
+## Resolved baseline dependency violations
 
-1. `DSHAgentRuntime.swift` implements `DSHActivityAgentTelemetry` by directly
-   calling the Objective-C `DSHNativeToolAudit` singleton.
-2. `DSHToolRegistry.swift` imports UIKit and includes `UIDevice` tools beside
-   the otherwise reusable registry.
-3. `DSHMCPServerManager.swift` combines reusable connection management with
-   Security/Keychain product configuration.
-4. `DSHSessionStore.swift` combines durable storage with Apple-specific file
-   type handling.
-5. `DSHLazyGuestManager.swift` combines generic approval/tool contracts with
-   the concrete iSH host.
-6. The generated Xcode target compiles every `app/*.swift` file directly, so
-   SHOS does not yet prove that it consumes package public APIs.
+1. Runtime telemetry is injected; the Objective-C activity adapter lives in SHOS.
+2. Device schemas/providers live in `AgentAppleTools`; UIKit adapters stay in SHOS.
+3. MCP protocol behavior uses the official Swift SDK in `AgentMCP`; Keychain
+   configuration stays in SHOS.
+4. Reusable session/workspace storage lives in `AgentStorage`; host file UI stays
+   outside the core package.
+5. `AgentLinuxGuest` exposes an iSH-free execution contract; the concrete iSH64
+   host remains in SHOS.
+6. SHOS, SHOSLite, and HarnessChat link package products through their public APIs.
 
 ## Enforced extraction rules
 
@@ -101,14 +97,17 @@ Their types must never appear in `AgentRuntime` public signatures.
 - Package tests are the authority for pure Swift behavior; hosted XCTest covers
   Apple integration and Objective-C bridges.
 
-## Phase 0 exit status
+## In-repository extraction status
 
-Phase 0 is complete when this inventory is committed, the 40-test baseline is
-green, and the next change creates package targets without weakening any
-existing acceptance requirement. The first extraction slice is:
+Phases 0–6 of the in-repository extraction are complete for Swift Harness Kit
+0.1.0. The package exposes Runtime, Providers, Tools, Storage, AppleTools, MCP,
+and LinuxGuest products with DocC and package-native tests. The official MCP
+Swift SDK adapter is exercised against independent Node and Python fixtures.
+HarnessChat is a second iOS 16 host, and SHOSLite proves a Release bundle can be
+built without iSH symbols, rootfs, or guest tools.
 
-1. Runtime value models and protocols.
-2. Foundation-only tool protocol/registry.
-3. Runtime state machine using the tool-providing abstraction.
-4. SSE and OpenAI-compatible provider.
-5. Package-native copies of the corresponding deterministic tests.
+The remaining Phase 7 work is intentionally a separate public-distribution
+milestone: legal/trademark review, moving the package to its own repository,
+Swift Package Index publication, and validation by an external adopter. Those
+external publication steps are not requirements of the SHOS 1.0.15 TestFlight
+release.
