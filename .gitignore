@@ -3,6 +3,8 @@ build/
 *.xcresult
 xcuserdata/
 DSH.xcodeproj/project.xcworkspace/xcuserdata/
+# Xcode recreates this from the package's authoritative exact-version lockfile.
+DSH.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 ish-arm64/build-arm64-release/
 ish-arm64/build/
 ish-arm64/e2e_out/

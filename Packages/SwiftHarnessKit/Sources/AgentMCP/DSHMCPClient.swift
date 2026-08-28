@@ -74,8 +74,9 @@ public actor DSHMCPClient {
     private let endpoint: URL
     private let transport: (any DSHMCPTransport)?
     private let headers: [String: String]
-    private let officialClient: MCP.Client?
-    private let officialTransport: (any MCP.Transport)?
+    private var officialClient: MCP.Client?
+    private var officialTransport: (any MCP.Transport)?
+    private let productionHTTP: Bool
     private var sessionID: String?
     private var negotiatedVersion: String?
     private var nextID = 1
@@ -85,19 +86,9 @@ public actor DSHMCPClient {
         self.endpoint = endpoint
         self.headers = headers
         transport = nil
+        productionHTTP = true
         officialClient = MCP.Client(name: "Dashros", version: "1")
-        officialTransport = MCP.HTTPClientTransport(
-            endpoint: endpoint,
-            streaming: true,
-            protocolVersion: Self.protocolVersion,
-            requestModifier: { request in
-                var request = request
-                for (name, value) in headers {
-                    request.setValue(value, forHTTPHeaderField: name)
-                }
-                return request
-            }
-        )
+        officialTransport = Self.makeHTTPTransport(endpoint: endpoint, headers: headers)
     }
 
     /// Test seam for deterministic wire-protocol fixtures. Production callers
@@ -106,6 +97,7 @@ public actor DSHMCPClient {
         self.endpoint = endpoint
         self.headers = headers
         self.transport = transport
+        productionHTTP = false
         officialClient = nil
         officialTransport = nil
     }
@@ -114,16 +106,23 @@ public actor DSHMCPClient {
         endpoint = URL(string: "https://in-memory.invalid/mcp")!
         headers = [:]
         self.transport = nil
+        productionHTTP = false
         officialClient = MCP.Client(name: "DashrosTests", version: "1")
         officialTransport = transport
     }
 
     public func connect() async throws {
+        if productionHTTP, officialClient == nil {
+            officialClient = MCP.Client(name: "Dashros", version: "1")
+            officialTransport = Self.makeHTTPTransport(endpoint: endpoint, headers: headers)
+        }
         if let officialClient, let officialTransport {
             do {
                 let result = try await officialClient.connect(transport: officialTransport)
                 negotiatedVersion = result.protocolVersion
                 return
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 throw DSHMCPError.sdkFailure
             }
@@ -164,6 +163,8 @@ public actor DSHMCPClient {
                     cursor = page.nextCursor
                 } while cursor != nil
                 return output
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 throw DSHMCPError.sdkFailure
             }
@@ -193,10 +194,13 @@ public actor DSHMCPClient {
         if let officialClient {
             guard case .object(let arguments) = arguments else { throw DSHMCPError.invalidResponse }
             do {
-                let result = try await officialClient.callTool(
-                    name: name,
-                    arguments: arguments.mapValues(Self.sdkValue(from:))
-                )
+                let race = DSHCancellationRace<(content: [MCP.Tool.Content], isError: Bool?)>()
+                let result = try await race.run {
+                    try await officialClient.callTool(
+                        name: name,
+                        arguments: arguments.mapValues(Self.sdkValue(from:))
+                    )
+                }
                 let content = try result.content.map { content in
                     try JSONDecoder().decode(
                         DSHJSONValue.self,
@@ -209,6 +213,8 @@ public actor DSHMCPClient {
                 ])
             } catch let error as DSHMCPError {
                 throw error
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 throw DSHMCPError.sdkFailure
             }
@@ -224,6 +230,10 @@ public actor DSHMCPClient {
         if let officialClient {
             await officialClient.disconnect()
             negotiatedVersion = nil
+            if productionHTTP {
+                self.officialClient = nil
+                officialTransport = nil
+            }
             return
         }
         if sessionID != nil {
@@ -235,6 +245,21 @@ public actor DSHMCPClient {
         }
         sessionID = nil
         negotiatedVersion = nil
+    }
+
+    private static func makeHTTPTransport(endpoint: URL, headers: [String: String]) -> MCP.HTTPClientTransport {
+        MCP.HTTPClientTransport(
+            endpoint: endpoint,
+            streaming: true,
+            protocolVersion: Self.protocolVersion,
+            requestModifier: { request in
+                var request = request
+                for (name, value) in headers {
+                    request.setValue(value, forHTTPHeaderField: name)
+                }
+                return request
+            }
+        )
     }
 
     private func request(
@@ -327,6 +352,67 @@ public actor DSHMCPClient {
         case .array(let values): return .array(values.map(sdkValue(from:)))
         case .object(let values): return .object(values.mapValues(sdkValue(from:)))
         }
+    }
+}
+
+/// Bridges SDK operations that do not promptly propagate structured
+/// cancellation. The first terminal event wins; late SDK results are ignored.
+private final class DSHCancellationRace<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Value, Error>?
+    private var operationTask: Task<Void, Never>?
+    private var completed = false
+    private var cancelled = false
+
+    func run(
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                lock.lock()
+                if cancelled {
+                    completed = true
+                    lock.unlock()
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+                self.continuation = continuation
+                let task = Task { [weak self] in
+                    do { self?.finish(.success(try await operation())) }
+                    catch { self?.finish(.failure(error)) }
+                }
+                operationTask = task
+                lock.unlock()
+            }
+        } onCancel: {
+            cancel()
+        }
+    }
+
+    private func cancel() {
+        let continuation: CheckedContinuation<Value, Error>?
+        let task: Task<Void, Never>?
+        lock.lock()
+        cancelled = true
+        guard !completed else { lock.unlock(); return }
+        completed = true
+        continuation = self.continuation
+        task = operationTask
+        self.continuation = nil
+        lock.unlock()
+        task?.cancel()
+        continuation?.resume(throwing: CancellationError())
+    }
+
+    private func finish(_ result: Result<Value, Error>) {
+        let continuation: CheckedContinuation<Value, Error>?
+        lock.lock()
+        guard !completed else { lock.unlock(); return }
+        completed = true
+        continuation = self.continuation
+        self.continuation = nil
+        lock.unlock()
+        continuation?.resume(with: result)
     }
 }
 

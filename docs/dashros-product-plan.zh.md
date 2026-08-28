@@ -299,13 +299,17 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 已通过本地 Swift Package 链接这些模块，不再直接编译 Package 源码。`AgentMCP`
 的生产路径已采用官方 MCP Swift SDK 0.12.1，并保留内部适配层与确定性 wire
 fixtures；官方 SDK 的内存 Client/Server 端到端互操作测试也已建立。
+生产 HTTP initializer 还通过两个独立进程实现（Node 与 Python）的 MCP server
+完成互操作，覆盖自定义/Bearer Header、初始化、工具发现、工具调用、disconnect
+后重连和慢调用取消；适配层会立即传播取消并丢弃 SDK 的迟到结果。
 `AgentLinuxGuest` 已提供与 iSH 无关的 lazy host、bash、附件 staging 和审批协议；
 Dashros 中只保留 iSH runtime 与原生确认 UI 的适配器。Package 已覆盖并发启动合并、
 拒绝不启动、超时钳制与跨会话附件隔离。
 
 接下来按以下顺序继续：
 
-1. 用至少两个独立真实 MCP Server 完成 HTTP 互操作、认证、重连和取消测试。
+1. 两个独立真实 MCP Server 的 HTTP、认证、重连和取消测试已完成，继续保留为
+   Package 回归门槛。
 2. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
 3. `NO_LINUX_GUEST` 已建立为可运行的 `DashrosLite` iOS 16 target：只链接
    Runtime、Providers、Tools、Storage 和 MCP；Release Bundle 审计验证不含 iSH、

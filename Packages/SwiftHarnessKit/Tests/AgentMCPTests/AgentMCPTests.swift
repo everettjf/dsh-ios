@@ -7,8 +7,67 @@ import Testing
 import AgentRuntime
 import MCP
 
-@Suite("AgentMCP")
+@Suite("AgentMCP", .serialized)
 struct AgentMCPTests {
+    @Test("production HTTP client interoperates with an independent Node MCP server")
+    func nodeHTTPInterop() async throws {
+        try await withFixtureServer(
+            executable: "node",
+            script: "node-server.mjs",
+            port: 18_765,
+            token: "node-secret"
+        ) { endpoint in
+            let client = DSHMCPClient(endpoint: endpoint, headers: [
+                "Authorization": "Bearer node-secret",
+                "X-Test-Server": "node"
+            ])
+            try await client.connect()
+            #expect(try await client.listTools().map(\.name) == ["node_add", "node_wait"])
+            let result = try await client.callTool(
+                name: "node_add",
+                arguments: .object(["a": .number(19), "b": .number(23)])
+            )
+            #expect(toolText(result) == "42")
+
+            let slowCall = Task {
+                try await client.callTool(name: "node_wait", arguments: .object([:]))
+            }
+            try await Task.sleep(for: .milliseconds(100))
+            slowCall.cancel()
+            await #expect(throws: CancellationError.self) { try await slowCall.value }
+            await client.disconnect()
+
+            // Disconnect invalidates the SDK transport's URLSession. A second
+            // connect must create a fresh SDK client/transport pair.
+            try await client.connect()
+            #expect(try await client.listTools().map(\.name) == ["node_add", "node_wait"])
+            await client.disconnect()
+        }
+    }
+
+    @Test("production HTTP client interoperates with an independent Python MCP server")
+    func pythonHTTPInterop() async throws {
+        try await withFixtureServer(
+            executable: "python3",
+            script: "python_server.py",
+            port: 18_766,
+            token: "python-secret"
+        ) { endpoint in
+            let client = DSHMCPClient(endpoint: endpoint, headers: [
+                "Authorization": "Bearer python-secret",
+                "X-Test-Server": "python"
+            ])
+            try await client.connect()
+            #expect(try await client.listTools().map(\.name) == ["python_echo"])
+            let result = try await client.callTool(
+                name: "python_echo",
+                arguments: .object(["text": .string("dashros")])
+            )
+            #expect(toolText(result) == "python:dashros")
+            await client.disconnect()
+        }
+    }
+
     @Test("official MCP SDK interoperates through the AgentMCP adapter")
     func officialSDKRoundTrip() async throws {
         let transports = await MCP.InMemoryTransport.createConnectedPair()
@@ -154,6 +213,55 @@ struct AgentMCPTests {
 
         #expect(tool.definition.name == "mcp__weather-service__forecast")
     }
+}
+
+private func toolText(_ value: DSHJSONValue) -> String? {
+    guard case .object(let object) = value,
+          case .array(let content) = object["content"],
+          case .object(let first) = content.first,
+          case .string(let text) = first["text"] else { return nil }
+    return text
+}
+
+private func withFixtureServer(
+    executable: String,
+    script: String,
+    port: Int,
+    token: String,
+    operation: (URL) async throws -> Void
+) async throws {
+    let packageRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let scriptURL = packageRoot.appendingPathComponent("Tests/MCPFixtures/\(script)")
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    process.arguments = [executable, scriptURL.path, String(port), token]
+    process.standardOutput = Pipe()
+    process.standardError = Pipe()
+    try process.run()
+    defer {
+        if process.isRunning { process.terminate() }
+        process.waitUntilExit()
+    }
+
+    let health = URL(string: "http://127.0.0.1:\(port)/health")!
+    var ready = false
+    for _ in 0..<50 {
+        if let (_, response) = try? await URLSession.shared.data(from: health),
+           (response as? HTTPURLResponse)?.statusCode == 200 {
+            ready = true
+            break
+        }
+        try await Task.sleep(for: .milliseconds(50))
+    }
+    guard ready else { throw FixtureServerError.didNotStart(executable) }
+    try await operation(URL(string: "http://127.0.0.1:\(port)/mcp")!)
+}
+
+private enum FixtureServerError: Error {
+    case didNotStart(String)
 }
 
 private func initializationResult() -> DSHJSONValue {
