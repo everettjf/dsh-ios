@@ -16,6 +16,7 @@ PORT="${DSH_TEST_PORT:-3181}"
 MOCK_PORT="${DSH_MOCK_PORT:-3199}"
 BRIDGE_PORT="${DSH_BRIDGE_PORT:-3197}"
 BOOT_TIMEOUT="${DSH_BOOT_TIMEOUT:-300}"
+GUEST_TIMEOUT="${DSH_GUEST_TIMEOUT:-90}"
 
 pass=0; fail=0
 ok()  { pass=$((pass+1)); printf '  \033[32mPASS\033[0m %s\n' "$*"; }
@@ -23,13 +24,23 @@ bad() { fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s\n' "$*"; }
 # check <name> <command...>: runs the command (no eval), records the result
 check() { local name="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$name"; else bad "$name"; fi; }
 filter() { sed '/expose_wasm/d'; }
+timed() {
+    if command -v gtimeout >/dev/null 2>&1; then
+        gtimeout "$@"
+    elif command -v timeout >/dev/null 2>&1; then
+        timeout "$@"
+    else
+        perl -e '$seconds = shift; alarm $seconds; exec @ARGV' "$@"
+    fi
+}
 # A guest process that starts while the previous one is still tearing down can
 # lose the fakefs lock and print nothing; every command here has output, so
-# an empty result means "try again".
+# an empty result means "try again". A broken guest must not hang the release
+# gate forever, so each attempt has a hard deadline.
 guest() {
     local out
-    for _ in 1 2 3; do
-        out="$("$ISH_BUILD/ish" -f "$WORK/fakefs" /bin/sh -c "$1" 2>&1 | filter)"
+    for _ in 1 2; do
+        out="$(timed "$GUEST_TIMEOUT" "$ISH_BUILD/ish" -f "$WORK/fakefs" /bin/sh -c "$1" 2>&1 | filter)"
         [ -n "$out" ] && break
         sleep 1
     done

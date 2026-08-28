@@ -1,6 +1,6 @@
 <h1 align="center">
   <img src="app/DSHAssets.xcassets/DSHAppIcon.appiconset/icon-1024.png" width="96" alt="DSH 图标"><br>
-  DSH — 在 iPad / iPhone 上运行 DeepSeek Harness
+  DSHIOS — 在 iPad / iPhone 上运行 DeepSeek Harness
 </h1>
 
 <p align="center">

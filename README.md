@@ -1,6 +1,6 @@
 <h1 align="center">
   <img src="app/DSHAssets.xcassets/DSHAppIcon.appiconset/icon-1024.png" width="96" alt="DSH icon"><br>
-  DSH — DeepSeek Harness on iPad &amp; iPhone
+  DSHIOS — DeepSeek Harness on iPad &amp; iPhone
 </h1>
 
 <p align="center">
@@ -25,7 +25,7 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-green"></a>
 </p>
 
-DSH is a native iOS app that embeds the [iSH-ARM64](ish-arm64) userspace Linux
+DSHIOS is a native iOS app that embeds the [iSH-ARM64](ish-arm64) userspace Linux
 emulator, boots a bundled Alpine Linux image with Node.js 22 and
 `@deepseek-ai/dsh`, supervises `dsh web`, and shows the harness's own web UI in
 a `WKWebView`. The agent loop, sessions, tools and the shell all run on the
