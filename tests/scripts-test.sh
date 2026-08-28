@@ -39,6 +39,25 @@ for module in AgentRuntime AgentProviders AgentTools AgentStorage AgentAppleTool
   }
 done
 
+for contract in DSHGuestExecutionRequest DSHGuestExecutionEvent DSHGuestExecutionLimits DSHGuestRuntimeManifest; do
+  rg -q "public (struct|enum) ${contract}" Packages/SwiftHarnessKit/Sources/AgentLinuxGuest/DSHLinuxGuest.swift || {
+    echo "not ok: missing Linux guest contract $contract" >&2
+    exit 1
+  }
+done
+rg -q 'cancelExecutionID' app/DSHGuestRuntime.h app/DSHGuestRuntime.m || {
+  echo 'not ok: iSH64 adapter does not expose execution cancellation' >&2
+  exit 1
+}
+for value in 'source-a90363a2723dc9e1c314c825b44303f8fd8a1d53' 'Alpine 3.21.0 / overlay 4 / dsh 0.1.0-rc.7' 'GPL-3.0'; do
+  rg -qF "$value" app/DSHLazyGuestManager.swift || {
+    echo "not ok: iSH64 manifest is missing $value" >&2
+    exit 1
+  }
+done
+
+printf 'ok  scripts: streaming and cancellable Linux guest contract\n'
+
 if rg -n '^import (UIKit|SwiftUI|HealthKit|EventKit|Photos)$' Packages/SwiftHarnessKit/Sources/AgentRuntime; then
   echo 'not ok: AgentRuntime imports an Apple UI or capability framework' >&2
   exit 1

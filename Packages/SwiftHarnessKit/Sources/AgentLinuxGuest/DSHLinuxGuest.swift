@@ -10,20 +10,126 @@ public enum DSHGuestState: Equatable, Sendable {
     case failed(String)
 }
 
+public struct DSHGuestExecutionLimits: Equatable, Sendable {
+    public static let `default` = Self()
+    public let maximumCommandBytes: Int
+    public let maximumOutputBytes: Int
+    public let maximumTimeout: TimeInterval
+
+    public init(maximumCommandBytes: Int = 16_384, maximumOutputBytes: Int = 1_048_576, maximumTimeout: TimeInterval = 120) {
+        self.maximumCommandBytes = maximumCommandBytes
+        self.maximumOutputBytes = maximumOutputBytes
+        self.maximumTimeout = maximumTimeout
+    }
+}
+
+public struct DSHGuestExecutionRequest: Equatable, Sendable {
+    public let id: UUID
+    public let command: String
+    public let timeout: TimeInterval
+    public let maximumOutputBytes: Int
+
+    public init(id: UUID = UUID(), command: String, timeout: TimeInterval, maximumOutputBytes: Int) {
+        self.id = id
+        self.command = command
+        self.timeout = timeout
+        self.maximumOutputBytes = maximumOutputBytes
+    }
+}
+
+public enum DSHGuestExecutionEvent: Equatable, Sendable {
+    case standardOutput(String)
+    case standardError(String)
+    case completed(DSHJSONValue)
+}
+
+public struct DSHGuestCapabilities: Codable, Equatable, Sendable {
+    public let streamsOutput: Bool
+    public let supportsCancellation: Bool
+
+    public init(streamsOutput: Bool, supportsCancellation: Bool) {
+        self.streamsOutput = streamsOutput
+        self.supportsCancellation = supportsCancellation
+    }
+}
+
+public struct DSHGuestRuntimeManifest: Codable, Equatable, Sendable {
+    public let backendName: String
+    public let backendVersion: String
+    public let rootFilesystemVersion: String
+    public let rootFilesystemSHA256: String
+    public let compatibleCoreVersion: String
+    public let license: String
+    public let sourceURL: URL
+
+    public init(backendName: String, backendVersion: String, rootFilesystemVersion: String, rootFilesystemSHA256: String, compatibleCoreVersion: String, license: String, sourceURL: URL) {
+        self.backendName = backendName
+        self.backendVersion = backendVersion
+        self.rootFilesystemVersion = rootFilesystemVersion
+        self.rootFilesystemSHA256 = rootFilesystemSHA256
+        self.compatibleCoreVersion = compatibleCoreVersion
+        self.license = license
+        self.sourceURL = sourceURL
+    }
+}
+
+public enum DSHGuestExecutionError: Error, LocalizedError, Equatable, Sendable {
+    case commandTooLarge(Int)
+    case outputTooLarge(Int)
+    case missingCompletion
+
+    public var errorDescription: String? {
+        switch self {
+        case .commandTooLarge(let limit): "Linux command exceeds the \(limit)-byte limit."
+        case .outputTooLarge(let limit): "Linux output exceeds the \(limit)-byte limit."
+        case .missingCompletion: "Linux execution ended without a completion result."
+        }
+    }
+}
+
 /// The portable boundary between Swift Harness Kit and any Linux execution
 /// implementation. The framework does not depend on iSH or a particular VM.
 public protocol DSHGuestHost: Sendable {
+    var capabilities: DSHGuestCapabilities { get }
+    var manifest: DSHGuestRuntimeManifest { get }
     func ensureReady() async throws
     func execute(command: String, timeout: TimeInterval) async throws -> DSHJSONValue
+    func stream(request: DSHGuestExecutionRequest) -> AsyncThrowingStream<DSHGuestExecutionEvent, Error>
+    func cancel(executionID: UUID) async
     func write(data: Data, to path: String, timeout: TimeInterval) async throws -> DSHJSONValue
+}
+
+public extension DSHGuestHost {
+    var capabilities: DSHGuestCapabilities { .init(streamsOutput: false, supportsCancellation: false) }
+
+    func stream(request: DSHGuestExecutionRequest) -> AsyncThrowingStream<DSHGuestExecutionEvent, Error> {
+        AsyncThrowingStream(DSHGuestExecutionEvent.self, bufferingPolicy: .unbounded) { continuation in
+            let task = Task {
+                do {
+                    continuation.yield(.completed(try await execute(command: request.command, timeout: request.timeout)))
+                    continuation.finish()
+                } catch { continuation.finish(throwing: error) }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    func cancel(executionID: UUID) async {}
 }
 
 public actor DSHLazyGuestManager {
     private let host: any DSHGuestHost
     private var bootTask: Task<Void, Error>?
+    private let limits: DSHGuestExecutionLimits
     public private(set) var state: DSHGuestState = .dormant
 
-    public init(host: any DSHGuestHost) { self.host = host }
+    public init(host: any DSHGuestHost, limits: DSHGuestExecutionLimits = .default) {
+        self.host = host
+        self.limits = limits
+    }
+
+    public nonisolated var capabilities: DSHGuestCapabilities { host.capabilities }
+    public nonisolated var manifest: DSHGuestRuntimeManifest { host.manifest }
 
     public func ensureReady() async throws {
         if state == .ready { return }
@@ -44,9 +150,49 @@ public actor DSHLazyGuestManager {
     }
 
     public func execute(command: String, timeout: TimeInterval) async throws -> DSHJSONValue {
-        try await ensureReady()
-        return try await host.execute(command: command, timeout: timeout)
+        var standardOutput = ""
+        var standardError = ""
+        var completion: DSHJSONValue?
+        let request = try executionRequest(command: command, timeout: timeout)
+        do {
+            for try await event in try await stream(request: request) {
+                try Task.checkCancellation()
+                switch event {
+                case .standardOutput(let value): standardOutput += value
+                case .standardError(let value): standardError += value
+                case .completed(let value): completion = value
+                }
+                guard standardOutput.utf8.count + standardError.utf8.count <= request.maximumOutputBytes else {
+                    await host.cancel(executionID: request.id)
+                    throw DSHGuestExecutionError.outputTooLarge(request.maximumOutputBytes)
+                }
+            }
+        } catch {
+            if error is CancellationError { await host.cancel(executionID: request.id) }
+            throw error
+        }
+        guard var result = completion else { throw DSHGuestExecutionError.missingCompletion }
+        if case .object(var values) = result {
+            if values["stdout"] == nil { values["stdout"] = .string(standardOutput) }
+            if values["stderr"] == nil { values["stderr"] = .string(standardError) }
+            result = .object(values)
+        }
+        return result
     }
+
+    public func executionRequest(command: String, timeout: TimeInterval, id: UUID = UUID()) throws -> DSHGuestExecutionRequest {
+        guard command.utf8.count <= limits.maximumCommandBytes else {
+            throw DSHGuestExecutionError.commandTooLarge(limits.maximumCommandBytes)
+        }
+        return .init(id: id, command: command, timeout: min(limits.maximumTimeout, max(1, timeout)), maximumOutputBytes: limits.maximumOutputBytes)
+    }
+
+    public func stream(request: DSHGuestExecutionRequest) async throws -> AsyncThrowingStream<DSHGuestExecutionEvent, Error> {
+        try await ensureReady()
+        return host.stream(request: request)
+    }
+
+    public func cancel(executionID: UUID) async { await host.cancel(executionID: executionID) }
 
     public func write(data: Data, to path: String, timeout: TimeInterval) async throws -> DSHJSONValue {
         try await ensureReady()

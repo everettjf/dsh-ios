@@ -3,8 +3,13 @@
 #import "ISHShellExecutor.h"
 
 static NSString *const DSHGuestRuntimeErrorDomain = @"com.xnuapp.dsh.guest";
+static NSMutableDictionary<NSString *, NSNumber *> *DSHGuestProcesses;
 
 @implementation DSHGuestRuntime
+
++ (void)initialize {
+    if (self == DSHGuestRuntime.class) DSHGuestProcesses = [NSMutableDictionary dictionary];
+}
 
 + (void)ensureReady:(void (^)(NSError *))completion {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -38,6 +43,41 @@ static NSString *const DSHGuestRuntimeErrorDomain = @"com.xnuapp.dsh.guest";
         }];
         [boot start];
     });
+}
+
++ (void)streamCommand:(NSString *)command
+           executionID:(NSString *)executionID
+               timeout:(NSTimeInterval)timeout
+                  line:(void (^)(NSString *, BOOL))line
+            completion:(void (^)(NSData *))completion {
+    int pid = [ISHShellExecutor executeCommand:command
+                                  lineCallback:line
+                                    completion:^(ISHShellExecutionResult *result) {
+        @synchronized (DSHGuestProcesses) { [DSHGuestProcesses removeObjectForKey:executionID]; }
+        NSDictionary *payload = @{
+            @"exit_code": @(result.exitCode), @"stdout": result.output ?: @"",
+            @"stderr": result.errorOutput ?: @"", @"duration": @(result.duration),
+            @"executor_error": @(result.error),
+        };
+        NSData *data = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+        completion(data ?: [@"{\"exit_code\":-1,\"stderr\":\"Could not encode command result.\"}" dataUsingEncoding:NSUTF8StringEncoding]);
+    }];
+    if (pid < 0) {
+        completion([@"{\"exit_code\":-1,\"stderr\":\"Could not start command.\"}" dataUsingEncoding:NSUTF8StringEncoding]);
+        return;
+    }
+    @synchronized (DSHGuestProcesses) { DSHGuestProcesses[executionID] = @(pid); }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)), dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        NSNumber *active;
+        @synchronized (DSHGuestProcesses) { active = DSHGuestProcesses[executionID]; }
+        if (active) [ISHShellExecutor killProcess:active.intValue withSignal:9];
+    });
+}
+
++ (void)cancelExecutionID:(NSString *)executionID {
+    NSNumber *pid;
+    @synchronized (DSHGuestProcesses) { pid = DSHGuestProcesses[executionID]; }
+    if (pid) [ISHShellExecutor killProcess:pid.intValue withSignal:9];
 }
 
 + (void)executeCommand:(NSString *)command

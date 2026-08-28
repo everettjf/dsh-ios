@@ -866,6 +866,12 @@ private struct FixedApproval: DSHToolApprovalPolicy {
 }
 
 private actor FakeGuestHost: DSHGuestHost {
+    nonisolated let capabilities = DSHGuestCapabilities(streamsOutput: false, supportsCancellation: false)
+    nonisolated let manifest = DSHGuestRuntimeManifest(
+        backendName: "Fake", backendVersion: "1", rootFilesystemVersion: "1",
+        rootFilesystemSHA256: "abc", compatibleCoreVersion: ">=0.1.0 <0.2.0",
+        license: "GPL-3.0", sourceURL: URL(string: "https://example.com/source")!
+    )
     private var bootCount = 0
     private var commands: [String] = []
     private var writes: [(path: String, data: Data)] = []

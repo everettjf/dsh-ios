@@ -11,6 +11,11 @@ startup and is first touched by a confirmed shell command or attachment-staging
 tool. `DSHNativeRootFactory` creates the primary scene without waiting for the
 guest or loading a WebView.
 
+Each execution has a UUID, bounded command/output sizes and timeout, streamed
+stdout/stderr events, and cancellation propagation to iSH64. The backend also
+publishes its capabilities and a manifest covering backend/rootfs versions,
+Core compatibility, source URL and GPL license.
+
 ## Runtime flow
 
 1. Persist the user message and attachment references in a native session.

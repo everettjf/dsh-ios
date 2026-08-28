@@ -1,0 +1,13 @@
+public typealias GuestState = DSHGuestState
+public typealias GuestExecutionLimits = DSHGuestExecutionLimits
+public typealias GuestExecutionRequest = DSHGuestExecutionRequest
+public typealias GuestExecutionEvent = DSHGuestExecutionEvent
+public typealias GuestCapabilities = DSHGuestCapabilities
+public typealias GuestRuntimeManifest = DSHGuestRuntimeManifest
+public typealias GuestExecutionError = DSHGuestExecutionError
+public typealias GuestHost = DSHGuestHost
+public typealias LazyGuestManager = DSHLazyGuestManager
+public typealias ActiveWorkspaceContext = DSHActiveWorkspaceContext
+public typealias StageAttachmentTool = DSHStageAttachmentTool
+public typealias ToolApprovalPolicy = DSHToolApprovalPolicy
+public typealias BashTool = DSHBashTool
