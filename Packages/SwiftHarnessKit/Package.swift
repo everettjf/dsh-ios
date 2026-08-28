@@ -10,14 +10,17 @@ let package = Package(
     products: [
         .library(name: "AgentRuntime", targets: ["AgentRuntime"]),
         .library(name: "AgentProviders", targets: ["AgentProviders"]),
-        .library(name: "AgentTools", targets: ["AgentTools"])
+        .library(name: "AgentTools", targets: ["AgentTools"]),
+        .library(name: "AgentStorage", targets: ["AgentStorage"])
     ],
     targets: [
         .target(name: "AgentRuntime"),
         .target(name: "AgentProviders", dependencies: ["AgentRuntime"]),
         .target(name: "AgentTools", dependencies: ["AgentRuntime"]),
+        .target(name: "AgentStorage", dependencies: ["AgentRuntime"]),
         .testTarget(name: "AgentRuntimeTests", dependencies: ["AgentRuntime", "AgentTools"]),
         .testTarget(name: "AgentProvidersTests", dependencies: ["AgentRuntime", "AgentProviders"]),
-        .testTarget(name: "AgentToolsTests", dependencies: ["AgentRuntime", "AgentTools"])
+        .testTarget(name: "AgentToolsTests", dependencies: ["AgentRuntime", "AgentTools"]),
+        .testTarget(name: "AgentStorageTests", dependencies: ["AgentRuntime", "AgentStorage"])
     ]
 )

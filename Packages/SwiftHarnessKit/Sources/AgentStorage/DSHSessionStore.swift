@@ -1,13 +1,16 @@
 import Foundation
 import UniformTypeIdentifiers
+#if canImport(AgentRuntime)
+import AgentRuntime
+#endif
 
-enum DSHWorkspaceError: Error, LocalizedError, Equatable {
+public enum DSHWorkspaceError: Error, LocalizedError, Equatable {
     case fileTooLarge(Int)
     case emptyFile
     case unreadableFile
     case attachmentMissing
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .fileTooLarge(let maximum): return "Attachments must be smaller than \(maximum / 1_048_576) MB."
         case .emptyFile: return "The selected file is empty."
@@ -17,12 +20,12 @@ enum DSHWorkspaceError: Error, LocalizedError, Equatable {
     }
 }
 
-actor DSHWorkspaceStore {
-    static let maximumFileBytes = 8 * 1_024 * 1_024
-    static let maximumExtractedTextCharacters = 128_000
+public actor DSHWorkspaceStore {
+    public static let maximumFileBytes = 8 * 1_024 * 1_024
+    public static let maximumExtractedTextCharacters = 128_000
     private let directory: URL
 
-    init(directory: URL? = nil) {
+    public init(directory: URL? = nil) {
         if let directory { self.directory = directory }
         else {
             let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -30,7 +33,7 @@ actor DSHWorkspaceStore {
         }
     }
 
-    func importFile(at url: URL, sessionID: UUID) throws -> DSHAttachment {
+    public func importFile(at url: URL, sessionID: UUID) throws -> DSHAttachment {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         guard let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentTypeKey, .nameKey]),
@@ -56,29 +59,29 @@ actor DSHWorkspaceStore {
         )
     }
 
-    func data(for attachment: DSHAttachment, sessionID: UUID) throws -> Data {
+    public func data(for attachment: DSHAttachment, sessionID: UUID) throws -> Data {
         let url = fileURL(sessionID: sessionID, attachmentID: attachment.id)
         guard FileManager.default.fileExists(atPath: url.path) else { throw DSHWorkspaceError.attachmentMissing }
         return try Data(contentsOf: url, options: .mappedIfSafe)
     }
 
-    func data(attachmentID: UUID, sessionID: UUID) throws -> Data {
+    public func data(attachmentID: UUID, sessionID: UUID) throws -> Data {
         let url = fileURL(sessionID: sessionID, attachmentID: attachmentID)
         guard FileManager.default.fileExists(atPath: url.path) else { throw DSHWorkspaceError.attachmentMissing }
         return try Data(contentsOf: url, options: .mappedIfSafe)
     }
 
-    func delete(_ attachment: DSHAttachment, sessionID: UUID) throws {
+    public func delete(_ attachment: DSHAttachment, sessionID: UUID) throws {
         let url = fileURL(sessionID: sessionID, attachmentID: attachment.id)
         if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
     }
 
-    func deleteSession(_ sessionID: UUID) throws {
+    public func deleteSession(_ sessionID: UUID) throws {
         let url = directory.appendingPathComponent(sessionID.uuidString, isDirectory: true)
         if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
     }
 
-    func pruneOrphans(referencedAttachmentIDs: Set<UUID>) throws {
+    public func pruneOrphans(referencedAttachmentIDs: Set<UUID>) throws {
         guard FileManager.default.fileExists(atPath: directory.path) else { return }
         let sessionDirectories = try FileManager.default.contentsOfDirectory(
             at: directory,
@@ -124,7 +127,7 @@ actor DSHWorkspaceStore {
     }
 }
 
-enum DSHSessionTurnState: String, Codable, Equatable, Sendable {
+public enum DSHSessionTurnState: String, Codable, Equatable, Sendable {
     case idle
     case running
     case completed
@@ -133,18 +136,18 @@ enum DSHSessionTurnState: String, Codable, Equatable, Sendable {
     case interrupted
 }
 
-struct DSHSessionRecord: Codable, Equatable, Identifiable, Sendable {
-    static let currentSchemaVersion = 3
+public struct DSHSessionRecord: Codable, Equatable, Identifiable, Sendable {
+    public static let currentSchemaVersion = 4
 
-    var schemaVersion: Int
-    let id: UUID
-    var title: String
-    var messages: [DSHChatMessage]
-    let createdAt: Date
-    var updatedAt: Date
-    var turnState: DSHSessionTurnState
+    public var schemaVersion: Int
+    public let id: UUID
+    public var title: String
+    public var messages: [DSHChatMessage]
+    public let createdAt: Date
+    public var updatedAt: Date
+    public var turnState: DSHSessionTurnState
 
-    init(
+    public init(
         id: UUID,
         title: String,
         messages: [DSHChatMessage],
@@ -165,7 +168,7 @@ struct DSHSessionRecord: Codable, Equatable, Identifiable, Sendable {
         case schemaVersion, id, title, messages, createdAt, updatedAt, turnState
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try values.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         id = try values.decode(UUID.self, forKey: .id)
@@ -177,12 +180,12 @@ struct DSHSessionRecord: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-actor DSHSessionStore {
+public actor DSHSessionStore {
     private let directory: URL
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
-    init(directory: URL? = nil) {
+    public init(directory: URL? = nil) {
         if let directory {
             self.directory = directory
         } else {
@@ -190,18 +193,36 @@ actor DSHSessionStore {
             self.directory = support.appendingPathComponent("NativeSessions", isDirectory: true)
         }
         encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        // Preserve the exact Date payload. ISO-8601's default formatter drops
+        // subsecond precision, so a save/load round-trip was not value-equal.
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(date.timeIntervalSinceReferenceDate)
+        }
         decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            if let interval = try? container.decode(Double.self) {
+                return Date(timeIntervalSinceReferenceDate: interval)
+            }
+            let legacy = try container.decode(String.self)
+            if let value = try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(legacy) {
+                return value
+            }
+            if let value = try? Date.ISO8601FormatStyle().parse(legacy) {
+                return value
+            }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid session date")
+        }
     }
 
-    func save(_ record: DSHSessionRecord) throws {
+    public func save(_ record: DSHSessionRecord) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let data = try encoder.encode(record)
         try data.write(to: fileURL(for: record.id), options: .atomic)
     }
 
-    func load(id: UUID) throws -> DSHSessionRecord? {
+    public func load(id: UUID) throws -> DSHSessionRecord? {
         let url = fileURL(for: id)
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         var record = try decoder.decode(DSHSessionRecord.self, from: Data(contentsOf: url))
@@ -212,7 +233,7 @@ actor DSHSessionStore {
         return record
     }
 
-    func list() throws -> [DSHSessionRecord] {
+    public func list() throws -> [DSHSessionRecord] {
         guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
         let records = try FileManager.default.contentsOfDirectory(
             at: directory,
@@ -231,7 +252,7 @@ actor DSHSessionStore {
         return records.sorted { $0.updatedAt > $1.updatedAt }
     }
 
-    func delete(id: UUID) throws {
+    public func delete(id: UUID) throws {
         let url = fileURL(for: id)
         if FileManager.default.fileExists(atPath: url.path) {
             try FileManager.default.removeItem(at: url)
