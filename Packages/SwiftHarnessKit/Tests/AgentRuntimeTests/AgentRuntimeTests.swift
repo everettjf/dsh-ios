@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 @testable import AgentRuntime
+import AgentTools
 
 final class AgentRuntimeTests: XCTestCase {
     func testJSONValueRoundTripsNestedValues() throws {

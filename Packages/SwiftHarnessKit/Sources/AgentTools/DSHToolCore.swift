@@ -1,6 +1,9 @@
 import Foundation
+#if canImport(AgentRuntime)
+import AgentRuntime
+#endif
 
-public enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
+public enum DSHToolError: Error, LocalizedError, Equatable, Sendable, DSHAgentErrorCategorizing {
     case unknownTool(String)
     case invalidArguments(String)
     case disabled(String)
@@ -18,6 +21,8 @@ public enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
         case .stepLimitExceeded: return "The agent exceeded the tool step limit."
         }
     }
+
+    public var agentErrorCategory: String { "tool_error" }
 }
 
 public protocol DSHNativeTool: Sendable {
@@ -25,7 +30,7 @@ public protocol DSHNativeTool: Sendable {
     func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue
 }
 
-public final class DSHToolRegistry: @unchecked Sendable {
+public final class DSHToolRegistry: @unchecked Sendable, DSHToolProviding {
     private let lock = NSLock()
     private var tools: [String: any DSHNativeTool]
 

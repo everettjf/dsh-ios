@@ -1,28 +1,13 @@
 import Foundation
+#if canImport(AgentRuntime)
+import AgentRuntime
+#endif
+#if canImport(AgentTools)
+import AgentTools
+#endif
 
-enum DSHToolPermissionGate: Sendable {
-    case enabledOnly
-    case systemPermission
-    case perCall
-}
-
-struct DSHToolPermission: Sendable {
-    let identifier: String
-    let title: String
-    let gate: DSHToolPermissionGate
-    let enabledByDefault: Bool
-}
-
-enum DSHToolAuthorizationDecision: Equatable, Sendable {
-    case allowed
-    case refused(String)
-    case declined(String)
-}
-
-protocol DSHToolAuthorizationPolicy: Sendable {
-    func authorize(permission: DSHToolPermission, detail: String?) async -> DSHToolAuthorizationDecision
-}
-
+/// Dashros policy adapter that combines its capability preferences with the
+/// native per-call confirmation UI. Neither concern belongs in AgentTools.
 struct DSHDefaultsToolAuthorizationPolicy: DSHToolAuthorizationPolicy {
     private let approval: any DSHToolApprovalPolicy
 
@@ -44,18 +29,7 @@ struct DSHDefaultsToolAuthorizationPolicy: DSHToolAuthorizationPolicy {
     }
 }
 
-protocol DSHToolAuditSink: Sendable {
-    func started(name: String, detail: String?, correlationID: String) async
-    func finished(
-        name: String,
-        detail: String?,
-        result: String?,
-        outcome: String,
-        duration: TimeInterval,
-        correlationID: String
-    ) async
-}
-
+/// Dashros adapter from package audit events to the Objective-C activity log.
 struct DSHActivityToolAuditSink: DSHToolAuditSink {
     func started(name: String, detail: String?, correlationID: String) async {
         DSHNativeToolAudit.recordStarted(name, detail: detail, correlationID: correlationID)
@@ -80,97 +54,8 @@ struct DSHActivityToolAuditSink: DSHToolAuditSink {
     }
 }
 
-struct DSHGovernedTool: DSHNativeTool {
-    let definition: DSHToolDefinition
-    private let tool: any DSHNativeTool
-    private let permission: DSHToolPermission
-    private let authorization: any DSHToolAuthorizationPolicy
-    private let audit: any DSHToolAuditSink
-
-    init(
-        _ tool: any DSHNativeTool,
-        permission: DSHToolPermission,
-        authorization: any DSHToolAuthorizationPolicy = DSHDefaultsToolAuthorizationPolicy(),
-        audit: any DSHToolAuditSink = DSHActivityToolAuditSink()
-    ) {
-        self.tool = tool
-        self.permission = permission
-        self.authorization = authorization
-        self.audit = audit
-        definition = tool.definition
-    }
-
-    func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue {
-        let correlationID = UUID().uuidString
-        let detail = Self.argumentSummary(arguments)
-        let clock = ContinuousClock()
-        let startedAt = clock.now
-        await audit.started(name: permission.identifier, detail: detail, correlationID: correlationID)
-
-        let decision = await authorization.authorize(permission: permission, detail: detail)
-        switch decision {
-        case .allowed:
-            break
-        case .refused(let message):
-            await finish(outcome: "refused", result: nil, startedAt: startedAt, detail: detail, correlationID: correlationID)
-            throw DSHToolError.disabled(message)
-        case .declined(let message):
-            await finish(outcome: "declined", result: nil, startedAt: startedAt, detail: detail, correlationID: correlationID)
-            throw DSHToolError.permissionDenied(message)
-        }
-
-        do {
-            let value = try await tool.execute(arguments: arguments)
-            await finish(
-                outcome: "ok",
-                result: Self.resultShape(value),
-                startedAt: startedAt,
-                detail: detail,
-                correlationID: correlationID
-            )
-            return value
-        } catch {
-            await finish(outcome: "error", result: nil, startedAt: startedAt, detail: detail, correlationID: correlationID)
-            throw error
-        }
-    }
-
-    private func finish(
-        outcome: String,
-        result: String?,
-        startedAt: ContinuousClock.Instant,
-        detail: String?,
-        correlationID: String
-    ) async {
-        let duration = startedAt.duration(to: ContinuousClock().now)
-        let seconds = Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
-        await audit.finished(
-            name: permission.identifier,
-            detail: detail,
-            result: result,
-            outcome: outcome,
-            duration: seconds,
-            correlationID: correlationID
-        )
-    }
-
-    private static func argumentSummary(_ value: DSHJSONValue) -> String? {
-        guard case .object(let object) = value, !object.isEmpty else { return nil }
-        return "\(object.count) argument field(s): \(object.keys.sorted().joined(separator: ", "))"
-    }
-
-    private static func resultShape(_ value: DSHJSONValue) -> String {
-        switch value {
-        case .object(let object): return "object with \(object.count) field(s)"
-        case .array(let array): return "array with \(array.count) item(s)"
-        case .string(let string): return "text with \(string.count) character(s)"
-        case .number: return "number"
-        case .bool: return "boolean"
-        case .null: return "empty"
-        }
-    }
-}
-
+/// Dashros-only adapter for tools whose lifecycle is audited without an
+/// authorization decision (for example MCP and guest staging wrappers).
 struct DSHAuditedTool: DSHNativeTool {
     let definition: DSHToolDefinition
     private let tool: any DSHNativeTool
@@ -194,16 +79,24 @@ struct DSHAuditedTool: DSHNativeTool {
         do {
             let result = try await tool.execute(arguments: arguments)
             DSHNativeToolAudit.recordFinished(
-                withSource: source, name: auditName, detail: detail,
-                result: Self.shape(result), outcome: "ok", duration: Self.seconds(started.duration(to: ContinuousClock().now)),
+                withSource: source,
+                name: auditName,
+                detail: detail,
+                result: Self.shape(result),
+                outcome: "ok",
+                duration: Self.seconds(started.duration(to: ContinuousClock().now)),
                 correlationID: id
             )
             return result
         } catch {
             DSHNativeToolAudit.recordFinished(
-                withSource: source, name: auditName, detail: detail,
-                result: "error_category=\(DSHAgentRuntime.errorCategory(error))", outcome: "error",
-                duration: Self.seconds(started.duration(to: ContinuousClock().now)), correlationID: id
+                withSource: source,
+                name: auditName,
+                detail: detail,
+                result: "error_category=\(DSHAgentRuntime.errorCategory(error))",
+                outcome: "error",
+                duration: Self.seconds(started.duration(to: ContinuousClock().now)),
+                correlationID: id
             )
             throw error
         }

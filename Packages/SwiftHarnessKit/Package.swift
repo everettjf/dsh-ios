@@ -9,12 +9,15 @@ let package = Package(
     ],
     products: [
         .library(name: "AgentRuntime", targets: ["AgentRuntime"]),
-        .library(name: "AgentProviders", targets: ["AgentProviders"])
+        .library(name: "AgentProviders", targets: ["AgentProviders"]),
+        .library(name: "AgentTools", targets: ["AgentTools"])
     ],
     targets: [
         .target(name: "AgentRuntime"),
         .target(name: "AgentProviders", dependencies: ["AgentRuntime"]),
-        .testTarget(name: "AgentRuntimeTests", dependencies: ["AgentRuntime"]),
-        .testTarget(name: "AgentProvidersTests", dependencies: ["AgentRuntime", "AgentProviders"])
+        .target(name: "AgentTools", dependencies: ["AgentRuntime"]),
+        .testTarget(name: "AgentRuntimeTests", dependencies: ["AgentRuntime", "AgentTools"]),
+        .testTarget(name: "AgentProvidersTests", dependencies: ["AgentRuntime", "AgentProviders"]),
+        .testTarget(name: "AgentToolsTests", dependencies: ["AgentRuntime", "AgentTools"])
     ]
 )

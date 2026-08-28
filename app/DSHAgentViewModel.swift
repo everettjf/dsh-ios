@@ -370,40 +370,48 @@ final class DSHAgentViewModel {
     ) -> DSHToolRegistry {
         let guest = DSHLazyGuestManager()
         let authorization = DSHDefaultsToolAuthorizationPolicy()
+        let audit = DSHActivityToolAuditSink()
         let deviceInfo = DSHGovernedTool(
             DSHDeviceInfoTool(),
             permission: .init(identifier: "device.info", title: "Device information", gate: .enabledOnly, enabledByDefault: true),
-            authorization: authorization
+            authorization: authorization,
+            audit: audit
         )
         let devicePower = DSHGovernedTool(
             DSHDevicePowerTool(),
             permission: .init(identifier: "device.power", title: "Battery and thermal state", gate: .enabledOnly, enabledByDefault: true),
-            authorization: authorization
+            authorization: authorization,
+            audit: audit
         )
         let location = DSHGovernedTool(
             DSHNativeReadTool(.location),
             permission: .init(identifier: "location.read", title: "Current location", gate: .systemPermission, enabledByDefault: true),
-            authorization: authorization
+            authorization: authorization,
+            audit: audit
         )
         let contacts = DSHGovernedTool(
             DSHNativeReadTool(.contacts),
             permission: .init(identifier: "contacts.read", title: "Contacts search", gate: .systemPermission, enabledByDefault: true),
-            authorization: authorization
+            authorization: authorization,
+            audit: audit
         )
         let calendar = DSHGovernedTool(
             DSHNativeReadTool(.calendar),
             permission: .init(identifier: "calendar.read", title: "Calendar access", gate: .systemPermission, enabledByDefault: true),
-            authorization: authorization
+            authorization: authorization,
+            audit: audit
         )
         let reminders = DSHGovernedTool(
             DSHNativeReadTool(.reminders),
             permission: .init(identifier: "reminders.read", title: "Reminders access", gate: .systemPermission, enabledByDefault: true),
-            authorization: authorization
+            authorization: authorization,
+            audit: audit
         )
         let health = DSHGovernedTool(
             DSHNativeReadTool(.health),
             permission: .init(identifier: "health.read", title: "Apple Health access", gate: .systemPermission, enabledByDefault: true),
-            authorization: authorization
+            authorization: authorization,
+            audit: audit
         )
         let nativeWrites: [DSHGovernedTool] = [
             (.notify, "notifications.post", "Notifications"),
@@ -421,7 +429,8 @@ final class DSHAgentViewModel {
             DSHGovernedTool(
                 DSHNativeWriteTool(kind),
                 permission: .init(identifier: identifier, title: title, gate: .enabledOnly, enabledByDefault: true),
-                authorization: authorization
+                authorization: authorization,
+                audit: audit
             )
         }
         return DSHToolRegistry([

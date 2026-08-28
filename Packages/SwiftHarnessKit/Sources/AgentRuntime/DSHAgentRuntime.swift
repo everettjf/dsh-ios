@@ -30,6 +30,7 @@ public enum DSHAgentRuntimeError: Error, LocalizedError, Equatable {
     case alreadyRunning
     case nothingToRetry
     case nothingToContinue
+    case stepLimitExceeded
 
     public var errorDescription: String? {
         switch self {
@@ -37,6 +38,7 @@ public enum DSHAgentRuntimeError: Error, LocalizedError, Equatable {
         case .alreadyRunning: return "The agent is already responding."
         case .nothingToRetry: return "There is no previous turn to retry."
         case .nothingToContinue: return "There is no response to continue."
+        case .stepLimitExceeded: return "The agent exceeded the tool step limit."
         }
     }
 }
@@ -99,7 +101,7 @@ public actor DSHAgentRuntime {
     private let client: any DSHModelClient
     private let model: String
     private let systemPrompt: String?
-    private let toolRegistry: DSHToolRegistry?
+    private let toolRegistry: (any DSHToolProviding)?
     private let maximumSteps: Int
     private let contextPolicy: DSHContextPolicy
     private let telemetry: any DSHAgentTelemetry
@@ -115,7 +117,7 @@ public actor DSHAgentRuntime {
         model: String,
         systemPrompt: String? = nil,
         messages: [DSHChatMessage] = [],
-        toolRegistry: DSHToolRegistry? = nil,
+        toolRegistry: (any DSHToolProviding)? = nil,
         maximumSteps: Int = 8,
         contextPolicy: DSHContextPolicy = .init(),
         telemetry: any DSHAgentTelemetry = DSHNoopAgentTelemetry()
@@ -263,7 +265,7 @@ public actor DSHAgentRuntime {
                     publish()
                 }
             }
-            throw DSHToolError.stepLimitExceeded
+            throw DSHAgentRuntimeError.stepLimitExceeded
         } catch is CancellationError {
             phase = .cancelled
             publish()
@@ -308,7 +310,7 @@ public actor DSHAgentRuntime {
             default: return "network_\(error.code.rawValue)"
             }
         }
-        if error is DSHToolError { return "tool_error" }
+        if error is DSHAgentRuntimeError { return "runtime_error" }
         return "internal_error"
     }
 
