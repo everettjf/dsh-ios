@@ -378,13 +378,13 @@ final class DSHAgentViewModel: ObservableObject {
         let authorization = DSHDefaultsToolAuthorizationPolicy()
         let audit = DSHActivityToolAuditSink()
         let deviceInfo = DSHGovernedTool(
-            DSHDeviceInfoTool(),
+            DSHDeviceInformationTool(provider: DSHSystemDeviceInformationProvider()),
             permission: .init(identifier: "device.info", title: "Device information", gate: .enabledOnly, enabledByDefault: true),
             authorization: authorization,
             audit: audit
         )
         let devicePower = DSHGovernedTool(
-            DSHDevicePowerTool(),
+            DSHDevicePowerTool(provider: DSHSystemDevicePowerProvider()),
             permission: .init(identifier: "device.power", title: "Battery and thermal state", gate: .enabledOnly, enabledByDefault: true),
             authorization: authorization,
             audit: audit

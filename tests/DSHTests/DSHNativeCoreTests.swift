@@ -601,8 +601,8 @@ final class DSHNativeCoreTests: XCTestCase {
     }
 
     func testDeviceToolsHaveSeparateStableSchemas() async throws {
-        let info = DSHDeviceInfoTool()
-        let power = DSHDevicePowerTool()
+        let info = DSHDeviceInformationTool(provider: DSHSystemDeviceInformationProvider())
+        let power = DSHDevicePowerTool(provider: DSHSystemDevicePowerProvider())
         XCTAssertEqual(info.definition.name, "device_info")
         XCTAssertEqual(power.definition.name, "device_power")
         guard case .object(let infoResult) = try await info.execute(arguments: .object([:])),

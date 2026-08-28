@@ -325,8 +325,8 @@ SHOS 中只保留 iSH runtime 与原生确认 UI 的适配器。Package 已覆�
    Bundle ID 和 `DSH*` 技术前缀，避免品牌改名破坏持久化和公共 API。
 2. **Apple Tools 模块化（首批已完成）**：13 个原生工具的 schema、参数校验、
    route 映射和执行协议已抽到 `AgentAppleTools`；HealthKit、EventKit、Photos、
-   capability bridge 与权限弹窗仍由 SHOS 宿主适配。下一步继续抽取 device info / power
-   的平台无关结果模型，并补充宿主接入示例。
+   capability bridge 与权限弹窗仍由 SHOS 宿主适配。device info / power 的平台无关
+   结果模型与 provider 协议也已抽取；下一步补充独立宿主接入示例。
 3. **Swift Harness Kit 0.1**：整理 public API、DocC、最小聊天/MCP/自定义工具
    示例、SemVer 与兼容性检查，使第二个 App 可直接接入。
 4. **iSH64 挂载完善**：固定 `ExecutionBackend` 契约，补齐流式 stdout/stderr、

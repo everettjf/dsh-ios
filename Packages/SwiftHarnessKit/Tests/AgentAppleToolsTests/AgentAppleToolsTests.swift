@@ -5,6 +5,27 @@ import AgentTools
 
 @Suite("Agent Apple tools")
 struct AgentAppleToolsTests {
+    @Test("device tools expose stable privacy-safe values")
+    func deviceTools() async throws {
+        let info = DSHDeviceInformationTool(provider: FixedDeviceInformationProvider())
+        let power = DSHDevicePowerTool(provider: FixedDevicePowerProvider())
+
+        #expect(info.definition.name == "device_info")
+        #expect(power.definition.name == "device_power")
+        #expect(try await info.execute(arguments: .object([:])) == .object([
+            "device": .string("Phone"),
+            "system_name": .string("iOS"),
+            "system_version": .string("16.0"),
+            "locale": .string("en_US")
+        ]))
+        #expect(try await power.execute(arguments: .object([:])) == .object([
+            "battery_level": .number(0.5),
+            "battery_state": .string("charging"),
+            "low_power_mode": .bool(true),
+            "thermal_state": .string("fair")
+        ]))
+    }
+
     @Test("read tools validate and map bounded arguments")
     func readRoutes() async throws {
         let executor = RecordingExecutor()
@@ -47,6 +68,18 @@ struct AgentAppleToolsTests {
         #expect(Set(reads + writes).count == 13)
         #expect(reads.contains("health_query"))
         #expect(writes.contains("calendar_create_event"))
+    }
+}
+
+private struct FixedDeviceInformationProvider: DSHDeviceInformationProviding {
+    func information() async -> DSHDeviceInformation {
+        .init(device: "Phone", systemName: "iOS", systemVersion: "16.0", localeIdentifier: "en_US")
+    }
+}
+
+private struct FixedDevicePowerProvider: DSHDevicePowerProviding {
+    func power() async -> DSHDevicePower {
+        .init(batteryLevel: 0.5, batteryState: .charging, lowPowerMode: true, thermalState: .fair)
     }
 }
 
