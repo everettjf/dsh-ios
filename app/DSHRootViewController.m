@@ -31,6 +31,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
 @property (nonatomic, nullable) TerminalViewController *terminalVC;
 @property (nonatomic) uint16_t loadedPort;
 @property (nonatomic) BOOL pageLoaded;
+@property (nonatomic) NSUInteger pageLoadGeneration;
 @property (nonatomic) NSMutableDictionary<NSValue *, NSURL *> *downloadDestinations;
 @end
 
@@ -154,7 +155,12 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
         [self.webView.topAnchor constraintEqualToAnchor:bar.bottomAnchor],
         [self.webView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [self.webView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [self.webView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+        // Keep the harness composer above the software keyboard. WKWebView's
+        // own viewport updates are not reliable across iOS releases when its
+        // scroll view uses contentInsetAdjustmentNever; the keyboard layout
+        // guide makes the native contract explicit and is a no-op for a
+        // hardware keyboard.
+        [self.webView.bottomAnchor constraintEqualToAnchor:self.view.keyboardLayoutGuide.topAnchor],
     ]];
 }
 
@@ -283,6 +289,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     [self.overlay setProgressStartedAt:nil expected:0];
     self.loadedPort = DSHHarness.shared.port;
     self.pageLoaded = NO;
+    self.pageLoadGeneration++;
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
     req.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     [self.webView loadRequest:req];
@@ -499,6 +506,7 @@ static const NSTimeInterval kActivityIndicatorVisible = 6;
     if (error.code == NSURLErrorCancelled)
         return;
     self.pageLoaded = NO;
+    NSUInteger generation = self.pageLoadGeneration;
     [DSHHarness.shared.log append:[NSString stringWithFormat:@"[dsh-ios] page load failed: %@", error.localizedDescription]];
     [self.overlay showStarting:@"Waiting for the harness…"];
     // The server was answering a moment ago; give it a beat and retry, and
@@ -506,7 +514,7 @@ static const NSTimeInterval kActivityIndicatorVisible = 6;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t) (1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         typeof(self) self = weakSelf;
-        if (self == nil || self.pageLoaded)
+        if (self == nil || self.pageLoaded || generation != self.pageLoadGeneration)
             return;
         [DSHHarness.shared verifyAliveWithCompletion:^(BOOL alive) {
             if (alive) [self loadHarness];
@@ -517,7 +525,8 @@ static const NSTimeInterval kActivityIndicatorVisible = 6;
 - (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView {
     [DSHHarness.shared.log append:@"[dsh-ios] web content process terminated; reloading"];
     self.pageLoaded = NO;
-    [self loadHarness];
+    if (DSHHarness.shared.state == DSHHarnessStateReady)
+        [self loadHarness];
 }
 
 - (void)webView:(WKWebView *)webView navigationResponse:(WKNavigationResponse *)navigationResponse didBecomeDownload:(WKDownload *)download {

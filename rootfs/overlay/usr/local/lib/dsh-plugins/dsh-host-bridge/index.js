@@ -18,7 +18,10 @@ export const inject = ["tools"];
 
 const BASE = process.env.DSH_HOST_BRIDGE_URL;
 const TOKEN = process.env.DSH_HOST_BRIDGE_TOKEN;
-const TIMEOUT_MS = Number(process.env.DSH_HOST_BRIDGE_TIMEOUT_MS ?? 20000);
+const configuredTimeout = Number(process.env.DSH_HOST_BRIDGE_TIMEOUT_MS ?? 20000);
+const TIMEOUT_MS = Number.isFinite(configuredTimeout) && configuredTimeout >= 1000
+  ? Math.min(configuredTimeout, 60000)
+  : 20000;
 
 /** Calls one bridge route and turns its error envelope into a thrown Error. */
 async function call(path, { method = "GET", body } = {}) {
@@ -74,6 +77,7 @@ function installActivityReporter(ctx) {
   // Tool calls are matched to their results by id so a row can carry both what
   // was asked and how it ended.
   const open = new Map();
+  const MAX_OPEN_CALLS = 200;
 
   const flush = async () => {
     timer = null;
@@ -124,6 +128,11 @@ function installActivityReporter(ctx) {
       if (event?.type === "tool/call") {
         const { id, name, arguments: args } = event.data ?? {};
         if (!name) return;
+        // A cancelled session may never publish tool/result. Bound this map as
+        // carefully as the pending queue so repeated interrupted turns cannot
+        // slowly grow the Node process for the lifetime of the app.
+        if (open.size >= MAX_OPEN_CALLS)
+          open.delete(open.keys().next().value);
         open.set(id, { name, at: Date.now() });
         // The id travels with both halves so the app can turn the start row
         // into the result row instead of stacking two rows per call.

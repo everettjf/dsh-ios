@@ -38,6 +38,8 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
 @property (nonatomic, nullable) DSHReadinessProbe *probe;
 @property (nonatomic) BOOL userStopped;
 @property (nonatomic) NSDate *lastLaunchAt;
+@property (nonatomic) BOOL healthCheckInFlight;
+@property (nonatomic) NSMutableArray<void (^)(BOOL)> *healthCheckCompletions;
 @end
 
 @implementation DSHHarness
@@ -61,6 +63,7 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
         _startupTimeout = 240;
         _maxConsecutiveCrashes = 4;
         _state = DSHHarnessStateIdle;
+        _healthCheckCompletions = [NSMutableArray array];
     }
     return self;
 }
@@ -245,14 +248,31 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
         if (completion) completion(NO);
         return;
     }
+    // Both UIApplicationDelegate and UISceneDelegate report foregrounding.
+    // Coalesce them so one resume cannot race two failed probes into two
+    // restarts (or make the loopback server do duplicate work while waking).
+    if (completion)
+        [self.healthCheckCompletions addObject:[completion copy]];
+    if (self.healthCheckInFlight)
+        return;
+    self.healthCheckInFlight = YES;
+    NSUInteger generation = self.launchGeneration;
+    NSURL *url = self.baseURL;
     __weak typeof(self) weakSelf = self;
-    [DSHReadinessProbe checkURL:self.baseURL timeout:5 completion:^(BOOL alive) {
+    [DSHReadinessProbe checkURL:url timeout:5 completion:^(BOOL alive) {
         typeof(self) self = weakSelf;
-        if (self != nil && !alive && self.state == DSHHarnessStateReady) {
+        if (self == nil)
+            return;
+        self.healthCheckInFlight = NO;
+        NSArray<void (^)(BOOL)> *completions = [self.healthCheckCompletions copy];
+        [self.healthCheckCompletions removeAllObjects];
+        BOOL stillCurrent = generation == self.launchGeneration && self.state == DSHHarnessStateReady;
+        if (!alive && stillCurrent) {
             [self.log append:@"[dsh-ios] health check failed; restarting server"];
             [self restart];
         }
-        if (completion) completion(alive);
+        for (void (^callback)(BOOL) in completions)
+            callback(alive && stillCurrent);
     }];
 }
 

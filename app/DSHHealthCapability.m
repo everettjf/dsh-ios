@@ -205,12 +205,27 @@ static const int64_t kQueryTimeoutSeconds = 5;
     days = [self clampDays:days];
     NSDate *start = [self startForDays:days];
 
-    HKStatisticsCollection *steps = [self dailyStatisticsFor:HKQuantityTypeIdentifierStepCount
-                                                     options:HKStatisticsOptionCumulativeSum days:days];
-    HKStatisticsCollection *distance = [self dailyStatisticsFor:HKQuantityTypeIdentifierDistanceWalkingRunning
-                                                        options:HKStatisticsOptionCumulativeSum days:days];
-    HKStatisticsCollection *energy = [self dailyStatisticsFor:HKQuantityTypeIdentifierActiveEnergyBurned
-                                                      options:HKStatisticsOptionCumulativeSum days:days];
+    // These independent HealthKit reads used to run serially. On a waking or
+    // busy device that could consume 15 seconds of the guest's 20-second
+    // bridge budget. Run them together; the same per-query bound still applies.
+    __block HKStatisticsCollection *steps;
+    __block HKStatisticsCollection *distance;
+    __block HKStatisticsCollection *energy;
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+    dispatch_group_async(group, queue, ^{
+        steps = [self dailyStatisticsFor:HKQuantityTypeIdentifierStepCount
+                                 options:HKStatisticsOptionCumulativeSum days:days];
+    });
+    dispatch_group_async(group, queue, ^{
+        distance = [self dailyStatisticsFor:HKQuantityTypeIdentifierDistanceWalkingRunning
+                                    options:HKStatisticsOptionCumulativeSum days:days];
+    });
+    dispatch_group_async(group, queue, ^{
+        energy = [self dailyStatisticsFor:HKQuantityTypeIdentifierActiveEnergyBurned
+                                  options:HKStatisticsOptionCumulativeSum days:days];
+    });
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
     if (steps == nil)
         return @{ @"metric": @"activity", @"days": @[], @"note": @"HealthKit did not answer in time." };
 
@@ -258,12 +273,20 @@ static const int64_t kQueryTimeoutSeconds = 5;
     NSDate *end = NSDate.date;
     HKUnit *bpm = [HKUnit.countUnit unitDividedByUnit:HKUnit.minuteUnit];
 
-    HKStatisticsCollection *heart =
-        [self dailyStatisticsFor:HKQuantityTypeIdentifierHeartRate
-                         options:HKStatisticsOptionDiscreteAverage | HKStatisticsOptionDiscreteMin | HKStatisticsOptionDiscreteMax
-                            days:days];
-    HKStatisticsCollection *resting = [self dailyStatisticsFor:HKQuantityTypeIdentifierRestingHeartRate
-                                                       options:HKStatisticsOptionDiscreteAverage days:days];
+    __block HKStatisticsCollection *heart;
+    __block HKStatisticsCollection *resting;
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+    dispatch_group_async(group, queue, ^{
+        heart = [self dailyStatisticsFor:HKQuantityTypeIdentifierHeartRate
+                                 options:HKStatisticsOptionDiscreteAverage | HKStatisticsOptionDiscreteMin | HKStatisticsOptionDiscreteMax
+                                    days:days];
+    });
+    dispatch_group_async(group, queue, ^{
+        resting = [self dailyStatisticsFor:HKQuantityTypeIdentifierRestingHeartRate
+                                   options:HKStatisticsOptionDiscreteAverage days:days];
+    });
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
     if (heart == nil)
         return @{ @"metric": @"heart_rate", @"days": @[], @"note": @"HealthKit did not answer in time." };
 
