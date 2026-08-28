@@ -5,7 +5,7 @@ import AgentRuntime
 import AgentStorage
 
 struct DSHNativeRootView: View {
-    @State private var model = DSHAgentViewModel()
+    @StateObject private var model = DSHAgentViewModel()
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var isComposerFocused: Bool
 
@@ -13,11 +13,18 @@ struct DSHNativeRootView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 if model.snapshot.messages.isEmpty {
-                    ContentUnavailableView(
-                        "DeepSeek Agent",
-                        systemImage: "sparkles",
-                        description: Text(model.isConfigured ? "Ask anything to begin." : "Add your DeepSeek API key to begin.")
-                    )
+                    VStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("DeepSeek Agent")
+                            .font(.title2.bold())
+                        Text(model.isConfigured ? "Ask anything to begin." : "Add your DeepSeek API key to begin.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
                     .accessibilityIdentifier("dsh.native.empty")
                 } else {
                     messageList
@@ -32,13 +39,13 @@ struct DSHNativeRootView: View {
             }
             .navigationTitle("DeepSeek")
             .toolbar {
-                ToolbarItemGroup(placement: .topBarLeading) {
+                ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button("Conversations", systemImage: "sidebar.left") { model.isShowingSessions = true }
                         .accessibilityIdentifier("dsh.native.sessions")
                     Button("New Conversation", systemImage: "square.and.pencil") { model.newSession() }
                         .accessibilityIdentifier("dsh.native.new-session")
                 }
-                ToolbarItemGroup(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button("Activity", systemImage: "list.bullet.rectangle") { model.isShowingActivity = true }
                         .accessibilityIdentifier("dsh.native.activity-button")
                     Button("Settings", systemImage: "gearshape") { model.isShowingSettings = true }
@@ -66,7 +73,7 @@ struct DSHNativeRootView: View {
             } message: {
                 Text(model.attachmentError ?? "The attachment could not be imported.")
             }
-            .onChange(of: scenePhase) { _, phase in
+            .onChange(of: scenePhase) { phase in
                 if phase != .active { model.persistForLifecycle() }
             }
             .toolbar {
@@ -91,7 +98,7 @@ struct DSHNativeRootView: View {
                 .padding()
             }
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: model.snapshot.messages) { _, messages in
+            .onChange(of: model.snapshot.messages) { messages in
                 if let id = messages.last?.id { proxy.scrollTo(id, anchor: .bottom) }
             }
             .accessibilityIdentifier("dsh.native.messages")
@@ -273,7 +280,7 @@ private struct ActivityContainer: UIViewControllerRepresentable {
 }
 
 private struct SessionBrowserView: View {
-    let model: DSHAgentViewModel
+    @ObservedObject var model: DSHAgentViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var renameID: UUID?
     @State private var renameTitle = ""
@@ -283,7 +290,15 @@ private struct SessionBrowserView: View {
         NavigationStack {
             Group {
                 if model.sessions.isEmpty {
-                    ContentUnavailableView("No Conversations", systemImage: "bubble.left.and.bubble.right")
+                    VStack(spacing: 12) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("No Conversations")
+                            .font(.title3.bold())
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List(model.sessions) { session in
                         Button {

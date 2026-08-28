@@ -1401,7 +1401,7 @@
 					"$(SRCROOT)/app",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHUITests/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1432,7 +1432,7 @@
 					"$(SRCROOT)/app",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHUITests/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1478,7 +1478,7 @@
 					"$(SRCROOT)/app",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHTests/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1523,7 +1523,7 @@
 					"$(SRCROOT)/app",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tests/DSHTests/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -124,7 +124,7 @@ Dir[(ROOT + 'rootfs/**/*').to_s].sort.select { |f| File.file?(f) }.each do |f|
 end
 
 # --- app target ---------------------------------------------------------------
-dsh = project.new_target(:application, 'DSH', :ios, '26.0')
+dsh = project.new_target(:application, 'DSH', :ios, '16.0')
 dsh.build_configuration_list.build_configurations.each do |bc|
   bc.build_settings.clear
   bc.base_configuration_reference = xcconfig_ref
@@ -213,7 +213,10 @@ ordered.each { |ph| phases << ph }
 # --- test bundles -------------------------------------------------------------
 common_test_settings = {
   'PRODUCT_NAME' => '$(TARGET_NAME)',
-  'IPHONEOS_DEPLOYMENT_TARGET' => '26.0',
+  # Xcode 27's XCTest runtime is built for iOS 17. The hosted application
+  # remains iOS 16; test bundles use 17 solely to avoid linking newer XCTest
+  # dylibs into a lower-version test bundle.
+  'IPHONEOS_DEPLOYMENT_TARGET' => '17.0',
   'SDKROOT' => 'iphoneos',
   'SUPPORTED_PLATFORMS' => 'iphoneos iphonesimulator',
   'TARGETED_DEVICE_FAMILY' => '1,2',
@@ -230,7 +233,7 @@ common_test_settings = {
   'HEADER_SEARCH_PATHS' => '$(inherited) $(SRCROOT)/ish-arm64 $(SRCROOT)/ish-arm64/app $(SRCROOT)/app',
 }
 
-tests = project.new_target(:unit_test_bundle, 'DSHTests', :ios, '26.0')
+tests = project.new_target(:unit_test_bundle, 'DSHTests', :ios, '17.0')
 tg = tests_group.new_group('DSHTests', 'DSHTests')
 Dir[(ROOT + 'tests/DSHTests/*.{m,swift}').to_s].sort.each { |f| tests.source_build_phase.add_file_reference(tg.new_file(File.basename(f)), true) }
 Dir[(ROOT + 'tests/DSHTests/*.h').to_s].sort.each { |f| tg.new_file(File.basename(f)) }
@@ -247,7 +250,7 @@ end
 tests.add_dependency(dsh)
 swift_harness_products.each_value { |dependency| tests.package_product_dependencies << dependency }
 
-uitests = project.new_target(:ui_test_bundle, 'DSHUITests', :ios, '26.0')
+uitests = project.new_target(:ui_test_bundle, 'DSHUITests', :ios, '17.0')
 ug = tests_group.new_group('DSHUITests', 'DSHUITests')
 Dir[(ROOT + 'tests/DSHUITests/*.m').to_s].sort.each { |f| uitests.source_build_phase.add_file_reference(ug.new_file(File.basename(f)), true) }
 ug.new_file('Info.plist')

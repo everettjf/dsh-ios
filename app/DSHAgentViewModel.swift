@@ -1,5 +1,5 @@
 import Foundation
-import Observation
+import Combine
 import AgentRuntime
 import AgentProviders
 import AgentTools
@@ -7,35 +7,34 @@ import AgentStorage
 import AgentMCP
 
 @MainActor
-@Observable
-final class DSHAgentViewModel {
-    var snapshot = DSHAgentSnapshot(messages: [], phase: .idle, usage: nil)
-    var draft = ""
-    var configuration: DSHAgentConfiguration
-    var isShowingSettings = false
-    var configurationError: String?
-    var mcpConfigurations = DSHMCPServerConfigurationStore.load()
-    var mcpStatuses: [DSHMCPServerStatus] = []
-    var sessions: [DSHSessionRecord] = []
-    var isShowingSessions = false
-    var isShowingActivity = false
-    var isImportingAttachments = false
-    var pendingAttachments: [DSHAttachment] = []
-    var attachmentError: String?
-    var hasRestoredSessions = false
+final class DSHAgentViewModel: ObservableObject {
+    @Published var snapshot = DSHAgentSnapshot(messages: [], phase: .idle, usage: nil)
+    @Published var draft = ""
+    @Published var configuration: DSHAgentConfiguration
+    @Published var isShowingSettings = false
+    @Published var configurationError: String?
+    @Published var mcpConfigurations = DSHMCPServerConfigurationStore.load()
+    @Published var mcpStatuses: [DSHMCPServerStatus] = []
+    @Published var sessions: [DSHSessionRecord] = []
+    @Published var isShowingSessions = false
+    @Published var isShowingActivity = false
+    @Published var isImportingAttachments = false
+    @Published var pendingAttachments: [DSHAttachment] = []
+    @Published var attachmentError: String?
+    @Published var hasRestoredSessions = false
 
-    @ObservationIgnored private var runtime: DSHAgentRuntime
-    @ObservationIgnored private var observationTask: Task<Void, Never>?
-    @ObservationIgnored private var sendTask: Task<Void, Never>?
-    @ObservationIgnored private var mcpTask: Task<Void, Never>?
-    @ObservationIgnored private var persistenceTask: Task<Void, Never>?
-    @ObservationIgnored private let sessionStore: DSHSessionStore
-    @ObservationIgnored private let workspaceStore: DSHWorkspaceStore
-    @ObservationIgnored private let workspaceContext: DSHActiveWorkspaceContext
-    @ObservationIgnored private let toolRegistry: DSHToolRegistry
-    @ObservationIgnored private let mcpManager: DSHMCPServerManager
-    @ObservationIgnored private var sessionID: UUID
-    @ObservationIgnored private var createdAt = Date()
+    private var runtime: DSHAgentRuntime
+    private var observationTask: Task<Void, Never>?
+    private var sendTask: Task<Void, Never>?
+    private var mcpTask: Task<Void, Never>?
+    private var persistenceTask: Task<Void, Never>?
+    private let sessionStore: DSHSessionStore
+    private let workspaceStore: DSHWorkspaceStore
+    private let workspaceContext: DSHActiveWorkspaceContext
+    private let toolRegistry: DSHToolRegistry
+    private let mcpManager: DSHMCPServerManager
+    private var sessionID: UUID
+    private var createdAt = Date()
 
     private static let currentSessionKey = "native.agent.current-session"
 

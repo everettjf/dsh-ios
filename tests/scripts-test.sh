@@ -64,3 +64,16 @@ if rg -q 'Packages/SwiftHarnessKit/Sources|DSHAgentRuntime.swift in Sources|DSHM
 fi
 
 printf 'ok  scripts: Dashros consumes SwiftHarnessKit package products\n'
+
+if ! rg -q "project.new_target\(:application, 'DSH', :ios, '16\\.0'\)" scripts/gen-xcode-project.rb ||
+   ! rg -q '^IPHONEOS_DEPLOYMENT_TARGET = 16\.0$' app/AppDSH.xcconfig; then
+  echo 'not ok: the Dashros application target must support iOS 16' >&2
+  exit 1
+fi
+
+if rg -q '^import Observation$|@Observable|@ObservationIgnored' app; then
+  echo 'not ok: Dashros app state uses Observation APIs unavailable on iOS 16' >&2
+  exit 1
+fi
+
+printf 'ok  scripts: Dashros iOS 16 compatibility boundary\n'
