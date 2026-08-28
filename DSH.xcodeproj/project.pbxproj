@@ -12,6 +12,7 @@
 		0822FB8121062FCC33B9FB19 /* DSHShareCapability.m in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F3897DC1093586ECB7E95 /* DSHShareCapability.m */; };
 		0AE00B232D06A496669E7B4A /* AgentLinuxGuest in Frameworks */ = {isa = PBXBuildFile; productRef = 44E1B2E9060D1B7EFBCAB914 /* AgentLinuxGuest */; };
 		0BCDE9A201F4AE1B2CB8D7C3 /* DSHLazyGuestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4272304B87F96ED7B0B50AB7 /* DSHLazyGuestManager.swift */; };
+		0CA74E833FF3CDA30FF7A6B0 /* HarnessChatApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4568EBFF96E87EDD4551D49D /* HarnessChatApp.swift */; };
 		0CFEA6FE8F485F2736A8AECA /* TerminalViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9662D2F7437ECA1AEB3125DB /* TerminalViewController.m */; };
 		0E32E156FAC5B189EE9E295D /* DSHToolRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388FFB8949CFC8B1A31A2D2C /* DSHToolRegistry.swift */; };
 		0F03039A9879229702A7CE41 /* hook.c in Sources */ = {isa = PBXBuildFile; fileRef = EBA7AD2959FB21E624B65131 /* hook.c */; };
@@ -35,6 +36,7 @@
 		290516952DAF600C29CCCE9C /* AccessibilityFixes.m in Sources */ = {isa = PBXBuildFile; fileRef = 2B8A44A582F76CFFD5A26FA4 /* AccessibilityFixes.m */; };
 		30AB4F8AE2434AD8D9749545 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72236EB3F925361E100BB6D0 /* Foundation.framework */; };
 		30E6983C068702DF14CEB3F5 /* DSHActivityCapability.m in Sources */ = {isa = PBXBuildFile; fileRef = C97A20301B6E2F99059EF1A4 /* DSHActivityCapability.m */; };
+		32ACAFED48123ADCBA9E6D05 /* AgentTools in Frameworks */ = {isa = PBXBuildFile; productRef = C86D393BF9F73ACFE29AC2D2 /* AgentTools */; };
 		3568F0F1C9C8E55AFEA4BB0A /* DSHCapability.m in Sources */ = {isa = PBXBuildFile; fileRef = 3DE85921B1279B07D574A4AD /* DSHCapability.m */; };
 		36142FE3E984D0FBCFC94EFA /* fakefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 669A7EE9472E5A7D7F2208F4 /* fakefs.c */; };
 		36B2582C7CC1CABC81A0E231 /* Roots.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D7EA9F34722B34C32B851873 /* Roots.storyboard */; };
@@ -59,13 +61,16 @@
 		4B6C1061D15266AC0345FDCF /* UpgradeRootViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C7C74E66622A401B3171B4B /* UpgradeRootViewController.m */; };
 		4D51CBB4F3F7E6EC9527C734 /* Terminal.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 91BEEDB21B695337B28A9FD6 /* Terminal.storyboard */; };
 		4D9C5F16CDC1B6FE6CAAB210 /* Terminal.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B024EC208325923EFAC85E1 /* Terminal.m */; };
+		4E132F1635CEB77C63A284D9 /* AgentAppleTools in Frameworks */ = {isa = PBXBuildFile; productRef = 78ADFE9DA4096EE3ED4F2995 /* AgentAppleTools */; };
 		50E7AABF5F2B72B03EFCE6D5 /* DSHHostBridgeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1C72556E9B62046AA74E4344 /* DSHHostBridgeTests.m */; };
 		51238AFC132322BD9FA1D1EC /* DSHPhotosCapability.m in Sources */ = {isa = PBXBuildFile; fileRef = 183BDFD4DFC01710F5EF1B00 /* DSHPhotosCapability.m */; };
 		54DA23576BF6D4DE72E8D047 /* DSHStatusOverlayView.m in Sources */ = {isa = PBXBuildFile; fileRef = 799C9CD8431D1BEDC3D72541 /* DSHStatusOverlayView.m */; };
 		553FB9587DD96B945FB3652E /* DSHLogBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = 2308AD9A0A857C0936366BAF /* DSHLogBuffer.m */; };
 		58B6191FBC01AACBD56ED833 /* DSHCallConfirmationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 528F639EA3746A0610FED8D0 /* DSHCallConfirmationTests.m */; };
 		5B8859E9E7A8989BFB7BE7BE /* FakeFFmpeg.m in Sources */ = {isa = PBXBuildFile; fileRef = DBE2AA985FE17AD9A9FBA01F /* FakeFFmpeg.m */; };
+		5FFACDEA66E905B228D542DE /* AgentMCP in Frameworks */ = {isa = PBXBuildFile; productRef = 469B7E9900A6AA99472DFE0E /* AgentMCP */; };
 		67438F00B8F1127B2E6743B4 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72236EB3F925361E100BB6D0 /* Foundation.framework */; };
+		683DD0B4B51AF6232A6139C7 /* AgentStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 4F88044D6A1FF98EAA09D902 /* AgentStorage */; };
 		6CCFCA1C6FE4444104F38FB6 /* AgentStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 32D9DBC6D48E8D61DB077939 /* AgentStorage */; };
 		6D4C9A35CAE9B4770554DFE6 /* DSHMCPServerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D47F58E614D96752E269ADD8 /* DSHMCPServerManager.swift */; };
 		6F5E50E908113A138D303E5F /* DSHPortAllocator.m in Sources */ = {isa = PBXBuildFile; fileRef = 751B6F1E621D9033D61C5D4B /* DSHPortAllocator.m */; };
@@ -112,6 +117,7 @@
 		A5030C244A4AE36278EF2B26 /* DSHActivityLogTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3A339942275819ED5A78DE1D /* DSHActivityLogTests.m */; };
 		A5041CF7EC765B01EA1F369F /* iinhash.png in Resources */ = {isa = PBXBuildFile; fileRef = E7569E5FD57CEDE770A98FC3 /* iinhash.png */; };
 		A60A6DE5D727928F44DD9D7E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 68F53887F018E6DCC2517D89 /* Assets.xcassets */; };
+		A91645AED1B4DB28C8142E40 /* AgentRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 24FBDF41193B1988C871FD57 /* AgentRuntime */; };
 		A95247C867C4F599163330F4 /* ISHShellExecutor.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F72F1C5EF3DCAA74EC24FA3 /* ISHShellExecutor.m */; };
 		A9B20594B54CF4CC6AF737A1 /* ScrollbarView.m in Sources */ = {isa = PBXBuildFile; fileRef = CB1297A1C4EFEBE75134A219 /* ScrollbarView.m */; };
 		AA2658E752075FA4A20C1346 /* reworked.png in Resources */ = {isa = PBXBuildFile; fileRef = C51D40F14A698EA93FCD1299 /* reworked.png */; };
@@ -119,9 +125,11 @@
 		ACBB1C00912EC782E14042C8 /* mach_exc.defs in Sources */ = {isa = PBXBuildFile; fileRef = A22C4CF850127CC9A9463190 /* mach_exc.defs */; settings = {ATTRIBUTES = (Server, ); }; };
 		AD0776EBF38C58C673F84C48 /* DSHNativeToolPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 470ECCEA701796C6209DE05D /* DSHNativeToolPolicy.swift */; };
 		AF9D7957D59EBAD07B321CF5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5F39A73771B4DD7760D748AB /* PrivacyInfo.xcprivacy */; };
+		B0E48097DBA8A4D27DD1B7D1 /* AgentProviders in Frameworks */ = {isa = PBXBuildFile; productRef = 4CCC5995C524D4E1D1E25289 /* AgentProviders */; };
 		B3B549CEFC96A157CE58F7E7 /* pydann2.png in Resources */ = {isa = PBXBuildFile; fileRef = ED1377683CEA7C1E6E075BD5 /* pydann2.png */; };
 		B463AB1DE5DE777CA93BA2C5 /* DSHNativeRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A676362827539A21DE85C1E4 /* DSHNativeRootView.swift */; };
 		B5AF2CFFF98B9F0BAE87658B /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B6DB54CC8E61D6AA4F6B5F5 /* libiconv.tbd */; };
+		B5DA0554FA8A872571C06FB7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72236EB3F925361E100BB6D0 /* Foundation.framework */; };
 		B6136E7CB64F6B16EC8F1CF2 /* DSHGuestLauncher.m in Sources */ = {isa = PBXBuildFile; fileRef = 242F0670334196DB17DC80C0 /* DSHGuestLauncher.m */; };
 		BA99C25F3925BF39594349F4 /* DSHActivityAgentTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEDC92E113F9B258817AEF81 /* DSHActivityAgentTelemetry.swift */; };
 		BC967716B7CF6C4E2389D7D3 /* ThemesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 424EC07F0A1955C62319F890 /* ThemesViewController.m */; };
@@ -249,6 +257,7 @@
 		2A3D09ABD82FA0E37A05A196 /* fetch-polyfill-test.mjs */ = {isa = PBXFileReference; includeInIndex = 1; path = "fetch-polyfill-test.mjs"; sourceTree = "<group>"; };
 		2B6DB54CC8E61D6AA4F6B5F5 /* libiconv.tbd */ = {isa = PBXFileReference; includeInIndex = 1; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
 		2B8A44A582F76CFFD5A26FA4 /* AccessibilityFixes.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AccessibilityFixes.m; sourceTree = "<group>"; };
+		2D72D0299E9DDC82C4A9D8A2 /* HarnessChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HarnessChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D7C976E02B21C877E39CE09 /* DSHAssets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = DSHAssets.xcassets; sourceTree = "<group>"; };
 		2E7729FEF10EC118BB965F11 /* IOSCalls.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = IOSCalls.m; sourceTree = "<group>"; };
 		2F38CF7138455163903C1C3E /* DSHMockLLMServer.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHMockLLMServer.h; sourceTree = "<group>"; };
@@ -271,6 +280,7 @@
 		4272304B87F96ED7B0B50AB7 /* DSHLazyGuestManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DSHLazyGuestManager.swift; sourceTree = "<group>"; };
 		42824A46FC3F994A703EC0F5 /* DSHContactsCapability.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHContactsCapability.h; sourceTree = "<group>"; };
 		4440FBDF18EADFAFDB434F92 /* DSHNativeCapabilityBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHNativeCapabilityBridge.m; sourceTree = "<group>"; };
+		4568EBFF96E87EDD4551D49D /* HarnessChatApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HarnessChatApp.swift; sourceTree = "<group>"; };
 		468CED0EEAC1D7F2D76CF4A8 /* ArrowBarButton.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ArrowBarButton.m; sourceTree = "<group>"; };
 		470ECCEA701796C6209DE05D /* DSHNativeToolPolicy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DSHNativeToolPolicy.swift; sourceTree = "<group>"; };
 		47F0A096B833E0CF67C395EE /* DSHHarness.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHHarness.h; sourceTree = "<group>"; };
@@ -286,6 +296,7 @@
 		5334189DBA93376EE2A6ECB2 /* DSHCapability.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHCapability.h; sourceTree = "<group>"; };
 		5431D7F8896E59D0AA1F2947 /* Makefile */ = {isa = PBXFileReference; includeInIndex = 1; path = Makefile; sourceTree = "<group>"; };
 		54448E1759FBB5EA671A147B /* DSHSceneDelegate.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHSceneDelegate.h; sourceTree = "<group>"; };
+		564048406D53DFDF5FDD49F7 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5972546CD745C120B2C6FBEE /* DSHContactsCapability.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHContactsCapability.m; sourceTree = "<group>"; };
 		5A825E17E2194CDBD120B71E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5B024EC208325923EFAC85E1 /* Terminal.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = Terminal.m; sourceTree = "<group>"; };
@@ -417,6 +428,7 @@
 		ED1377683CEA7C1E6E075BD5 /* pydann2.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = pydann2.png; sourceTree = "<group>"; };
 		F0C4E86542C05C387BBE6E85 /* AppDelegate.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		F1C88FB7675B5847D4EE571A /* hterm_all.js */ = {isa = PBXFileReference; includeInIndex = 1; path = hterm_all.js; sourceTree = "<group>"; };
+		F326C5DE4B36857F4EE9FBDB /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; path = README.md; sourceTree = "<group>"; };
 		F3BBCA9A255813408D5199B4 /* colontildehash.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = colontildehash.png; sourceTree = "<group>"; };
 		F427CA07BAB3009F0B1031AE /* BarButton.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = BarButton.m; sourceTree = "<group>"; };
 		F482CEF800D120FE7FDB9725 /* DSHEventKitCapability.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHEventKitCapability.m; sourceTree = "<group>"; };
@@ -432,6 +444,20 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1585D2F2E5AC5A45C78C81D2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B5DA0554FA8A872571C06FB7 /* Foundation.framework in Frameworks */,
+				A91645AED1B4DB28C8142E40 /* AgentRuntime in Frameworks */,
+				B0E48097DBA8A4D27DD1B7D1 /* AgentProviders in Frameworks */,
+				32ACAFED48123ADCBA9E6D05 /* AgentTools in Frameworks */,
+				683DD0B4B51AF6232A6139C7 /* AgentStorage in Frameworks */,
+				4E132F1635CEB77C63A284D9 /* AgentAppleTools in Frameworks */,
+				5FFACDEA66E905B228D542DE /* AgentMCP in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6BB9BFB8C7656C9AA075BD10 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -505,6 +531,7 @@
 				B3AC0F019A95810A3B888ACC /* SHOSLite.app */,
 				CDF2B1C40457BB5C65F960E5 /* DSHTests.xctest */,
 				EA758E30F027843DB0306035 /* DSHUITests.xctest */,
+				2D72D0299E9DDC82C4A9D8A2 /* HarnessChat.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -785,6 +812,17 @@
 			path = Icons;
 			sourceTree = "<group>";
 		};
+		59F0A19084C5C105B070FDD7 /* HarnessChat */ = {
+			isa = PBXGroup;
+			children = (
+				4568EBFF96E87EDD4551D49D /* HarnessChatApp.swift */,
+				564048406D53DFDF5FDD49F7 /* Info.plist */,
+				F326C5DE4B36857F4EE9FBDB /* README.md */,
+			);
+			name = HarnessChat;
+			path = Examples/HarnessChat;
+			sourceTree = "<group>";
+		};
 		5AA68127A0A061E7DA763F18 /* dsh-host-bridge */ = {
 			isa = PBXGroup;
 			children = (
@@ -987,6 +1025,7 @@
 				5431D7F8896E59D0AA1F2947 /* Makefile */,
 				BC6554CC8FB4EE41DB298BF5 /* scripts */,
 				32E2A78AF576C56FF3F81E73 /* rootfs */,
+				59F0A19084C5C105B070FDD7 /* HarnessChat */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1047,6 +1086,31 @@
 			productName = DSHTests;
 			productReference = CDF2B1C40457BB5C65F960E5 /* DSHTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8C6047262B7A498F54664076 /* HarnessChat */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A346D1DA0759996333B3640 /* Build configuration list for PBXNativeTarget "HarnessChat" */;
+			buildPhases = (
+				A5C4EEACC6CDB5BD42650020 /* Sources */,
+				1585D2F2E5AC5A45C78C81D2 /* Frameworks */,
+				E5A70B172CDC3F89BBC8B0BE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HarnessChat;
+			packageProductDependencies = (
+				24FBDF41193B1988C871FD57 /* AgentRuntime */,
+				4CCC5995C524D4E1D1E25289 /* AgentProviders */,
+				C86D393BF9F73ACFE29AC2D2 /* AgentTools */,
+				4F88044D6A1FF98EAA09D902 /* AgentStorage */,
+				78ADFE9DA4096EE3ED4F2995 /* AgentAppleTools */,
+				469B7E9900A6AA99472DFE0E /* AgentMCP */,
+			);
+			productName = HarnessChat;
+			productReference = 2D72D0299E9DDC82C4A9D8A2 /* HarnessChat.app */;
+			productType = "com.apple.product-type.application";
 		};
 		9728DE1E20F563C29E6203B7 /* SHOSLite */ = {
 			isa = PBXNativeTarget;
@@ -1150,6 +1214,7 @@
 				9728DE1E20F563C29E6203B7 /* SHOSLite */,
 				40B743482077E51030B2C4AB /* DSHTests */,
 				207BE1D819AF1D48C2309786 /* DSHUITests */,
+				8C6047262B7A498F54664076 /* HarnessChat */,
 			);
 		};
 /* End PBXProject section */
@@ -1223,6 +1288,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		891CB2804960702058DCF1F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E5A70B172CDC3F89BBC8B0BE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1438,6 +1510,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A5C4EEACC6CDB5BD42650020 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0CA74E833FF3CDA30FF7A6B0 /* HarnessChatApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CEEB8667763BD7878F08CBA7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1620,6 +1700,48 @@
 			};
 			name = Release;
 		};
+		D27EA50B658C9832932A3C2C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"ARCHS[sdk=iphonesimulator*]" = arm64;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(DSH_DEVELOPMENT_TEAM)";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64 i386";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/Examples/HarnessChat/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.swiftharnesskit.example;
+				PRODUCT_NAME = HarnessChat;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D33D068239B22D25484CCAF5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"ARCHS[sdk=iphonesimulator*]" = arm64;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(DSH_DEVELOPMENT_TEAM)";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64 i386";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/Examples/HarnessChat/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.swiftharnesskit.example;
+				PRODUCT_NAME = HarnessChat;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		D7A849128DEF6C03D6BC17F4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 297F3DCE5D323FF9FF90CB68 /* AppDSH.xcconfig */;
@@ -1695,6 +1817,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		8A346D1DA0759996333B3640 /* Build configuration list for PBXNativeTarget "HarnessChat" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D33D068239B22D25484CCAF5 /* Release */,
+				D27EA50B658C9832932A3C2C /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		B1F764302B2C68194DCA406D /* Build configuration list for PBXNativeTarget "DSH" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1728,6 +1859,11 @@
 			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
 			productName = AgentMCP;
 		};
+		24FBDF41193B1988C871FD57 /* AgentRuntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
+			productName = AgentRuntime;
+		};
 		32D9DBC6D48E8D61DB077939 /* AgentStorage */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
@@ -1737,6 +1873,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
 			productName = AgentLinuxGuest;
+		};
+		469B7E9900A6AA99472DFE0E /* AgentMCP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
+			productName = AgentMCP;
+		};
+		4CCC5995C524D4E1D1E25289 /* AgentProviders */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
+			productName = AgentProviders;
+		};
+		4F88044D6A1FF98EAA09D902 /* AgentStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
+			productName = AgentStorage;
 		};
 		5555195FA2FDC21544D718EE /* AgentRuntime */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1752,6 +1903,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
 			productName = AgentStorage;
+		};
+		78ADFE9DA4096EE3ED4F2995 /* AgentAppleTools */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
+			productName = AgentAppleTools;
 		};
 		7EEBBB73DE44289AAC95A1E2 /* AgentMCP */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1772,6 +1928,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
 			productName = AgentProviders;
+		};
+		C86D393BF9F73ACFE29AC2D2 /* AgentTools */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
+			productName = AgentTools;
 		};
 		DABC8496A84A2C67E1943631 /* AgentProviders */ = {
 			isa = XCSwiftPackageProductDependency;

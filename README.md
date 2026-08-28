@@ -84,6 +84,7 @@ make test-sim           # XCTest and XCUITest on a simulator
 make test-device-unit   # app and guest integration tests on a device
 make test-device        # app and UI tests on a device
 make test-lite          # build/audit the iOS 16 variant without Linux guest
+make test-example       # build the independent HarnessChat public-API host
 ```
 
 The app suite covers SSE fragmentation, multi-step tools, cancellation, retry,

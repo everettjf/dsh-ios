@@ -40,3 +40,8 @@ swift test --package-path Packages/SwiftHarnessKit
 The package does not embed the GPL iSH/Alpine runtime. SHOS explicitly mounts
 iSH64 as an optional, separately licensed `AgentLinuxGuest` execution backend;
 third-party hosts can omit it or supply another backend.
+
+An independent iOS 16 reference host is available in
+[`Examples/HarnessChat`](../../Examples/HarnessChat). It demonstrates streaming,
+cancellation, storage, a custom tool, and Apple-tool provider injection without
+linking SHOS or iSH64. Build it with `make test-example` from the repository root.

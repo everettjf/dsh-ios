@@ -327,6 +327,44 @@ apple_tools_dependency.product_name = 'AgentAppleTools'
   build_file.product_ref = apple_tools_dependency
   target.frameworks_build_phase.files << build_file
 end
+
+# Independent public-API reference host. Allocate it after all legacy objects so
+# adding the example cannot churn deterministic UUIDs in shipping targets.
+example_group = project.main_group.new_group('HarnessChat', 'Examples/HarnessChat')
+example_source = example_group.new_file('HarnessChatApp.swift')
+example_group.new_file('Info.plist')
+example_group.new_file('README.md')
+example = project.new_target(:application, 'HarnessChat', :ios, '16.0')
+example.source_build_phase.add_file_reference(example_source, true)
+example.build_configuration_list.build_configurations.each do |bc|
+  bc.build_settings.clear
+  bc.build_settings.merge!({
+    'PRODUCT_NAME' => 'HarnessChat',
+    'PRODUCT_BUNDLE_IDENTIFIER' => 'com.xnuapp.swiftharnesskit.example',
+    'MARKETING_VERSION' => '0.1.0',
+    'CURRENT_PROJECT_VERSION' => '1',
+    'INFOPLIST_FILE' => '$(SRCROOT)/Examples/HarnessChat/Info.plist',
+    'GENERATE_INFOPLIST_FILE' => 'NO',
+    'IPHONEOS_DEPLOYMENT_TARGET' => '16.0',
+    'SDKROOT' => 'iphoneos',
+    'SUPPORTED_PLATFORMS' => 'iphoneos iphonesimulator',
+    'TARGETED_DEVICE_FAMILY' => '1,2',
+    'SWIFT_VERSION' => '6.0',
+    'CODE_SIGN_STYLE' => 'Automatic',
+    'DEVELOPMENT_TEAM' => '$(DSH_DEVELOPMENT_TEAM)',
+    'ARCHS[sdk=iphonesimulator*]' => 'arm64',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64 i386',
+  })
+end
+%w[AgentRuntime AgentProviders AgentTools AgentStorage AgentAppleTools AgentMCP].each do |product_name|
+  dependency = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
+  dependency.package = swift_harness_package
+  dependency.product_name = product_name
+  example.package_product_dependencies << dependency
+  build_file = project.new(Xcodeproj::Project::Object::PBXBuildFile)
+  build_file.product_ref = dependency
+  example.frameworks_build_phase.files << build_file
+end
 project.save
 
 # --- scheme -------------------------------------------------------------------
@@ -348,4 +386,10 @@ lite_scheme.configure_with_targets(lite, nil, launch_target: true)
   lite_scheme.send(action).build_configuration = 'Release'
 end
 lite_scheme.save_as(PROJECT_PATH.to_s, 'SHOSLite', true)
-puts "ok: #{PROJECT_PATH} (DSH, DSHTests, DSHUITests, SHOSLite)"
+example_scheme = Xcodeproj::XCScheme.new
+example_scheme.configure_with_targets(example, nil, launch_target: true)
+%w[test_action launch_action profile_action analyze_action archive_action].each do |action|
+  example_scheme.send(action).build_configuration = 'Release'
+end
+example_scheme.save_as(PROJECT_PATH.to_s, 'HarnessChat', true)
+puts "ok: #{PROJECT_PATH} (DSH, DSHTests, DSHUITests, SHOSLite, HarnessChat)"

@@ -327,8 +327,8 @@ SHOS 中只保留 iSH runtime 与原生确认 UI 的适配器。Package 已覆�
    route 映射和执行协议已抽到 `AgentAppleTools`；HealthKit、EventKit、Photos、
    capability bridge 与权限弹窗仍由 SHOS 宿主适配。device info / power 的平台无关
    结果模型与 provider 协议也已抽取；下一步补充独立宿主接入示例。
-3. **Swift Harness Kit 0.1**：整理 public API、DocC、最小聊天/MCP/自定义工具
-   示例、SemVer 与兼容性检查，使第二个 App 可直接接入。
+3. **Swift Harness Kit 0.1**：独立 `HarnessChat` iOS 16 宿主已建立并验证不链接
+   SHOS/iSH64；继续整理 public API、DocC、MCP 配置示例、SemVer 与兼容性检查。
 4. **iSH64 挂载完善**：固定 `ExecutionBackend` 契约，补齐流式 stdout/stderr、
    取消、配额、镜像版本/校验值、工作区迁移与 GPL 分发材料。
 5. **SHOS 产品完善**：Markdown、工具时间线、会话搜索、附件体验、中英文、

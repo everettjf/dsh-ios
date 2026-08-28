@@ -93,6 +93,27 @@ done
 
 printf 'ok  scripts: NO_LINUX_GUEST product boundary\n'
 
+example_target=$(ruby -rxcodeproj -e '
+  project = Xcodeproj::Project.open("DSH.xcodeproj")
+  target = project.targets.find { |value| value.name == "HarnessChat" } or abort "missing HarnessChat"
+  puts target.source_build_phase.files.map { |file| file.file_ref.real_path }
+  puts target.resources_build_phase.files.map { |file| file.file_ref.real_path }
+  puts target.package_product_dependencies.map(&:product_name)
+')
+case "$example_target" in
+  *app/DSH*|*app-lite*|*ish-arm64*|*root.tar.gz*|*AgentLinuxGuest*)
+    echo 'not ok: HarnessChat is not independent from SHOS/iSH64' >&2
+    exit 1
+    ;;
+esac
+for product in AgentRuntime AgentProviders AgentTools AgentStorage AgentAppleTools AgentMCP; do
+  printf '%s\n' "$example_target" | rg -q "^${product}$" || {
+    echo "not ok: HarnessChat does not link $product" >&2
+    exit 1
+  }
+done
+printf 'ok  scripts: independent HarnessChat public-API host\n'
+
 if ! rg -q "project.new_target\(:application, 'DSH', :ios, '16\\.0'\)" scripts/gen-xcode-project.rb ||
    ! rg -q '^IPHONEOS_DEPLOYMENT_TARGET = 16\.0$' app/AppDSH.xcconfig; then
   echo 'not ok: the SHOS application target must support iOS 16' >&2

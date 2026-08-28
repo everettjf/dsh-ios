@@ -56,6 +56,9 @@ test-lite: project
 	xcodebuild -project $(PROJECT) -scheme SHOSLite -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build/lite-derived CODE_SIGNING_ALLOWED=NO build
 	tests/verify-lite-bundle.sh build/lite-derived/Build/Products/Release-iphonesimulator/SHOSLite.app
 
+test-example: project
+	xcodebuild -project $(PROJECT) -scheme HarnessChat -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build/example-derived CODE_SIGNING_ALLOWED=NO build
+
 install: app
 	xcrun devicectl device install app --device $(DEVICE) "$(DERIVED)/Release-iphoneos/DSH.app"
 
