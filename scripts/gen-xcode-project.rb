@@ -21,6 +21,8 @@ class Xcodeproj::Project
   def generate_uuid
     @dsh_uuid_sequence ||= 0
     loop do
+      # This is an on-disk project identity salt, not a user-facing product name.
+      # Keep it stable across branding changes so generated object IDs do not churn.
       value = Digest::SHA256.hexdigest("dashros-xcode-object-#{@dsh_uuid_sequence}").upcase[0, 24]
       @dsh_uuid_sequence += 1
       next if generated_uuids.include?(value) || objects_by_uuid.key?(value)
@@ -115,7 +117,7 @@ xcconfig_ref = app_group.new_file('AppDSH.xcconfig')
 app_group.new_file('Info.plist')
 app_group.new_file('DSH.entitlements')
 app_resource_refs = %w[DSHAssets.xcassets DSHLaunchScreen.storyboard PrivacyInfo.xcprivacy].map { |f| app_group.new_file(f) }
-lite_source_ref = lite_group.new_file('DashrosLiteApp.swift')
+lite_source_ref = lite_group.new_file('SHOSLiteApp.swift')
 lite_info_ref = lite_group.new_file('Info.plist')
 project.main_group.new_file('README.md')
 project.main_group.new_file('Makefile')
@@ -154,7 +156,7 @@ product_group = project.root_object.project_references.find { |r| r[:project_ref
 libarchive_product = product_group.children.find { |c| c.path.to_s == 'libarchive.a' } or abort 'libarchive.a proxy missing'
 dsh.frameworks_build_phase.add_file_reference(libarchive_product, true)
 
-# Dashros consumes the same public package products exposed to third-party apps.
+# SHOS consumes the same public package products exposed to third-party apps.
 # Do not add Package Sources directly to the application compile phase: doing so
 # hides missing public API and dependency-boundary problems.
 swift_harness_package = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
@@ -174,12 +176,12 @@ end
 # A real no-guest application target is the product-level proof that the core
 # remains usable without GPL/iSH payloads. It intentionally has no dependency
 # on AgentLinuxGuest, no iSH sources/resources, and no guest build phases.
-lite = project.new_target(:application, 'DashrosLite', :ios, '16.0')
+lite = project.new_target(:application, 'SHOSLite', :ios, '16.0')
 lite.source_build_phase.add_file_reference(lite_source_ref, true)
 lite.build_configuration_list.build_configurations.each do |bc|
   bc.build_settings.clear
   bc.build_settings.merge!({
-    'PRODUCT_NAME' => 'DashrosLite',
+    'PRODUCT_NAME' => 'SHOSLite',
     'PRODUCT_BUNDLE_IDENTIFIER' => 'com.xnuapp.dsh.lite',
     'MARKETING_VERSION' => '1.0.0',
     'CURRENT_PROJECT_VERSION' => '1',
@@ -332,5 +334,5 @@ lite_scheme.configure_with_targets(lite, nil, launch_target: true)
 %w[test_action launch_action profile_action analyze_action archive_action].each do |action|
   lite_scheme.send(action).build_configuration = 'Release'
 end
-lite_scheme.save_as(PROJECT_PATH.to_s, 'DashrosLite', true)
-puts "ok: #{PROJECT_PATH} (DSH, DSHTests, DSHUITests, DashrosLite)"
+lite_scheme.save_as(PROJECT_PATH.to_s, 'SHOSLite', true)
+puts "ok: #{PROJECT_PATH} (DSH, DSHTests, DSHUITests, SHOSLite)"

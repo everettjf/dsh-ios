@@ -20,7 +20,7 @@
 		162D4824E92A89149161BF27 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = EBEF6BFC74A06E910A6D4C36 /* libresolv.tbd */; };
 		16902D8D64F075FEFA9BBB78 /* freeiosterminal.png in Resources */ = {isa = PBXBuildFile; fileRef = 4DE863BFD0120F18A5B58CD7 /* freeiosterminal.png */; };
 		16CB117E166A549BBF82DEB3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72236EB3F925361E100BB6D0 /* Foundation.framework */; };
-		177F36E3E5DFD5EA77EBF41F /* DashrosLiteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF07D8030FDF60F3093FFAC /* DashrosLiteApp.swift */; };
+		177F36E3E5DFD5EA77EBF41F /* SHOSLiteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF07D8030FDF60F3093FFAC /* SHOSLiteApp.swift */; };
 		1816473B509658B6A8607F57 /* DSHHealthCapability.m in Sources */ = {isa = PBXBuildFile; fileRef = CE350631D78E847B2CE8BA8B /* DSHHealthCapability.m */; };
 		192CFA2757756B80C30AF466 /* DSHRootUpgrader.m in Sources */ = {isa = PBXBuildFile; fileRef = 036DFB064D43ED8DE9C6A68F /* DSHRootUpgrader.m */; };
 		198679AF00B3D4D3FD67AD45 /* AgentProviders in Frameworks */ = {isa = PBXBuildFile; productRef = DABC8496A84A2C67E1943631 /* AgentProviders */; };
@@ -353,7 +353,7 @@
 		A97A8C5C8D12FFCCF691D51E /* AboutExternalKeyboardViewController.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = AboutExternalKeyboardViewController.m; sourceTree = "<group>"; };
 		AA842842E6657ACC01942E29 /* DSHLaunchUITests.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHLaunchUITests.m; sourceTree = "<group>"; };
 		B1D119C52791CD1E93357527 /* Roots.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = Roots.m; sourceTree = "<group>"; };
-		B3AC0F019A95810A3B888ACC /* DashrosLite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DashrosLite.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3AC0F019A95810A3B888ACC /* SHOSLite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SHOSLite.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3B2ED2B35CAA0D49E87563C /* About.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = About.storyboard; sourceTree = "<group>"; };
 		B4BF5A7BB147F60DD7C60CB0 /* 3d.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = 3d.png; sourceTree = "<group>"; };
 		B5C8CEA170BE50EE03045CE1 /* dollarblock2.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = dollarblock2.png; sourceTree = "<group>"; };
@@ -391,7 +391,7 @@
 		D7EA9F34722B34C32B851873 /* Roots.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = Roots.storyboard; sourceTree = "<group>"; };
 		D8C13872EBED4D51314012C1 /* DSHNotificationCapability.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DSHNotificationCapability.m; sourceTree = "<group>"; };
 		D9A258C6D9F1083DE1862072 /* DSHFilesCapability.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DSHFilesCapability.h; sourceTree = "<group>"; };
-		DAF07D8030FDF60F3093FFAC /* DashrosLiteApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DashrosLiteApp.swift; sourceTree = "<group>"; };
+		DAF07D8030FDF60F3093FFAC /* SHOSLiteApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SHOSLiteApp.swift; sourceTree = "<group>"; };
 		DB50A4C76DB6048C1C19F542 /* term.css */ = {isa = PBXFileReference; includeInIndex = 1; path = term.css; sourceTree = "<group>"; };
 		DBE2AA985FE17AD9A9FBA01F /* FakeFFmpeg.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = FakeFFmpeg.m; sourceTree = "<group>"; };
 		DDDF39D24FD2BBCEE19D882E /* DSHAgentConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DSHAgentConfiguration.swift; sourceTree = "<group>"; };
@@ -498,7 +498,7 @@
 			children = (
 				912775236C818C5CC21D7854 /* libarchive.a */,
 				1E6F5126E661EE848ED1D7AE /* DSH.app */,
-				B3AC0F019A95810A3B888ACC /* DashrosLite.app */,
+				B3AC0F019A95810A3B888ACC /* SHOSLite.app */,
 				CDF2B1C40457BB5C65F960E5 /* DSHTests.xctest */,
 				EA758E30F027843DB0306035 /* DSHUITests.xctest */,
 			);
@@ -840,7 +840,7 @@
 		722BAA7C2DCFE0FA4A3FD95B /* app-lite */ = {
 			isa = PBXGroup;
 			children = (
-				DAF07D8030FDF60F3093FFAC /* DashrosLiteApp.swift */,
+				DAF07D8030FDF60F3093FFAC /* SHOSLiteApp.swift */,
 				80D5C238FB81C9E6486F58FD /* Info.plist */,
 			);
 			name = "app-lite";
@@ -1043,9 +1043,9 @@
 			productReference = CDF2B1C40457BB5C65F960E5 /* DSHTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		9728DE1E20F563C29E6203B7 /* DashrosLite */ = {
+		9728DE1E20F563C29E6203B7 /* SHOSLite */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4F8BEE39DA911D2127DCCE88 /* Build configuration list for PBXNativeTarget "DashrosLite" */;
+			buildConfigurationList = 4F8BEE39DA911D2127DCCE88 /* Build configuration list for PBXNativeTarget "SHOSLite" */;
 			buildPhases = (
 				CEEB8667763BD7878F08CBA7 /* Sources */,
 				6BB9BFB8C7656C9AA075BD10 /* Frameworks */,
@@ -1055,7 +1055,7 @@
 			);
 			dependencies = (
 			);
-			name = DashrosLite;
+			name = SHOSLite;
 			packageProductDependencies = (
 				5555195FA2FDC21544D718EE /* AgentRuntime */,
 				C2BC115ABD6971446BAF495A /* AgentProviders */,
@@ -1063,8 +1063,8 @@
 				32D9DBC6D48E8D61DB077939 /* AgentStorage */,
 				7EEBBB73DE44289AAC95A1E2 /* AgentMCP */,
 			);
-			productName = DashrosLite;
-			productReference = B3AC0F019A95810A3B888ACC /* DashrosLite.app */;
+			productName = SHOSLite;
+			productReference = B3AC0F019A95810A3B888ACC /* SHOSLite.app */;
 			productType = "com.apple.product-type.application";
 		};
 		C06321687E005893E765C779 /* DSH */ = {
@@ -1140,7 +1140,7 @@
 			projectRoot = "";
 			targets = (
 				C06321687E005893E765C779 /* DSH */,
-				9728DE1E20F563C29E6203B7 /* DashrosLite */,
+				9728DE1E20F563C29E6203B7 /* SHOSLite */,
 				40B743482077E51030B2C4AB /* DSHTests */,
 				207BE1D819AF1D48C2309786 /* DSHUITests */,
 			);
@@ -1435,7 +1435,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				177F36E3E5DFD5EA77EBF41F /* DashrosLiteApp.swift in Sources */,
+				177F36E3E5DFD5EA77EBF41F /* SHOSLiteApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1506,7 +1506,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.lite;
-				PRODUCT_NAME = DashrosLite;
+				PRODUCT_NAME = SHOSLite;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) NO_LINUX_GUEST";
@@ -1604,7 +1604,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xnuapp.dsh.lite;
-				PRODUCT_NAME = DashrosLite;
+				PRODUCT_NAME = SHOSLite;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) NO_LINUX_GUEST";
@@ -1670,7 +1670,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4F8BEE39DA911D2127DCCE88 /* Build configuration list for PBXNativeTarget "DashrosLite" */ = {
+		4F8BEE39DA911D2127DCCE88 /* Build configuration list for PBXNativeTarget "SHOSLite" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C57322CE14650D17465B81AF /* Release */,

@@ -7,12 +7,12 @@ import AgentStorage
 import AgentMCP
 
 @main
-struct DashrosLiteApp: App {
-    var body: some Scene { WindowGroup { DashrosLiteRootView() } }
+struct SHOSLiteApp: App {
+    var body: some Scene { WindowGroup { SHOSLiteRootView() } }
 }
 
 @MainActor
-private final class DashrosLiteModel: ObservableObject {
+private final class SHOSLiteModel: ObservableObject {
     @Published var messages: [DSHChatMessage] = []
     @Published var draft = ""
     @Published var endpoint = "https://api.deepseek.com/v1"
@@ -70,7 +70,7 @@ private final class DashrosLiteModel: ObservableObject {
         return DSHAgentRuntime(
             client: DSHOpenAICompatibleClient(baseURL: baseURL, apiKey: apiKey),
             model: model,
-            systemPrompt: "You are Dashros, a native iOS assistant. Use native tools when useful.",
+            systemPrompt: "You are SHOS, a native iOS assistant. Use native tools when useful.",
             messages: messages,
             toolRegistry: tools
         )
@@ -111,8 +111,8 @@ private struct LiteDeviceInfoTool: DSHNativeTool {
     }
 }
 
-private struct DashrosLiteRootView: View {
-    @StateObject private var model = DashrosLiteModel()
+private struct SHOSLiteRootView: View {
+    @StateObject private var model = SHOSLiteModel()
     @State private var showingSettings = false
     @FocusState private var composerFocused: Bool
 
@@ -125,7 +125,7 @@ private struct DashrosLiteRootView: View {
                             if model.messages.isEmpty {
                                 VStack(spacing: 10) {
                                     Image(systemName: "sparkles").font(.largeTitle)
-                                    Text("Dashros Lite").font(.title2.bold())
+                                    Text("SHOS Lite").font(.title2.bold())
                                     Text("Native agent without the Linux guest")
                                         .foregroundStyle(.secondary)
                                 }
@@ -151,7 +151,7 @@ private struct DashrosLiteRootView: View {
                     Text(error).font(.caption).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal)
                 }
                 HStack(alignment: .bottom, spacing: 10) {
-                    TextField("Message Dashros", text: $model.draft, axis: .vertical)
+                    TextField("Message SHOS", text: $model.draft, axis: .vertical)
                         .lineLimit(1...5)
                         .focused($composerFocused)
                         .padding(10)
@@ -171,7 +171,7 @@ private struct DashrosLiteRootView: View {
                 .padding()
                 .background(.bar)
             }
-            .navigationTitle("Dashros Lite")
+            .navigationTitle("SHOS Lite")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Settings", systemImage: "gearshape") { showingSettings = true }

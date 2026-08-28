@@ -47,25 +47,25 @@ fi
 printf 'ok  scripts: AgentRuntime dependency boundary\n'
 
 if ! rg -q 'XCLocalSwiftPackageReference "SwiftHarnessKit"' DSH.xcodeproj/project.pbxproj; then
-  echo 'not ok: Dashros does not reference the local SwiftHarnessKit package' >&2
+  echo 'not ok: SHOS does not reference the local SwiftHarnessKit package' >&2
   exit 1
 fi
 
 for product in AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP AgentLinuxGuest; do
   if ! rg -q "${product} in Frameworks" DSH.xcodeproj/project.pbxproj; then
-    echo "not ok: Dashros does not link Swift package product $product" >&2
+    echo "not ok: SHOS does not link Swift package product $product" >&2
     exit 1
   fi
 done
 
 if rg -q 'Packages/SwiftHarnessKit/Sources|DSHAgentRuntime.swift in Sources|DSHMCPClient.swift in Sources' DSH.xcodeproj/project.pbxproj; then
-  echo 'not ok: SwiftHarnessKit sources are compiled directly into the Dashros app target' >&2
+  echo 'not ok: SwiftHarnessKit sources are compiled directly into the SHOS app target' >&2
   exit 1
 fi
 
-printf 'ok  scripts: Dashros consumes SwiftHarnessKit package products\n'
+printf 'ok  scripts: SHOS consumes SwiftHarnessKit package products\n'
 
-if ! rg -q "project.new_target\(:application, 'DashrosLite', :ios, '16\\.0'\)" scripts/gen-xcode-project.rb ||
+if ! rg -q "project.new_target\(:application, 'SHOSLite', :ios, '16\\.0'\)" scripts/gen-xcode-project.rb ||
    ! rg -q 'NO_LINUX_GUEST' DSH.xcodeproj/project.pbxproj; then
   echo 'not ok: missing iOS 16 NO_LINUX_GUEST application target' >&2
   exit 1
@@ -73,20 +73,20 @@ fi
 
 lite_target=$(ruby -rxcodeproj -e '
   project = Xcodeproj::Project.open("DSH.xcodeproj")
-  target = project.targets.find { |value| value.name == "DashrosLite" } or abort "missing DashrosLite"
+  target = project.targets.find { |value| value.name == "SHOSLite" } or abort "missing SHOSLite"
   puts target.source_build_phase.files.map { |file| file.file_ref.real_path }
   puts target.resources_build_phase.files.map { |file| file.file_ref.real_path }
   puts target.package_product_dependencies.map(&:product_name)
 ')
 case "$lite_target" in
   *ish-arm64*|*root.tar.gz*|*AgentLinuxGuest*)
-    echo 'not ok: DashrosLite includes a Linux guest source, resource, or package' >&2
+    echo 'not ok: SHOSLite includes a Linux guest source, resource, or package' >&2
     exit 1
     ;;
 esac
 for product in AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP; do
   printf '%s\n' "$lite_target" | rg -q "^${product}$" || {
-    echo "not ok: DashrosLite does not link $product" >&2
+    echo "not ok: SHOSLite does not link $product" >&2
     exit 1
   }
 done
@@ -95,13 +95,13 @@ printf 'ok  scripts: NO_LINUX_GUEST product boundary\n'
 
 if ! rg -q "project.new_target\(:application, 'DSH', :ios, '16\\.0'\)" scripts/gen-xcode-project.rb ||
    ! rg -q '^IPHONEOS_DEPLOYMENT_TARGET = 16\.0$' app/AppDSH.xcconfig; then
-  echo 'not ok: the Dashros application target must support iOS 16' >&2
+  echo 'not ok: the SHOS application target must support iOS 16' >&2
   exit 1
 fi
 
 if rg -q '^import Observation$|@Observable|@ObservationIgnored' app; then
-  echo 'not ok: Dashros app state uses Observation APIs unavailable on iOS 16' >&2
+  echo 'not ok: SHOS app state uses Observation APIs unavailable on iOS 16' >&2
   exit 1
 fi
 
-printf 'ok  scripts: Dashros iOS 16 compatibility boundary\n'
+printf 'ok  scripts: SHOS iOS 16 compatibility boundary\n'

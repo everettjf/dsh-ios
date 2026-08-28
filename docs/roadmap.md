@@ -1,8 +1,8 @@
 # Swift-native agent delivery plan
 
 The current rewrite is also the incubation branch for the reusable **Swift
-Harness Kit** internal program and the user-facing **Dashros** app. See the
-[Chinese overall product plan](dashros-product-plan.zh.md) and [framework
+Harness Kit** internal program and the user-facing **SHOS** app. See the
+[Chinese overall product plan](shos-product-plan.zh.md) and [framework
 extraction plan](swift-harness-kit-plan.md) for package boundaries, licensing
 strategy, public API goals, naming constraints, and phased delivery.
 
@@ -32,7 +32,7 @@ lazy workspace capability.
 - There is no rollback migration. Native storage schemas migrate forward.
 
 Future work now follows the Swift Harness Kit extraction plan while evolving
-the buildable reference application into Dashros. Real-device beta feedback,
+the buildable reference application into SHOS. Real-device beta feedback,
 additional native tools, MCP interoperability fixtures, Instruments energy
 traces, localization, deterministic Xcode project generation, and App Store
 presentation remain product work. None reintroduces the old WebView runtime as

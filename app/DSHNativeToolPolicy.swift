@@ -9,7 +9,7 @@ import AgentTools
 import AgentLinuxGuest
 #endif
 
-/// Dashros policy adapter that combines its capability preferences with the
+/// SHOS policy adapter that combines its capability preferences with the
 /// native per-call confirmation UI. Neither concern belongs in AgentTools.
 struct DSHDefaultsToolAuthorizationPolicy: DSHToolAuthorizationPolicy {
     private let approval: any DSHToolApprovalPolicy
@@ -32,7 +32,7 @@ struct DSHDefaultsToolAuthorizationPolicy: DSHToolAuthorizationPolicy {
     }
 }
 
-/// Dashros adapter from package audit events to the Objective-C activity log.
+/// SHOS adapter from package audit events to the Objective-C activity log.
 struct DSHActivityToolAuditSink: DSHToolAuditSink {
     func started(name: String, detail: String?, correlationID: String) async {
         DSHNativeToolAudit.recordStarted(name, detail: detail, correlationID: correlationID)
@@ -57,7 +57,7 @@ struct DSHActivityToolAuditSink: DSHToolAuditSink {
     }
 }
 
-/// Dashros-only adapter for tools whose lifecycle is audited without an
+/// SHOS-only adapter for tools whose lifecycle is audited without an
 /// authorization decision (for example MCP and guest staging wrappers).
 struct DSHAuditedTool: DSHNativeTool {
     let definition: DSHToolDefinition

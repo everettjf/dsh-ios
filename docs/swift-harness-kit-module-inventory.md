@@ -1,7 +1,7 @@
 # Swift Harness Kit module inventory
 
 This is the Phase 0 ownership baseline for extracting the reusable runtime from
-the current Dashros (DSHIOS target) implementation. It records current source
+the current SHOS (DSHIOS target) implementation. It records current source
 authority, intended package ownership, known dependency violations, and the
 evidence that must remain green during extraction.
 
@@ -32,7 +32,7 @@ AgentAppleTools    Apple-framework implementations
 AgentLinuxGuest    portable lazy Linux host, bash and attachment-staging contracts
 AgentUI            reusable SwiftUI components
     ↑
-Dashros            app composition, Keychain settings and product UI
+SHOS            app composition, Keychain settings and product UI
 ```
 
 Arrows point from a consumer to its lower-level dependency. No lower-level
@@ -47,21 +47,21 @@ module may import a higher-level module.
 | `DSHSSEDecoder.swift` | `AgentProviders` | Public/testable streaming decoder; retain bounded buffering behavior |
 | `DSHOpenAICompatibleClient.swift` | `AgentProviders` | Import Runtime; expose Provider implementation and HTTP test seam |
 | `DSHToolRegistry.swift` | `AgentTools` + `AgentAppleTools` | Split UIKit device implementations from Foundation-only registry |
-| `DSHNativeToolPolicy.swift` | `AgentTools` + Dashros adapter | Keep policy/contracts in package; move defaults and Objective-C audit sink to app integration |
+| `DSHNativeToolPolicy.swift` | `AgentTools` + SHOS adapter | Keep policy/contracts in package; move defaults and Objective-C audit sink to app integration |
 | `DSHSessionStore.swift` | `AgentStorage` | Split UniformTypeIdentifiers import and file import policy if needed; expose storage protocols |
 | `DSHMCPClient.swift` | `AgentMCP` | Replace hand-written protocol layer behind adapter with official MCP Swift SDK |
-| `DSHMCPServerManager.swift` | `AgentMCP` + Dashros | Move Keychain configuration persistence to Dashros; keep connection manager in package |
-| `DSHLazyGuestManager.swift` | `AgentLinuxGuest` + Dashros adapter | Package owns the iSH-free lazy host/tools; Dashros owns iSH and native confirmation adapters |
+| `DSHMCPServerManager.swift` | `AgentMCP` + SHOS | Move Keychain configuration persistence to SHOS; keep connection manager in package |
+| `DSHLazyGuestManager.swift` | `AgentLinuxGuest` + SHOS adapter | Package owns the iSH-free lazy host/tools; SHOS owns iSH and native confirmation adapters |
 | `DSHNativeReadTools.swift` | `AgentAppleTools` | Keep route executor injectable; remove app singleton assumptions |
 | `DSHNativeWriteTools.swift` | `AgentAppleTools` | Keep validation before UI/system access; retain stable schemas |
-| `DSHAgentConfiguration.swift` | Dashros | Product settings and Keychain storage stay in app composition |
-| `DSHAgentViewModel.swift` | Dashros / later `AgentUI` seams | Keep product orchestration in app; expose only reusable event-to-view state where proven |
-| `DSHNativeRootView.swift` | Dashros | Product UI; split reusable components only after runtime boundaries stabilize |
+| `DSHAgentConfiguration.swift` | SHOS | Product settings and Keychain storage stay in app composition |
+| `DSHAgentViewModel.swift` | SHOS / later `AgentUI` seams | Keep product orchestration in app; expose only reusable event-to-view state where proven |
+| `DSHNativeRootView.swift` | SHOS | Product UI; split reusable components only after runtime boundaries stabilize |
 
 ## Objective-C and iSH ownership
 
 The existing Objective-C capability implementations, confirmations, activity
-view, App/Scene delegates and host bridge remain Dashros/`AgentAppleTools`
+view, App/Scene delegates and host bridge remain SHOS/`AgentAppleTools`
 integration code. They are not copied into the pure Swift Core.
 
 `DSHGuestRuntime`, `DSHGuestLauncher`, the vendored `ish-arm64` tree and the
@@ -81,7 +81,7 @@ Their types must never appear in `AgentRuntime` public signatures.
 5. `DSHLazyGuestManager.swift` combines generic approval/tool contracts with
    the concrete iSH host.
 6. The generated Xcode target compiles every `app/*.swift` file directly, so
-   Dashros does not yet prove that it consumes package public APIs.
+   SHOS does not yet prove that it consumes package public APIs.
 
 ## Enforced extraction rules
 
@@ -93,10 +93,10 @@ Their types must never appear in `AgentRuntime` public signatures.
   credential-store product is introduced.
 - `AgentLinuxGuest` is optional; `NO_LINUX_GUEST` must compile and run native
   agent, storage, native tools and MCP flows.
-- `DashrosLite` is the executable acceptance fixture for that boundary. Its
+- `SHOSLite` is the executable acceptance fixture for that boundary. Its
   Release bundle is rejected if it contains iSH/rootfs files, emulator
   libraries, or guest-tool symbols.
-- Dashros must compile against package products rather than duplicate the same
+- SHOS must compile against package products rather than duplicate the same
   source files in the app target.
 - Package tests are the authority for pure Swift behavior; hosted XCTest covers
   Apple integration and Objective-C bridges.

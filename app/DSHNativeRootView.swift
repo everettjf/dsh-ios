@@ -18,7 +18,7 @@ struct DSHNativeRootView: View {
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
                             .accessibilityHidden(true)
-                        Text("Dashros")
+                        Text("SHOS")
                             .font(.title2.bold())
                         Text(model.isConfigured ? "Ask anything to begin." : "Add a model API key to begin.")
                             .foregroundStyle(.secondary)
@@ -37,7 +37,7 @@ struct DSHNativeRootView: View {
                 }
                 .background(.bar)
             }
-            .navigationTitle("Dashros")
+            .navigationTitle("SHOS")
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button("Conversations", systemImage: "sidebar.left") { model.isShowingSessions = true }
@@ -130,7 +130,7 @@ struct DSHNativeRootView: View {
                     .labelStyle(.iconOnly)
                     .disabled(model.isStreaming || !model.hasRestoredSessions)
                     .accessibilityIdentifier("dsh.native.attach")
-                TextField("Message Dashros", text: $model.draft, axis: .vertical)
+                TextField("Message SHOS", text: $model.draft, axis: .vertical)
                     .lineLimit(1...6)
                     .focused($isComposerFocused)
                     .textFieldStyle(.plain)

@@ -1,37 +1,38 @@
-# Dashros 与 Swift Harness Kit 总体规划
+# SHOS（Swift Harness OS）与 Swift Harness Kit 总体规划
 
 ## 一、命名与产品关系
 
-### 面向用户的产品：Dashros
+### 面向用户的产品：SHOS
 
-**Dashros** 是 iPhone、iPad 及后续 Apple 平台上的原生 Agent App 品牌。
+**SHOS** 是 iPhone、iPad 及后续 Apple 平台上的原生 Agent App 品牌，名称展开为
+**Swift Harness OS**。产品界面、App Store 名称和图标标题只展示 `SHOS`。
 它不再被定义为 Node.js DeepSeek Harness 的移植版，也不以兼容旧 `dsh`
 插件为产品目标。
 
-Dashros 的一句话定位：
+SHOS 的一句话定位：
 
 > 快速、原生、安全的 Apple 平台 AI Agent，既能使用系统能力，也能按需
 > 启动完整 Linux 工作区。
 
-DeepSeek 是默认支持和重点优化的模型提供商，但 Dashros 不绑定单一模型。
+DeepSeek 是默认支持和重点优化的模型提供商，但 SHOS 不绑定单一模型。
 后续可以接入其他 OpenAI-compatible 服务、Apple Foundation Models 和其他
 独立 Provider。
 
 建议采用以下展示形式：
 
-- App Store 名称：`Dashros`
-- App 图标标题：`Dashros`
-- Bundle display name：`Dashros`
+- App Store 名称：`SHOS`
+- App 图标标题：`SHOS`
+- Bundle display name：`SHOS`
 - 副标题：`Native AI Agent for iPhone and iPad`
 - 中文副标题：`iPhone 与 iPad 原生 AI Agent`
 
 正式改名需要单独检查 App Store Connect 名称可用性、商标和域名。本规划先
 确定产品架构，不把这些外部结果作为开发阻塞项。
 
-### 内部框架工作名：Swift Harness Kit
+### 底层框架：Swift Harness Kit
 
-**Swift Harness Kit** 是 Dashros 内部孵化的可复用 Swift Agent Runtime
-计划名称。它代表模型之上的完整 Harness：
+**Swift Harness Kit** 是 SHOS 内部孵化、并将独立发布的可复用 Swift Agent
+Runtime 框架名称。它代表模型之上的完整 Harness：
 
 - 模型传输和流式事件
 - turn/step Agent 状态机
@@ -43,8 +44,9 @@ DeepSeek 是默认支持和重点优化的模型提供商，但 Dashros 不绑�
 - 可选 Linux 工作区
 - UI 可观察事件和诊断
 
-`Swift Harness Kit` 暂时只作为内部计划名和文档名。由于生态中已经存在多个
-`HarnessKit` 项目，对外发布前仍需确定唯一的仓库和 Package 品牌。
+框架品牌固定为 `Swift Harness Kit`；模块仍采用职责名称，不强制使用统一品牌
+前缀。对外发布前只需完成仓库、Swift Package Index、商标与许可证检查，不再
+另起框架名称。
 
 Swift module 不使用宽泛的 `HarnessKit` 名称，而采用职责明确的名称：
 
@@ -62,12 +64,12 @@ import AgentStorage
 
 ### 目标
 
-1. Dashros 冷启动不依赖 Linux，不加载旧 Web UI。
+1. SHOS 冷启动不依赖 Linux，不加载旧 Web UI。
 2. Swift 原生完成模型请求、SSE、Agent 循环、会话、工具治理、MCP 和 UI。
 3. Health、Location、Contacts、Calendar、Files、Photos 等能力通过明确权限和
    每次写入确认安全开放给 Agent。
-4. bash、代码执行和 Linux-only 工具第一次被调用时才启动 iSH-ARM64 Guest。
-5. 核心 Runtime 可以脱离 Dashros、UIKit 和 iSH，被其他 Swift App 使用。
+4. bash、代码执行和 Linux-only 工具第一次被调用时才启动 iSH64 Guest。
+5. 核心 Runtime 可以脱离 SHOS、UIKit 和 iSH，被其他 Swift App 使用。
 6. DeepSeek 体验优秀，同时保持 Provider 可替换。
 7. 所有关键状态都可以持久化、取消、恢复、测试和审计。
 
@@ -78,16 +80,16 @@ import AgentStorage
 - 不让 Linux Guest 成为核心 Swift Package 的强制依赖。
 - 不把 App UI 放入核心 Runtime。
 - 不将 API Key 明文写入源码、UserDefaults 或可导出的会话数据。
-- 不为了框架抽取而长期破坏 Dashros 的可运行状态。
+- 不为了框架抽取而长期破坏 SHOS 的可运行状态。
 
 ## 三、目标架构
 
 ```text
-Dashros App
-  ├─ DashrosUI                 SwiftUI 产品界面与 App 导航
-  ├─ DashrosComposition        配置、依赖装配、生命周期
+SHOS App
+  ├─ SHOSUI                 SwiftUI 产品界面与 App 导航
+  ├─ SHOSComposition        配置、依赖装配、生命周期
   │
-  ├─ Swift Harness Kit（内部工作名）
+  ├─ Swift Harness Kit
   │   ├─ AgentRuntime          turn/step、上下文、事件、取消/重试
   │   ├─ AgentProviders        DeepSeek/OpenAI-compatible、SSE
   │   ├─ AgentTools            Schema、Registry、Policy、Audit
@@ -96,8 +98,8 @@ Dashros App
   │   ├─ AgentAppleTools       Health/Location/Contacts/Calendar/…
   │   └─ AgentUI               可选的通用 SwiftUI 组件
   │
-  └─ AgentLinuxGuest（独立 GPL 边界）
-      └─ iSH-ARM64 + Alpine + shell/staging backend
+  └─ AgentLinuxGuest（可选挂载层、独立 GPL 边界）
+      └─ iSH64 + Alpine + shell/staging backend
 ```
 
 ### 依赖方向
@@ -107,7 +109,18 @@ Dashros App
 - `AgentAppleTools` 可以依赖 Apple frameworks，但 Core 不允许导入 UIKit、
   SwiftUI、HealthKit、EventKit、Photos 或 iSH 符号。
 - `AgentLinuxGuest` 只实现 `ExecutionBackend`，iSH 类型不能泄漏到公共 Runtime API。
-- Dashros 只通过公开 API 使用这些模块，不能依赖模块内部实现。
+- SHOS 只通过公开 API 使用这些模块，不能依赖模块内部实现。
+
+权威依赖方向如下，禁止反向依赖：
+
+```text
+SHOS → Swift Harness Kit
+SHOS → AgentLinuxGuest → iSH64
+Swift Harness Kit Core ✕→ AgentLinuxGuest / iSH64
+```
+
+因此第三方 App 可以只使用 Swift Harness Kit；iSH64 是 SHOS 或其他宿主显式选择的
+执行后端，不是框架核心的安装、编译或启动前提。
 
 ## 四、核心公共接口
 
@@ -174,8 +187,8 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 
 1. `Swift Harness Kit Core`：无 iSH、宽松许可证、体积小。
 2. `AgentLinuxGuest`：开发者主动选择的独立 GPL 产品或仓库。
-3. `Dashros Lite` 构建配置：Native Tools + MCP，无 Linux Payload。
-4. `Dashros Full`：明确包含 GPL Guest，并提供源码、许可证和必要声明。
+3. `SHOS Lite` 构建配置：Native Tools + MCP，无 Linux Payload。
+4. `SHOS Full`：明确包含 GPL Guest，并提供源码、许可证和必要声明。
 
 应用也可以自行实现 `ExecutionBackend`，连接远程容器或自己的执行沙箱。
 
@@ -184,20 +197,20 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 ### Phase 0：冻结边界与基线
 
 - 盘点所有当前 `DSH*` Swift 类型并划分模块归属。
-- 确定 Dashros、Swift Harness Kit、旧 Node 版本三者的文档边界。
+- 确定 SHOS、Swift Harness Kit、旧 Node 版本三者的文档边界。
 - 固定现有 Swift 分支的功能、性能、测试和包体基线。
 - 加入核心依赖规则，防止 UI、AppleTools、Guest 反向污染 Runtime。
 
-验收：模块图获得确认；现有 Dashros 构建和测试全部通过。
+验收：模块图获得确认；现有 SHOS 构建和测试全部通过。
 
 ### Phase 1：建立本地 Swift Package
 
 - 在当前仓库加入 `Package.swift`，暂不立即拆新仓库。
 - 首先抽取 JSON/message/tool models、SSE decoder、ModelProvider 和 Agent loop。
 - 将对应 XCTest 迁移到 Package tests，可直接执行 `swift test`。
-- Dashros 改用本地 Package，保持 UI 和行为不变。
+- SHOS 改用本地 Package，保持 UI 和行为不变。
 
-验收：Core 在不构建 iSH/Xcode App 的情况下完成测试；Dashros 回归通过。
+验收：Core 在不构建 iSH/Xcode App 的情况下完成测试；SHOS 回归通过。
 
 ### Phase 2：稳定 Runtime 与 Provider
 
@@ -233,9 +246,9 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 - 增加 `NO_LINUX_GUEST` 配置并持续测试。
 - 明确 Guest 源码、rootfs、许可证和分发流程。
 
-验收：Dashros Lite 完全不包含 Guest；Dashros Full 只在工具调用时启动 Guest。
+验收：SHOS Lite 完全不包含 Guest；SHOS Full 只在工具调用时启动 Guest。
 
-### Phase 6：完善 Dashros 产品
+### Phase 6：完善 SHOS 产品
 
 - 将 App 重构为薄的 composition root 和官方参考客户端。
 - 完成聊天输入、键盘、滚动、工具状态、权限引导和错误恢复体验。
@@ -247,14 +260,14 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 
 ### Phase 7：独立框架发布
 
-- 完成最终框架名称、GitHub、Swift Package Index、域名和商标冲突检查。
+- 以 `Swift Harness Kit` 完成 GitHub、Swift Package Index、域名和商标冲突检查。
 - 完成 permissive Core 与 GPL Guest 的代码来源审计。
 - 将成熟 Package 移入独立仓库，并保留清晰提交历史。
 - 提供 DocC、最小聊天、原生工具、MCP 和 Linux Workspace 示例。
-- Dashros 改用带 Tag 的 Package release。
+- SHOS 改用带 Tag 的 Package release。
 - 在至少第二个 App 验证后发布框架 `1.0.0`。
 
-验收：框架与 Dashros 可以独立升级和发布。
+验收：框架与 SHOS 可以独立升级和发布。
 
 ## 八、测试与质量门槛
 
@@ -274,7 +287,7 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 
 ## 九、版本与发布路线
 
-### Dashros
+### SHOS
 
 - 继续使用独立 App 版本号和 TestFlight build number。
 - 品牌改名、Bundle display name、图标和商店元数据作为单独发行完成。
@@ -295,7 +308,7 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 ## 十、当前执行顺序
 
 截至 2026-08-28，Phase 0 已完成；`AgentRuntime`、`AgentProviders`、
-`AgentTools`、`AgentStorage`、`AgentMCP` 和 `AgentLinuxGuest` 已成为独立 Package products，Dashros
+`AgentTools`、`AgentStorage`、`AgentMCP` 和 `AgentLinuxGuest` 已成为独立 Package products，SHOS
 已通过本地 Swift Package 链接这些模块，不再直接编译 Package 源码。`AgentMCP`
 的生产路径已采用官方 MCP Swift SDK 0.12.1，并保留内部适配层与确定性 wire
 fixtures；官方 SDK 的内存 Client/Server 端到端互操作测试也已建立。
@@ -303,23 +316,28 @@ fixtures；官方 SDK 的内存 Client/Server 端到端互操作测试也已建�
 完成互操作，覆盖自定义/Bearer Header、初始化、工具发现、工具调用、disconnect
 后重连和慢调用取消；适配层会立即传播取消并丢弃 SDK 的迟到结果。
 `AgentLinuxGuest` 已提供与 iSH 无关的 lazy host、bash、附件 staging 和审批协议；
-Dashros 中只保留 iSH runtime 与原生确认 UI 的适配器。Package 已覆盖并发启动合并、
+SHOS 中只保留 iSH runtime 与原生确认 UI 的适配器。Package 已覆盖并发启动合并、
 拒绝不启动、超时钳制与跨会话附件隔离。
 
 接下来按以下顺序继续：
 
-1. 两个独立真实 MCP Server 的 HTTP、认证、重连和取消测试已完成，继续保留为
-   Package 回归门槛。
-2. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
-3. `NO_LINUX_GUEST` 已建立为可运行的 `DashrosLite` iOS 16 target：只链接
-   Runtime、Providers、Tools、Storage 和 MCP；Release Bundle 审计验证不含 iSH、
-   rootfs、guest 动态依赖或 Linux 工具符号。后续继续保持该测试门槛。
-4. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
-5. 完成辅助功能和本地化（Dashros 品牌、iOS 16 与首轮聊天体验已完成）。
-6. 完成真机工具、Guest、安全、性能和 TestFlight 发行验收。
+1. **SHOS 品牌收口**：统一 App、Lite target、文档、测试与发布元数据；保留现有
+   Bundle ID 和 `DSH*` 技术前缀，避免品牌改名破坏持久化和公共 API。
+2. **Apple Tools 模块化**：把无 UI 的参数、结果和执行协议抽到
+   `AgentAppleTools`；HealthKit、EventKit、Photos、权限弹窗仍由宿主适配。
+3. **Swift Harness Kit 0.1**：整理 public API、DocC、最小聊天/MCP/自定义工具
+   示例、SemVer 与兼容性检查，使第二个 App 可直接接入。
+4. **iSH64 挂载完善**：固定 `ExecutionBackend` 契约，补齐流式 stdout/stderr、
+   取消、配额、镜像版本/校验值、工作区迁移与 GPL 分发材料。
+5. **SHOS 产品完善**：Markdown、工具时间线、会话搜索、附件体验、中英文、
+   VoiceOver、Dynamic Type、iPad 分栏与性能门槛。
+6. **发布验证**：持续执行 Package、iPhone/iPad simulator、MCP、Guest、Rootfs、
+   安全与 Archive 验收；真机权限验证按当前决定延后，不阻塞本阶段开发。
 
 整个过程在当前 `rewrite-deepseek-harness-with-swift` 分支持续开发，采用前进式
-迁移，不为旧 Node.js Web Harness 增加新的兼容层。
+迁移，不为旧 Node.js Web Harness 增加新的兼容层。该分支不得合并到 `main`；
+`main` 继续保留官方 Node.js DeepSeek Harness 基线。所有修改必须在当前分支
+提交并 push。
 
 Phase 0 的权威逐文件清单见 [Swift Harness Kit module
 inventory](swift-harness-kit-module-inventory.md)。

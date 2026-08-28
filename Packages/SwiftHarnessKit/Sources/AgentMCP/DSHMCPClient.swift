@@ -87,7 +87,7 @@ public actor DSHMCPClient {
         self.headers = headers
         transport = nil
         productionHTTP = true
-        officialClient = MCP.Client(name: "Dashros", version: "1")
+        officialClient = MCP.Client(name: "SHOS", version: "1")
         officialTransport = Self.makeHTTPTransport(endpoint: endpoint, headers: headers)
     }
 
@@ -107,13 +107,13 @@ public actor DSHMCPClient {
         headers = [:]
         self.transport = nil
         productionHTTP = false
-        officialClient = MCP.Client(name: "DashrosTests", version: "1")
+        officialClient = MCP.Client(name: "SHOSTests", version: "1")
         officialTransport = transport
     }
 
     public func connect() async throws {
         if productionHTTP, officialClient == nil {
-            officialClient = MCP.Client(name: "Dashros", version: "1")
+            officialClient = MCP.Client(name: "SHOS", version: "1")
             officialTransport = Self.makeHTTPTransport(endpoint: endpoint, headers: headers)
         }
         if let officialClient, let officialTransport {

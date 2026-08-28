@@ -50,11 +50,11 @@ app: project
 
 # Pure Swift product variant: no iSH sources, rootfs, bash, or Linux staging.
 app-lite: project
-	xcodebuild -project $(PROJECT) -scheme DashrosLite -configuration Release -destination 'generic/platform=iOS' DSH_DEVELOPMENT_TEAM=$(TEAM) build
+	xcodebuild -project $(PROJECT) -scheme SHOSLite -configuration Release -destination 'generic/platform=iOS' DSH_DEVELOPMENT_TEAM=$(TEAM) build
 
 test-lite: project
-	xcodebuild -project $(PROJECT) -scheme DashrosLite -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build/lite-derived CODE_SIGNING_ALLOWED=NO build
-	tests/verify-lite-bundle.sh build/lite-derived/Build/Products/Release-iphonesimulator/DashrosLite.app
+	xcodebuild -project $(PROJECT) -scheme SHOSLite -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build/lite-derived CODE_SIGNING_ALLOWED=NO build
+	tests/verify-lite-bundle.sh build/lite-derived/Build/Products/Release-iphonesimulator/SHOSLite.app
 
 install: app
 	xcrun devicectl device install app --device $(DEVICE) "$(DERIVED)/Release-iphoneos/DSH.app"

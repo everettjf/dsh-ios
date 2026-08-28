@@ -1,7 +1,7 @@
 import Foundation
 import AgentRuntime
 
-/// Dashros adapter from the reusable runtime telemetry protocol to the
+/// SHOS adapter from the reusable runtime telemetry protocol to the
 /// Objective-C activity log. This deliberately remains outside AgentRuntime.
 struct DSHActivityAgentTelemetry: DSHAgentTelemetry, @unchecked Sendable {
     func started(source: String, name: String, detail: String, correlationID: String) async {

@@ -1,6 +1,6 @@
-# Dashros — a Swift-native agent for iPhone and iPad
+# SHOS — a Swift-native agent for iPhone and iPad
 
-Dashros is a fast, native iOS agent with first-class DeepSeek support. Swift owns the
+SHOS is a fast, native iOS agent with first-class DeepSeek support. Swift owns the
 primary UI, model streaming, turn state machine, conversations, attachments,
 permissions, native iOS tools, MCP clients, and private diagnostics.
 
@@ -14,19 +14,20 @@ does not promise compatibility with every dsh plugin.
 > official Node.js implementation before this rewrite is also
 > preserved at [`nodejs-harness-v1.0.10`](https://github.com/everettjf/dsh-ios/tree/nodejs-harness-v1.0.10).
 > Use that tag when you need the original `dsh web` / Node.js architecture;
-> Swift-native Dashros and the internal **Swift Harness Kit** are developed on
+> Swift-native SHOS and the internal **Swift Harness Kit** are developed on
 > `rewrite-deepseek-harness-with-swift`.
 
 ## Product architecture
 
 ```text
-SwiftUI app
-  ├─ DeepSeek/OpenAI-compatible SSE client
-  ├─ turn/step state machine and bounded context
-  ├─ native conversation and attachment stores
-  ├─ governed iOS tools and per-call confirmations
-  ├─ dynamic MCP clients
-  └─ optional Linux guest ── shell / staging / Linux-only tools
+SHOS (SwiftUI app)
+  ├─ Swift Harness Kit
+  │   ├─ providers + SSE
+  │   ├─ turn/step runtime
+  │   ├─ tools, storage and MCP
+  │   └─ host-neutral Linux guest contracts
+  ├─ native Apple tools, permissions and UI
+  └─ AgentLinuxGuest (optional) ── iSH64 / Alpine / shell / staging
 ```
 
 - The native agent is usable immediately; Linux is not part of app startup.
@@ -39,8 +40,8 @@ SwiftUI app
   their capability switch and the corresponding iOS permission.
 - Remote MCP endpoints must use HTTPS; loopback HTTP is allowed for development.
 
-See [Swift-native architecture](docs/swift-native-agent.md), the [Dashros
-product plan](docs/dashros-product-plan.zh.md), the [Swift Harness Kit
+See [Swift-native architecture](docs/swift-native-agent.md), the [SHOS
+product plan](docs/shos-product-plan.zh.md), the [Swift Harness Kit
 extraction plan](docs/swift-harness-kit-plan.md), and [release
 acceptance](docs/release-acceptance.md) for the complete contract.
 
@@ -106,7 +107,7 @@ docs/           architecture, security, migration and release acceptance
 
 Run `make project` after adding or removing Xcode source files.
 
-Dashros is intentionally an iOS-native agent, not a byte-for-byte Swift
+SHOS is intentionally an iOS-native agent, not a byte-for-byte Swift
 port of the original harness. Its supported extension surface is the native
 tool registry plus MCP; Linux is an optional workspace capability.
 

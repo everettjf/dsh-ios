@@ -61,9 +61,9 @@ struct AgentMCPTests {
             #expect(try await client.listTools().map(\.name) == ["python_echo"])
             let result = try await client.callTool(
                 name: "python_echo",
-                arguments: .object(["text": .string("dashros")])
+                arguments: .object(["text": .string("shos")])
             )
-            #expect(toolText(result) == "python:dashros")
+            #expect(toolText(result) == "python:shos")
             await client.disconnect()
         }
     }

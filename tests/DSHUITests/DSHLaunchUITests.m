@@ -20,7 +20,7 @@
 }
 
 - (void)testNativeAgentLaunchesImmediatelyWithoutWebHarness {
-    XCTAssertTrue([self.app.navigationBars[@"Dashros"] waitForExistenceWithTimeout:5]);
+    XCTAssertTrue([self.app.navigationBars[@"SHOS"] waitForExistenceWithTimeout:5]);
     XCTAssertTrue([self.app.buttons[@"dsh.native.settings"] waitForExistenceWithTimeout:2]);
     XCTAssertTrue([self.app.textFields[@"dsh.native.composer"] waitForExistenceWithTimeout:2]);
     XCTAssertTrue([self.app.buttons[@"dsh.native.attach"] waitForExistenceWithTimeout:2]);
@@ -68,7 +68,7 @@
     XCTAssertTrue(newSession.isHittable);
     [newSession tap];
     XCTAssertTrue(self.app.otherElements[@"dsh.native.empty"].exists ||
-                  self.app.staticTexts[@"Dashros"].exists);
+                  self.app.staticTexts[@"SHOS"].exists);
 }
 
 - (void)testConversationBrowserIsNativeAndCanCreateSession {
@@ -79,7 +79,7 @@
     XCTAssertTrue(self.app.staticTexts[@"No Conversations"].exists || self.app.buttons[@"New"].exists);
     XCTAssertEqual(self.app.webViews.count, 0u);
     [self.app.buttons[@"New"] tap];
-    XCTAssertTrue([self.app.navigationBars[@"Dashros"] waitForExistenceWithTimeout:3]);
+    XCTAssertTrue([self.app.navigationBars[@"SHOS"] waitForExistenceWithTimeout:3]);
 }
 
 - (void)testLandscapeKeepsNativeControlsReachable {
