@@ -25,7 +25,7 @@ BUNDLE_ID ?= com.xnuapp.dsh
 XCB        = xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Release DSH_DEVELOPMENT_TEAM=$(TEAM)
 DERIVED    = $(shell ls -dt ~/Library/Developer/Xcode/DerivedData/DSH-*/Build/Products 2>/dev/null | head -1)
 
-.PHONY: all emulator rootfs project app install run test test-package test-emu test-rootfs test-sim test-device test-device-unit archive release clean
+.PHONY: all emulator rootfs project app app-lite test-lite install run test test-package test-emu test-rootfs test-sim test-device test-device-unit archive release clean
 
 all: emulator rootfs project app
 
@@ -47,6 +47,14 @@ project:
 
 app: project
 	$(XCB) -destination 'generic/platform=iOS' build
+
+# Pure Swift product variant: no iSH sources, rootfs, bash, or Linux staging.
+app-lite: project
+	xcodebuild -project $(PROJECT) -scheme DashrosLite -configuration Release -destination 'generic/platform=iOS' DSH_DEVELOPMENT_TEAM=$(TEAM) build
+
+test-lite: project
+	xcodebuild -project $(PROJECT) -scheme DashrosLite -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath build/lite-derived CODE_SIGNING_ALLOWED=NO build
+	tests/verify-lite-bundle.sh build/lite-derived/Build/Products/Release-iphonesimulator/DashrosLite.app
 
 install: app
 	xcrun devicectl device install app --device $(DEVICE) "$(DERIVED)/Release-iphoneos/DSH.app"

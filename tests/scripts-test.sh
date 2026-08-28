@@ -65,6 +65,34 @@ fi
 
 printf 'ok  scripts: Dashros consumes SwiftHarnessKit package products\n'
 
+if ! rg -q "project.new_target\(:application, 'DashrosLite', :ios, '16\\.0'\)" scripts/gen-xcode-project.rb ||
+   ! rg -q 'NO_LINUX_GUEST' DSH.xcodeproj/project.pbxproj; then
+  echo 'not ok: missing iOS 16 NO_LINUX_GUEST application target' >&2
+  exit 1
+fi
+
+lite_target=$(ruby -rxcodeproj -e '
+  project = Xcodeproj::Project.open("DSH.xcodeproj")
+  target = project.targets.find { |value| value.name == "DashrosLite" } or abort "missing DashrosLite"
+  puts target.source_build_phase.files.map { |file| file.file_ref.real_path }
+  puts target.resources_build_phase.files.map { |file| file.file_ref.real_path }
+  puts target.package_product_dependencies.map(&:product_name)
+')
+case "$lite_target" in
+  *ish-arm64*|*root.tar.gz*|*AgentLinuxGuest*)
+    echo 'not ok: DashrosLite includes a Linux guest source, resource, or package' >&2
+    exit 1
+    ;;
+esac
+for product in AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP; do
+  printf '%s\n' "$lite_target" | rg -q "^${product}$" || {
+    echo "not ok: DashrosLite does not link $product" >&2
+    exit 1
+  }
+done
+
+printf 'ok  scripts: NO_LINUX_GUEST product boundary\n'
+
 if ! rg -q "project.new_target\(:application, 'DSH', :ios, '16\\.0'\)" scripts/gen-xcode-project.rb ||
    ! rg -q '^IPHONEOS_DEPLOYMENT_TARGET = 16\.0$' app/AppDSH.xcconfig; then
   echo 'not ok: the Dashros application target must support iOS 16' >&2

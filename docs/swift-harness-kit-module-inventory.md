@@ -93,6 +93,9 @@ Their types must never appear in `AgentRuntime` public signatures.
   credential-store product is introduced.
 - `AgentLinuxGuest` is optional; `NO_LINUX_GUEST` must compile and run native
   agent, storage, native tools and MCP flows.
+- `DashrosLite` is the executable acceptance fixture for that boundary. Its
+  Release bundle is rejected if it contains iSH/rootfs files, emulator
+  libraries, or guest-tool symbols.
 - Dashros must compile against package products rather than duplicate the same
   source files in the app target.
 - Package tests are the authority for pure Swift behavior; hosted XCTest covers

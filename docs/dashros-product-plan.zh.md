@@ -307,7 +307,9 @@ Dashros 中只保留 iSH runtime 与原生确认 UI 的适配器。Package 已�
 
 1. 用至少两个独立真实 MCP Server 完成 HTTP 互操作、认证、重连和取消测试。
 2. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
-3. 建立 `NO_LINUX_GUEST` 构建，并验证产物不含 iSH、rootfs 或 Linux 工具。
+3. `NO_LINUX_GUEST` 已建立为可运行的 `DashrosLite` iOS 16 target：只链接
+   Runtime、Providers、Tools、Storage 和 MCP；Release Bundle 审计验证不含 iSH、
+   rootfs、guest 动态依赖或 Linux 工具符号。后续继续保持该测试门槛。
 4. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
 5. 完成辅助功能和本地化（Dashros 品牌、iOS 16 与首轮聊天体验已完成）。
 6. 完成真机工具、Guest、安全、性能和 TestFlight 发行验收。

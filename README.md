@@ -82,6 +82,7 @@ make test-rootfs        # guest image and mock-model integrations
 make test-sim           # XCTest and XCUITest on a simulator
 make test-device-unit   # app and guest integration tests on a device
 make test-device        # app and UI tests on a device
+make test-lite          # build/audit the iOS 16 variant without Linux guest
 ```
 
 The app suite covers SSE fragmentation, multi-step tools, cancellation, retry,
@@ -96,6 +97,7 @@ forward-only Linux compatibility notice.
 ```text
 app/            Swift-native agent plus governed iOS/guest integration
 tests/          XCTest, XCUITest, emulator and rootfs integration suites
+app-lite/       runnable NO_LINUX_GUEST reference application
 rootfs/         optional Alpine guest image overlay
 ish-arm64/      vendored userspace emulator
 scripts/        project, rootfs, test and release automation

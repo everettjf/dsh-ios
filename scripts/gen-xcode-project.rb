@@ -69,6 +69,7 @@ ish_group = project.main_group.new_group('ish-arm64', ISH_REL)
 app_group = project.main_group.new_group('app', 'app')
 package_group = project.main_group.new_group('SwiftHarnessKit', 'Packages/SwiftHarnessKit')
 tests_group = project.main_group.new_group('tests', 'tests')
+lite_group = project.main_group.new_group('app-lite', 'app-lite')
 config_group = ish_group.new_group('xcconfig', 'app')
 project_debug_cfg = config_group.new_file('ProjectDebug.xcconfig')
 project_release_cfg = config_group.new_file('ProjectRelease.xcconfig')
@@ -114,6 +115,8 @@ xcconfig_ref = app_group.new_file('AppDSH.xcconfig')
 app_group.new_file('Info.plist')
 app_group.new_file('DSH.entitlements')
 app_resource_refs = %w[DSHAssets.xcassets DSHLaunchScreen.storyboard PrivacyInfo.xcprivacy].map { |f| app_group.new_file(f) }
+lite_source_ref = lite_group.new_file('DashrosLiteApp.swift')
+lite_info_ref = lite_group.new_file('Info.plist')
 project.main_group.new_file('README.md')
 project.main_group.new_file('Makefile')
 scripts_group = project.main_group.new_group('scripts', 'scripts')
@@ -166,6 +169,42 @@ swift_harness_products = %w[AgentRuntime AgentProviders AgentTools AgentStorage 
   build_file.product_ref = dependency
   dsh.frameworks_build_phase.files << build_file
   [product_name, dependency]
+end
+
+# A real no-guest application target is the product-level proof that the core
+# remains usable without GPL/iSH payloads. It intentionally has no dependency
+# on AgentLinuxGuest, no iSH sources/resources, and no guest build phases.
+lite = project.new_target(:application, 'DashrosLite', :ios, '16.0')
+lite.source_build_phase.add_file_reference(lite_source_ref, true)
+lite.build_configuration_list.build_configurations.each do |bc|
+  bc.build_settings.clear
+  bc.build_settings.merge!({
+    'PRODUCT_NAME' => 'DashrosLite',
+    'PRODUCT_BUNDLE_IDENTIFIER' => 'com.xnuapp.dsh.lite',
+    'MARKETING_VERSION' => '1.0.0',
+    'CURRENT_PROJECT_VERSION' => '1',
+    'INFOPLIST_FILE' => '$(SRCROOT)/app-lite/Info.plist',
+    'GENERATE_INFOPLIST_FILE' => 'NO',
+    'IPHONEOS_DEPLOYMENT_TARGET' => '16.0',
+    'SDKROOT' => 'iphoneos',
+    'SUPPORTED_PLATFORMS' => 'iphoneos iphonesimulator',
+    'TARGETED_DEVICE_FAMILY' => '1,2',
+    'SWIFT_VERSION' => '6.0',
+    'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited) NO_LINUX_GUEST',
+    'CODE_SIGN_STYLE' => 'Automatic',
+    'DEVELOPMENT_TEAM' => '$(DSH_DEVELOPMENT_TEAM)',
+    'ARCHS[sdk=iphonesimulator*]' => 'arm64',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64 i386',
+  })
+end
+%w[AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP].each do |product_name|
+  dependency = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
+  dependency.package = swift_harness_package
+  dependency.product_name = product_name
+  lite.package_product_dependencies << dependency
+  build_file = project.new(Xcodeproj::Project::Object::PBXBuildFile)
+  build_file.product_ref = dependency
+  lite.frameworks_build_phase.files << build_file
 end
 
 (ish_resource_refs + app_resource_refs).each { |r| dsh.resources_build_phase.add_file_reference(r, true) }
@@ -288,4 +327,10 @@ scheme.test_action.add_testable(Xcodeproj::XCScheme::TestAction::TestableReferen
   scheme.send(a).build_configuration = 'Release'
 end
 scheme.save_as(PROJECT_PATH.to_s, 'DSH', true)
-puts "ok: #{PROJECT_PATH} (DSH, DSHTests, DSHUITests) — open it and pick the DSH scheme"
+lite_scheme = Xcodeproj::XCScheme.new
+lite_scheme.configure_with_targets(lite, nil, launch_target: true)
+%w[test_action launch_action profile_action analyze_action archive_action].each do |action|
+  lite_scheme.send(action).build_configuration = 'Release'
+end
+lite_scheme.save_as(PROJECT_PATH.to_s, 'DashrosLite', true)
+puts "ok: #{PROJECT_PATH} (DSH, DSHTests, DSHUITests, DashrosLite)"

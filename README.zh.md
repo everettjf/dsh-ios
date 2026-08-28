@@ -71,6 +71,7 @@ make test-rootfs        # guest 镜像及 mock model 集成测试
 make test-sim           # 模拟器 XCTest + XCUITest
 make test-device-unit   # 真机 app 与 guest 集成测试
 make test-device        # 真机 app 与 UI 测试
+make test-lite          # 构建并审计不含 Linux guest 的 iOS 16 版本
 ```
 
 App 测试覆盖 SSE 分片、多 step 工具、取消与重试、存储迁移、附件隔离、权限、
@@ -83,6 +84,7 @@ App 测试覆盖 SSE 分片、多 step 工具、取消与重试、存储迁移�
 ```text
 app/            Swift 原生 agent，以及 iOS/guest 权限治理集成
 tests/          XCTest、XCUITest、emulator 和 rootfs 集成测试
+app-lite/       可运行的 NO_LINUX_GUEST 参考应用
 rootfs/         可选 Alpine guest 镜像 overlay
 ish-arm64/      vendored 用户态模拟器
 scripts/        工程、rootfs、测试和发布自动化
