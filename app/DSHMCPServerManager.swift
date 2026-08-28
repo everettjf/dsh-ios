@@ -166,6 +166,7 @@ actor DSHMCPServerManager {
             case .protocolError(let code, _): return "protocol_\(code)"
             case .unsupportedProtocol: return "unsupported_protocol"
             case .notInitialized: return "not_initialized"
+            case .sdkFailure: return "sdk_failure"
             }
         }
         if let error = error as? URLError {

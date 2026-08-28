@@ -1,4 +1,5 @@
 import Foundation
+import MCP
 #if canImport(AgentRuntime)
 import AgentRuntime
 #endif
@@ -15,6 +16,7 @@ public enum DSHMCPError: Error, LocalizedError, Equatable, Sendable, DSHAgentErr
     case protocolError(Int, String)
     case unsupportedProtocol(String)
     case notInitialized
+    case sdkFailure
 
     public var errorDescription: String? {
         switch self {
@@ -23,6 +25,7 @@ public enum DSHMCPError: Error, LocalizedError, Equatable, Sendable, DSHAgentErr
         case .protocolError(let code, let message): return "MCP error \(code): \(message)"
         case .unsupportedProtocol(let version): return "Unsupported MCP protocol version: \(version)"
         case .notInitialized: return "The MCP connection has not been initialized."
+        case .sdkFailure: return "The MCP SDK could not complete the request."
         }
     }
 
@@ -69,19 +72,62 @@ public actor DSHMCPClient {
     public static let protocolVersion = "2025-11-25"
 
     private let endpoint: URL
-    private let transport: any DSHMCPTransport
+    private let transport: (any DSHMCPTransport)?
     private let headers: [String: String]
+    private let officialClient: MCP.Client?
+    private let officialTransport: (any MCP.Transport)?
     private var sessionID: String?
     private var negotiatedVersion: String?
     private var nextID = 1
 
-    public init(endpoint: URL, headers: [String: String] = [:], transport: any DSHMCPTransport = DSHURLSessionMCPTransport()) {
+    /// Creates the production client backed by the official MCP Swift SDK.
+    public init(endpoint: URL, headers: [String: String] = [:]) {
+        self.endpoint = endpoint
+        self.headers = headers
+        transport = nil
+        officialClient = MCP.Client(name: "Dashros", version: "1")
+        officialTransport = MCP.HTTPClientTransport(
+            endpoint: endpoint,
+            streaming: true,
+            protocolVersion: Self.protocolVersion,
+            requestModifier: { request in
+                var request = request
+                for (name, value) in headers {
+                    request.setValue(value, forHTTPHeaderField: name)
+                }
+                return request
+            }
+        )
+    }
+
+    /// Test seam for deterministic wire-protocol fixtures. Production callers
+    /// use the official-SDK initializer above.
+    public init(endpoint: URL, headers: [String: String] = [:], transport: any DSHMCPTransport) {
         self.endpoint = endpoint
         self.headers = headers
         self.transport = transport
+        officialClient = nil
+        officialTransport = nil
+    }
+
+    init(testingOfficialTransport transport: any MCP.Transport) {
+        endpoint = URL(string: "https://in-memory.invalid/mcp")!
+        headers = [:]
+        self.transport = nil
+        officialClient = MCP.Client(name: "DashrosTests", version: "1")
+        officialTransport = transport
     }
 
     public func connect() async throws {
+        if let officialClient, let officialTransport {
+            do {
+                let result = try await officialClient.connect(transport: officialTransport)
+                negotiatedVersion = result.protocolVersion
+                return
+            } catch {
+                throw DSHMCPError.sdkFailure
+            }
+        }
         let result = try await request(
             method: "initialize",
             params: .object([
@@ -102,6 +148,26 @@ public actor DSHMCPClient {
 
     public func listTools() async throws -> [DSHMCPToolDescription] {
         guard negotiatedVersion != nil else { throw DSHMCPError.notInitialized }
+        if let officialClient {
+            do {
+                var cursor: String?
+                var output: [DSHMCPToolDescription] = []
+                repeat {
+                    let page = try await officialClient.listTools(cursor: cursor)
+                    output.append(contentsOf: page.tools.map {
+                        .init(
+                            name: $0.name,
+                            description: $0.description ?? "",
+                            inputSchema: Self.runtimeValue(from: $0.inputSchema)
+                        )
+                    })
+                    cursor = page.nextCursor
+                } while cursor != nil
+                return output
+            } catch {
+                throw DSHMCPError.sdkFailure
+            }
+        }
         var cursor: String?
         var output: [DSHMCPToolDescription] = []
         repeat {
@@ -124,6 +190,29 @@ public actor DSHMCPClient {
 
     public func callTool(name: String, arguments: DSHJSONValue) async throws -> DSHJSONValue {
         guard negotiatedVersion != nil else { throw DSHMCPError.notInitialized }
+        if let officialClient {
+            guard case .object(let arguments) = arguments else { throw DSHMCPError.invalidResponse }
+            do {
+                let result = try await officialClient.callTool(
+                    name: name,
+                    arguments: arguments.mapValues(Self.sdkValue(from:))
+                )
+                let content = try result.content.map { content in
+                    try JSONDecoder().decode(
+                        DSHJSONValue.self,
+                        from: JSONEncoder().encode(content)
+                    )
+                }
+                return .object([
+                    "content": .array(content),
+                    "isError": result.isError.map(DSHJSONValue.bool) ?? .null
+                ])
+            } catch let error as DSHMCPError {
+                throw error
+            } catch {
+                throw DSHMCPError.sdkFailure
+            }
+        }
         return try await request(
             method: "tools/call",
             params: .object(["name": .string(name), "arguments": arguments])
@@ -132,12 +221,17 @@ public actor DSHMCPClient {
 
     public func disconnect() async {
         guard negotiatedVersion != nil else { return }
+        if let officialClient {
+            await officialClient.disconnect()
+            negotiatedVersion = nil
+            return
+        }
         if sessionID != nil {
             var request = URLRequest(url: endpoint)
             request.httpMethod = "DELETE"
             for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
             if let sessionID { request.setValue(sessionID, forHTTPHeaderField: "MCP-Session-Id") }
-            _ = try? await transport.send(request)
+            _ = try? await transport?.send(request)
         }
         sessionID = nil
         negotiatedVersion = nil
@@ -157,6 +251,7 @@ public actor DSHMCPClient {
             "method": .string(method),
             "params": params
         ])
+        guard let transport else { throw DSHMCPError.invalidResponse }
         let (data, response) = try await transport.send(makeRequest(body: body, notification: false))
         if method == "initialize", let value = response.value(forHTTPHeaderField: "MCP-Session-Id") {
             sessionID = value
@@ -175,6 +270,7 @@ public actor DSHMCPClient {
 
     private func notification(method: String) async throws {
         let body: DSHJSONValue = .object(["jsonrpc": .string("2.0"), "method": .string(method)])
+        guard let transport else { throw DSHMCPError.invalidResponse }
         let (_, response) = try await transport.send(makeRequest(body: body, notification: true))
         guard (200..<300).contains(response.statusCode) else { throw DSHMCPError.httpStatus(response.statusCode) }
     }
@@ -202,6 +298,35 @@ public actor DSHMCPClient {
             return try JSONDecoder().decode(DSHJSONValue.self, from: payloadData)
         }
         return try JSONDecoder().decode(DSHJSONValue.self, from: data)
+    }
+
+    private static func runtimeValue(from value: MCP.Value) -> DSHJSONValue {
+        switch value {
+        case .null: return .null
+        case .bool(let value): return .bool(value)
+        case .int(let value): return .number(Double(value))
+        case .double(let value): return .number(value)
+        case .string(let value): return .string(value)
+        case .data(let mimeType, let value):
+            return .object([
+                "mimeType": mimeType.map(DSHJSONValue.string) ?? .null,
+                "base64": .string(value.base64EncodedString())
+            ])
+        case .array(let values): return .array(values.map(runtimeValue(from:)))
+        case .object(let values): return .object(values.mapValues(runtimeValue(from:)))
+        }
+    }
+
+    private static func sdkValue(from value: DSHJSONValue) -> MCP.Value {
+        switch value {
+        case .null: return .null
+        case .bool(let value): return .bool(value)
+        case .number(let value):
+            return value.rounded() == value ? .int(Int(value)) : .double(value)
+        case .string(let value): return .string(value)
+        case .array(let values): return .array(values.map(sdkValue(from:)))
+        case .object(let values): return .object(values.mapValues(sdkValue(from:)))
+        }
     }
 }
 

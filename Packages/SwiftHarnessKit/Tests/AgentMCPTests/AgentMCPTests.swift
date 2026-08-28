@@ -5,9 +5,60 @@ import FoundationNetworking
 import Testing
 @testable import AgentMCP
 import AgentRuntime
+import MCP
 
 @Suite("AgentMCP")
 struct AgentMCPTests {
+    @Test("official MCP SDK interoperates through the AgentMCP adapter")
+    func officialSDKRoundTrip() async throws {
+        let transports = await MCP.InMemoryTransport.createConnectedPair()
+        let server = MCP.Server(
+            name: "AgentMCPTests",
+            version: "1",
+            capabilities: .init(tools: .init())
+        )
+        await server.withMethodHandler(MCP.ListTools.self) { _ in
+            .init(tools: [
+                .init(
+                    name: "add",
+                    description: "Add two integers",
+                    inputSchema: .object([
+                        "type": .string("object"),
+                        "properties": .object([
+                            "a": .object(["type": .string("integer")]),
+                            "b": .object(["type": .string("integer")])
+                        ])
+                    ])
+                )
+            ])
+        }
+        await server.withMethodHandler(MCP.CallTool.self) { request in
+            let a = request.arguments?["a"]?.intValue ?? 0
+            let b = request.arguments?["b"]?.intValue ?? 0
+            return .init(content: [.text(text: "\(a + b)", annotations: nil, _meta: nil)])
+        }
+        try await server.start(transport: transports.server)
+        let client = DSHMCPClient(testingOfficialTransport: transports.client)
+
+        try await client.connect()
+        let tools = try await client.listTools()
+        let result = try await client.callTool(
+            name: "add",
+            arguments: .object(["a": .number(2), "b": .number(3)])
+        )
+
+        #expect(tools.map(\.name) == ["add"])
+        guard case .object(let resultObject) = result,
+              case .array(let content) = resultObject["content"],
+              case .object(let first) = content.first else {
+            Issue.record("Expected the official SDK tool response envelope")
+            return
+        }
+        #expect(first["text"] == .string("5"))
+        await client.disconnect()
+        await server.stop()
+    }
+
     @Test("initialization, pagination, and negotiated headers")
     func initializationAndPagination() async throws {
         let endpoint = try #require(URL(string: "https://example.test/mcp"))

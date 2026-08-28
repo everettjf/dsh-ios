@@ -294,15 +294,20 @@ iSH-derived Guest 使用 GPL，并带来较大的二进制和 rootfs。它不能
 
 ## 十、当前执行顺序
 
-下一轮开发按以下顺序进行：
+截至 2026-08-28，Phase 0 已完成；`AgentRuntime`、`AgentProviders`、
+`AgentTools`、`AgentStorage` 和 `AgentMCP` 已成为独立 Package products，Dashros
+已通过本地 Swift Package 链接这些模块，不再直接编译 Package 源码。`AgentMCP`
+的生产路径已采用官方 MCP Swift SDK 0.12.1，并保留内部适配层与确定性 wire
+fixtures；官方 SDK 的内存 Client/Server 端到端互操作测试也已建立。
 
-1. 完成现有 Swift 类型到目标模块的逐文件盘点。
-2. 创建本地 `Package.swift` 和 `AgentRuntime`/`AgentProviders` 最小 target。
-3. 先迁移纯 Swift models、SSE 与 Runtime 测试。
-4. 让 Dashros 使用本地 Package，完成构建和模拟器回归。
-5. 再迁移 Tool Registry、Policy 和 Storage。
-6. Runtime 边界稳定后接入官方 MCP Swift SDK。
-7. 最后隔离 iSH Guest，因为它的构建和许可证边界最复杂。
+接下来按以下顺序继续：
+
+1. 用至少两个独立真实 MCP Server 完成 HTTP 互操作、认证、重连和取消测试。
+2. 抽取 Apple 原生工具边界，保持系统权限与 UI 适配留在 Dashros。
+3. 定义 `ExecutionBackend` 并隔离 iSH Guest，建立 `NO_LINUX_GUEST` 构建。
+4. 将 Dashros 和测试目标最低系统统一降到 iOS 16。
+5. 完成 Dashros 品牌、聊天体验、辅助功能和本地化。
+6. 完成真机工具、Guest、安全、性能和 TestFlight 发行验收。
 
 整个过程在当前 `rewrite-deepseek-harness-with-swift` 分支持续开发，采用前进式
 迁移，不为旧 Node.js Web Harness 增加新的兼容层。
