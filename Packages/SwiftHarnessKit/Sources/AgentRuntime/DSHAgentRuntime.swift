@@ -1,16 +1,17 @@
 import Foundation
 
-protocol DSHAgentTelemetry: Sendable {
+public protocol DSHAgentTelemetry: Sendable {
     func started(source: String, name: String, detail: String, correlationID: String) async
     func finished(source: String, name: String, detail: String, result: String, outcome: String, duration: TimeInterval, correlationID: String) async
 }
 
-struct DSHNoopAgentTelemetry: DSHAgentTelemetry {
-    func started(source: String, name: String, detail: String, correlationID: String) async { }
-    func finished(source: String, name: String, detail: String, result: String, outcome: String, duration: TimeInterval, correlationID: String) async { }
+public struct DSHNoopAgentTelemetry: DSHAgentTelemetry {
+    public init() {}
+    public func started(source: String, name: String, detail: String, correlationID: String) async { }
+    public func finished(source: String, name: String, detail: String, result: String, outcome: String, duration: TimeInterval, correlationID: String) async { }
 }
 
-enum DSHAgentPhase: Equatable, Sendable {
+public enum DSHAgentPhase: Equatable, Sendable {
     case idle
     case streaming(step: Int)
     case completed
@@ -18,19 +19,19 @@ enum DSHAgentPhase: Equatable, Sendable {
     case failed(message: String)
 }
 
-struct DSHAgentSnapshot: Equatable, Sendable {
-    let messages: [DSHChatMessage]
-    let phase: DSHAgentPhase
-    let usage: DSHTokenUsage?
+public struct DSHAgentSnapshot: Equatable, Sendable {
+    public let messages: [DSHChatMessage]
+    public let phase: DSHAgentPhase
+    public let usage: DSHTokenUsage?
 }
 
-enum DSHAgentRuntimeError: Error, LocalizedError, Equatable {
+public enum DSHAgentRuntimeError: Error, LocalizedError, Equatable {
     case emptyPrompt
     case alreadyRunning
     case nothingToRetry
     case nothingToContinue
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .emptyPrompt: return "Enter a message before sending."
         case .alreadyRunning: return "The agent is already responding."
@@ -40,10 +41,14 @@ enum DSHAgentRuntimeError: Error, LocalizedError, Equatable {
     }
 }
 
-struct DSHContextPolicy: Equatable, Sendable {
-    var maximumEstimatedTokens: Int = 32_000
+public struct DSHContextPolicy: Equatable, Sendable {
+    public var maximumEstimatedTokens: Int
 
-    func messagesForRequest(_ messages: [DSHChatMessage], systemPrompt: String?) -> [DSHChatMessage] {
+    public init(maximumEstimatedTokens: Int = 32_000) {
+        self.maximumEstimatedTokens = maximumEstimatedTokens
+    }
+
+    public func messagesForRequest(_ messages: [DSHChatMessage], systemPrompt: String?) -> [DSHChatMessage] {
         let system = systemPrompt.flatMap { $0.isEmpty ? nil : DSHChatMessage(role: .system, content: $0) }
         let budget = max(1_000, maximumEstimatedTokens - estimatedTokens(system))
         let groups = turnGroups(messages)
@@ -90,7 +95,7 @@ struct DSHContextPolicy: Equatable, Sendable {
     }
 }
 
-actor DSHAgentRuntime {
+public actor DSHAgentRuntime {
     private let client: any DSHModelClient
     private let model: String
     private let systemPrompt: String?
@@ -105,7 +110,7 @@ actor DSHAgentRuntime {
     private var lastStreamingPublishAt: ContinuousClock.Instant?
     private var observers: [UUID: AsyncStream<DSHAgentSnapshot>.Continuation] = [:]
 
-    init(
+    public init(
         client: any DSHModelClient,
         model: String,
         systemPrompt: String? = nil,
@@ -125,11 +130,11 @@ actor DSHAgentRuntime {
         self.telemetry = telemetry
     }
 
-    func snapshot() -> DSHAgentSnapshot {
+    public func snapshot() -> DSHAgentSnapshot {
         DSHAgentSnapshot(messages: messages, phase: phase, usage: usage)
     }
 
-    func updates() -> AsyncStream<DSHAgentSnapshot> {
+    public func updates() -> AsyncStream<DSHAgentSnapshot> {
         let id = UUID()
         return AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
             observers[id] = continuation
@@ -141,7 +146,7 @@ actor DSHAgentRuntime {
     }
 
     @discardableResult
-    func send(_ prompt: String, attachments: [DSHAttachment] = []) async throws -> DSHAgentSnapshot {
+    public func send(_ prompt: String, attachments: [DSHAttachment] = []) async throws -> DSHAgentSnapshot {
         guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty || !attachments.isEmpty else { throw DSHAgentRuntimeError.emptyPrompt }
@@ -151,7 +156,7 @@ actor DSHAgentRuntime {
     }
 
     @discardableResult
-    func retryLastTurn() async throws -> DSHAgentSnapshot {
+    public func retryLastTurn() async throws -> DSHAgentSnapshot {
         guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
         guard let index = messages.lastIndex(where: { $0.role == .user }) else { throw DSHAgentRuntimeError.nothingToRetry }
         messages = Array(messages.prefix(through: index))
@@ -159,7 +164,7 @@ actor DSHAgentRuntime {
     }
 
     @discardableResult
-    func continueResponse() async throws -> DSHAgentSnapshot {
+    public func continueResponse() async throws -> DSHAgentSnapshot {
         guard !isRunning else { throw DSHAgentRuntimeError.alreadyRunning }
         guard messages.contains(where: { $0.role == .assistant }) else {
             throw DSHAgentRuntimeError.nothingToContinue
@@ -292,7 +297,7 @@ actor DSHAgentRuntime {
         Int((seconds(duration) * 1_000).rounded())
     }
 
-    static func errorCategory(_ error: Error) -> String {
+    public static func errorCategory(_ error: Error) -> String {
         if error is CancellationError { return "cancelled" }
         if let error = error as? any DSHAgentErrorCategorizing { return error.agentErrorCategory }
         if let error = error as? URLError {

@@ -1,6 +1,6 @@
 import Foundation
 
-enum DSHJSONValue: Codable, Equatable, Sendable {
+public enum DSHJSONValue: Codable, Equatable, Sendable {
     case null
     case bool(Bool)
     case number(Double)
@@ -8,7 +8,7 @@ enum DSHJSONValue: Codable, Equatable, Sendable {
     case array([DSHJSONValue])
     case object([String: DSHJSONValue])
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() {
             self = .null
@@ -25,7 +25,7 @@ enum DSHJSONValue: Codable, Equatable, Sendable {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
         case .null: try container.encodeNil()
@@ -38,22 +38,22 @@ enum DSHJSONValue: Codable, Equatable, Sendable {
     }
 }
 
-enum DSHMessageRole: String, Codable, Sendable {
+public enum DSHMessageRole: String, Codable, Sendable {
     case system
     case user
     case assistant
     case tool
 }
 
-struct DSHAttachment: Codable, Equatable, Identifiable, Sendable {
-    let id: UUID
-    let name: String
-    let mediaType: String
-    let byteCount: Int
-    let createdAt: Date
-    let extractedText: String?
+public struct DSHAttachment: Codable, Equatable, Identifiable, Sendable {
+    public let id: UUID
+    public let name: String
+    public let mediaType: String
+    public let byteCount: Int
+    public let createdAt: Date
+    public let extractedText: String?
 
-    init(
+    public init(
         id: UUID = UUID(),
         name: String,
         mediaType: String,
@@ -70,22 +70,28 @@ struct DSHAttachment: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-struct DSHToolCall: Codable, Equatable, Identifiable, Sendable {
-    let id: String
-    let name: String
-    let arguments: String
+public struct DSHToolCall: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let name: String
+    public let arguments: String
+
+    public init(id: String, name: String, arguments: String) {
+        self.id = id
+        self.name = name
+        self.arguments = arguments
+    }
 }
 
-struct DSHChatMessage: Codable, Equatable, Identifiable, Sendable {
-    let id: UUID
-    let role: DSHMessageRole
-    var content: String?
-    var reasoningContent: String?
-    var toolCalls: [DSHToolCall]
-    var toolCallID: String?
-    var attachments: [DSHAttachment]
+public struct DSHChatMessage: Codable, Equatable, Identifiable, Sendable {
+    public let id: UUID
+    public let role: DSHMessageRole
+    public var content: String?
+    public var reasoningContent: String?
+    public var toolCalls: [DSHToolCall]
+    public var toolCallID: String?
+    public var attachments: [DSHAttachment]
 
-    init(
+    public init(
         id: UUID = UUID(),
         role: DSHMessageRole,
         content: String? = nil,
@@ -107,7 +113,7 @@ struct DSHChatMessage: Codable, Equatable, Identifiable, Sendable {
         case id, role, content, reasoningContent, toolCalls, toolCallID, attachments
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(UUID.self, forKey: .id)
         role = try values.decode(DSHMessageRole.self, forKey: .role)
@@ -119,19 +125,25 @@ struct DSHChatMessage: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-struct DSHToolDefinition: Codable, Equatable, Sendable {
-    let name: String
-    let description: String
-    let parameters: DSHJSONValue
+public struct DSHToolDefinition: Codable, Equatable, Sendable {
+    public let name: String
+    public let description: String
+    public let parameters: DSHJSONValue
+
+    public init(name: String, description: String, parameters: DSHJSONValue) {
+        self.name = name
+        self.description = description
+        self.parameters = parameters
+    }
 }
 
-struct DSHCompletionRequest: Equatable, Sendable {
-    let model: String
-    let messages: [DSHChatMessage]
-    let tools: [DSHToolDefinition]
-    let temperature: Double?
+public struct DSHCompletionRequest: Equatable, Sendable {
+    public let model: String
+    public let messages: [DSHChatMessage]
+    public let tools: [DSHToolDefinition]
+    public let temperature: Double?
 
-    init(
+    public init(
         model: String,
         messages: [DSHChatMessage],
         tools: [DSHToolDefinition] = [],
@@ -144,7 +156,7 @@ struct DSHCompletionRequest: Equatable, Sendable {
     }
 }
 
-enum DSHFinishReason: String, Codable, Equatable, Sendable {
+public enum DSHFinishReason: String, Codable, Equatable, Sendable {
     case stop
     case toolCalls = "tool_calls"
     case length
@@ -152,20 +164,33 @@ enum DSHFinishReason: String, Codable, Equatable, Sendable {
     case unknown
 }
 
-struct DSHTokenUsage: Codable, Equatable, Sendable {
-    let promptTokens: Int
-    let completionTokens: Int
-    let totalTokens: Int
+public struct DSHTokenUsage: Codable, Equatable, Sendable {
+    public let promptTokens: Int
+    public let completionTokens: Int
+    public let totalTokens: Int
+
+    public init(promptTokens: Int, completionTokens: Int, totalTokens: Int) {
+        self.promptTokens = promptTokens
+        self.completionTokens = completionTokens
+        self.totalTokens = totalTokens
+    }
 }
 
-struct DSHToolCallDelta: Equatable, Sendable {
-    let index: Int
-    let id: String?
-    let name: String?
-    let arguments: String?
+public struct DSHToolCallDelta: Equatable, Sendable {
+    public let index: Int
+    public let id: String?
+    public let name: String?
+    public let arguments: String?
+
+    public init(index: Int, id: String?, name: String?, arguments: String?) {
+        self.index = index
+        self.id = id
+        self.name = name
+        self.arguments = arguments
+    }
 }
 
-enum DSHModelEvent: Equatable, Sendable {
+public enum DSHModelEvent: Equatable, Sendable {
     case reasoningDelta(String)
     case contentDelta(String)
     case toolCallDelta(DSHToolCallDelta)
@@ -173,12 +198,12 @@ enum DSHModelEvent: Equatable, Sendable {
     case completed(DSHFinishReason)
 }
 
-protocol DSHModelClient: Sendable {
+public protocol DSHModelClient: Sendable {
     func stream(request: DSHCompletionRequest) -> AsyncThrowingStream<DSHModelEvent, Error>
 }
 
 /// Lets providers expose a stable, privacy-safe error category without making
 /// AgentRuntime depend on a concrete transport implementation.
-protocol DSHAgentErrorCategorizing: Error {
+public protocol DSHAgentErrorCategorizing: Error {
     var agentErrorCategory: String { get }
 }

@@ -67,6 +67,7 @@ project.root_object.attributes['LastUpgradeCheck'] = '2700'
 # Project-level configs come from iSH so warnings/flags match the emulator build.
 ish_group = project.main_group.new_group('ish-arm64', ISH_REL)
 app_group = project.main_group.new_group('app', 'app')
+package_group = project.main_group.new_group('SwiftHarnessKit', 'Packages/SwiftHarnessKit')
 tests_group = project.main_group.new_group('tests', 'tests')
 config_group = ish_group.new_group('xcconfig', 'app')
 project_debug_cfg = config_group.new_file('ProjectDebug.xcconfig')
@@ -107,6 +108,10 @@ libarchive_target = libarchive_project.targets.find { |t| t.name == 'libarchive'
 # our files
 app_dir = ROOT + 'app'
 app_source_refs = Dir[(app_dir + '*.{m,swift}').to_s].sort.map { |f| app_group.new_file(File.basename(f)) }
+package_source_refs = Dir[(ROOT + 'Packages/SwiftHarnessKit/Sources/**/*.swift').to_s].sort.map do |f|
+  relpath = Pathname.new(f).relative_path_from(ROOT + 'Packages/SwiftHarnessKit').to_s
+  ref_for(package_group, relpath, cache)
+end
 Dir[(app_dir + '*.h').to_s].sort.each { |f| app_group.new_file(File.basename(f)) }
 xcconfig_ref = app_group.new_file('AppDSH.xcconfig')
 app_group.new_file('Info.plist')
@@ -135,7 +140,7 @@ rule.output_files = mig_rule.output_files.dup
 rule.script = mig_rule.script
 dsh.build_rules << rule
 
-(ish_source_refs + app_source_refs).each { |r| dsh.source_build_phase.add_file_reference(r, true) }
+(ish_source_refs + app_source_refs + package_source_refs).each { |r| dsh.source_build_phase.add_file_reference(r, true) }
 mig_bf = dsh.source_build_phase.add_file_reference(mig_ref, true)
 mig_bf.settings = { 'ATTRIBUTES' => ['Server'] }
 

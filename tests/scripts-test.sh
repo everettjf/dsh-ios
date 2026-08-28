@@ -31,3 +31,17 @@ second_project=$(shasum -a 256 DSH.xcodeproj/project.pbxproj DSH.xcodeproj/xcsha
 }
 
 printf 'ok  scripts: deterministic Xcode project generation\n'
+
+for module in AgentRuntime AgentProviders; do
+  [ -d "Packages/SwiftHarnessKit/Sources/$module" ] || {
+    echo "not ok: missing Swift package module $module" >&2
+    exit 1
+  }
+done
+
+if rg -n '^import (UIKit|SwiftUI|HealthKit|EventKit|Photos)$' Packages/SwiftHarnessKit/Sources/AgentRuntime; then
+  echo 'not ok: AgentRuntime imports an Apple UI or capability framework' >&2
+  exit 1
+fi
+
+printf 'ok  scripts: AgentRuntime dependency boundary\n'

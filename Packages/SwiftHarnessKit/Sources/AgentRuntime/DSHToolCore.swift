@@ -1,6 +1,6 @@
 import Foundation
 
-enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
+public enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
     case unknownTool(String)
     case invalidArguments(String)
     case disabled(String)
@@ -8,7 +8,7 @@ enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
     case executionFailed(String)
     case stepLimitExceeded
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .unknownTool(let name): return "Unknown tool: \(name)"
         case .invalidArguments(let message): return "Invalid tool arguments: \(message)"
@@ -20,31 +20,31 @@ enum DSHToolError: Error, LocalizedError, Equatable, Sendable {
     }
 }
 
-protocol DSHNativeTool: Sendable {
+public protocol DSHNativeTool: Sendable {
     var definition: DSHToolDefinition { get }
     func execute(arguments: DSHJSONValue) async throws -> DSHJSONValue
 }
 
-final class DSHToolRegistry: @unchecked Sendable {
+public final class DSHToolRegistry: @unchecked Sendable {
     private let lock = NSLock()
     private var tools: [String: any DSHNativeTool]
 
-    init(_ tools: [any DSHNativeTool] = []) {
+    public init(_ tools: [any DSHNativeTool] = []) {
         self.tools = Dictionary(uniqueKeysWithValues: tools.map { ($0.definition.name, $0) })
     }
 
-    var definitions: [DSHToolDefinition] {
+    public var definitions: [DSHToolDefinition] {
         lock.withLock { tools.values.map(\.definition).sorted { $0.name < $1.name } }
     }
 
-    func replaceTools(withPrefix prefix: String, with replacements: [any DSHNativeTool]) {
+    public func replaceTools(withPrefix prefix: String, with replacements: [any DSHNativeTool]) {
         lock.withLock {
             tools = tools.filter { !$0.key.hasPrefix(prefix) }
             for tool in replacements { tools[tool.definition.name] = tool }
         }
     }
 
-    func execute(_ call: DSHToolCall) async -> String {
+    public func execute(_ call: DSHToolCall) async -> String {
         let tool = lock.withLock { tools[call.name] }
         guard let tool else {
             return encodeError(DSHToolError.unknownTool(call.name))

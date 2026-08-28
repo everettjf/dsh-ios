@@ -25,7 +25,7 @@ BUNDLE_ID ?= com.xnuapp.dsh
 XCB        = xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Release DSH_DEVELOPMENT_TEAM=$(TEAM)
 DERIVED    = $(shell ls -dt ~/Library/Developer/Xcode/DerivedData/DSH-*/Build/Products 2>/dev/null | head -1)
 
-.PHONY: all emulator rootfs project app install run test test-emu test-rootfs test-sim test-device test-device-unit archive release clean
+.PHONY: all emulator rootfs project app install run test test-package test-emu test-rootfs test-sim test-device test-device-unit archive release clean
 
 all: emulator rootfs project app
 
@@ -54,7 +54,10 @@ install: app
 run: install
 	xcrun devicectl device process launch --device $(DEVICE) --terminate-existing $(BUNDLE_ID)
 
-test: test-emu test-rootfs test-sim
+test: test-package test-emu test-rootfs test-sim
+
+test-package:
+	swift test --package-path Packages/SwiftHarnessKit
 
 test-emu: emulator
 	tests/emu-test.sh

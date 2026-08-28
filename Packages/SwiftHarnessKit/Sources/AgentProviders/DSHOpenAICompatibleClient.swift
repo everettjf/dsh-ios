@@ -1,12 +1,15 @@
 import Foundation
+#if canImport(AgentRuntime)
+import AgentRuntime
+#endif
 
-enum DSHModelClientError: Error, LocalizedError, Equatable, DSHAgentErrorCategorizing {
+public enum DSHModelClientError: Error, LocalizedError, Equatable, DSHAgentErrorCategorizing {
     case invalidEndpoint
     case invalidResponse
     case httpStatus(Int, String)
     case malformedEvent
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidEndpoint: return "The model endpoint is invalid."
         case .invalidResponse: return "The model server returned an invalid response."
@@ -15,7 +18,7 @@ enum DSHModelClientError: Error, LocalizedError, Equatable, DSHAgentErrorCategor
         }
     }
 
-    var agentErrorCategory: String {
+    public var agentErrorCategory: String {
         switch self {
         case .invalidEndpoint: return "invalid_endpoint"
         case .invalidResponse: return "invalid_response"
@@ -25,14 +28,14 @@ enum DSHModelClientError: Error, LocalizedError, Equatable, DSHAgentErrorCategor
     }
 }
 
-final class DSHOpenAICompatibleClient: DSHModelClient, @unchecked Sendable {
+public final class DSHOpenAICompatibleClient: DSHModelClient, @unchecked Sendable {
     private let baseURL: URL
     private let apiKey: String
     private let session: URLSession
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
 
-    init(baseURL: URL, apiKey: String, session: URLSession = .shared) {
+    public init(baseURL: URL, apiKey: String, session: URLSession = .shared) {
         self.baseURL = baseURL
         self.apiKey = apiKey
         self.session = session
@@ -40,7 +43,7 @@ final class DSHOpenAICompatibleClient: DSHModelClient, @unchecked Sendable {
         encoder.keyEncodingStrategy = .convertToSnakeCase
     }
 
-    func stream(request: DSHCompletionRequest) -> AsyncThrowingStream<DSHModelEvent, Error> {
+    public func stream(request: DSHCompletionRequest) -> AsyncThrowingStream<DSHModelEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -85,7 +88,7 @@ final class DSHOpenAICompatibleClient: DSHModelClient, @unchecked Sendable {
         }
     }
 
-    func makeURLRequest(_ request: DSHCompletionRequest) throws -> URLRequest {
+    public func makeURLRequest(_ request: DSHCompletionRequest) throws -> URLRequest {
         guard let url = URL(string: "chat/completions", relativeTo: normalizedBaseURL()) else {
             throw DSHModelClientError.invalidEndpoint
         }
