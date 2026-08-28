@@ -4,6 +4,7 @@ import AgentRuntime
 import AgentProviders
 import AgentTools
 import AgentStorage
+import AgentAppleTools
 import AgentLinuxGuest
 import AgentMCP
 
@@ -389,31 +390,31 @@ final class DSHAgentViewModel: ObservableObject {
             audit: audit
         )
         let location = DSHGovernedTool(
-            DSHNativeReadTool(.location),
+            DSHAppleReadTool(.location, executor: DSHInProcessRouteExecutor()),
             permission: .init(identifier: "location.read", title: "Current location", gate: .systemPermission, enabledByDefault: true),
             authorization: authorization,
             audit: audit
         )
         let contacts = DSHGovernedTool(
-            DSHNativeReadTool(.contacts),
+            DSHAppleReadTool(.contacts, executor: DSHInProcessRouteExecutor()),
             permission: .init(identifier: "contacts.read", title: "Contacts search", gate: .systemPermission, enabledByDefault: true),
             authorization: authorization,
             audit: audit
         )
         let calendar = DSHGovernedTool(
-            DSHNativeReadTool(.calendar),
+            DSHAppleReadTool(.calendar, executor: DSHInProcessRouteExecutor()),
             permission: .init(identifier: "calendar.read", title: "Calendar access", gate: .systemPermission, enabledByDefault: true),
             authorization: authorization,
             audit: audit
         )
         let reminders = DSHGovernedTool(
-            DSHNativeReadTool(.reminders),
+            DSHAppleReadTool(.reminders, executor: DSHInProcessRouteExecutor()),
             permission: .init(identifier: "reminders.read", title: "Reminders access", gate: .systemPermission, enabledByDefault: true),
             authorization: authorization,
             audit: audit
         )
         let health = DSHGovernedTool(
-            DSHNativeReadTool(.health),
+            DSHAppleReadTool(.health, executor: DSHInProcessRouteExecutor()),
             permission: .init(identifier: "health.read", title: "Apple Health access", gate: .systemPermission, enabledByDefault: true),
             authorization: authorization,
             audit: audit
@@ -432,7 +433,7 @@ final class DSHAgentViewModel: ObservableObject {
             // picker. The outer gate enforces the persistent capability switch;
             // keeping confirmation in the adapter avoids asking twice.
             DSHGovernedTool(
-                DSHNativeWriteTool(kind),
+                DSHAppleWriteTool(kind, executor: DSHInProcessRouteExecutor()),
                 permission: .init(identifier: identifier, title: title, gate: .enabledOnly, enabledByDefault: true),
                 authorization: authorization,
                 audit: audit

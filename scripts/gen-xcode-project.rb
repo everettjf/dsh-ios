@@ -314,6 +314,19 @@ tests_group.new_group('emu', 'emu').new_file('neon_convert_test.c')
 attrs = (project.root_object.attributes['TargetAttributes'] ||= {})
 attrs[tests.uuid] = { 'TestTargetID' => dsh.uuid }
 attrs[uitests.uuid] = { 'TestTargetID' => dsh.uuid }
+
+# Append new package products after all legacy project objects are allocated.
+# The deterministic UUID generator is sequence-based, so this preserves stable
+# object identities and keeps package extraction diffs reviewable.
+apple_tools_dependency = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
+apple_tools_dependency.package = swift_harness_package
+apple_tools_dependency.product_name = 'AgentAppleTools'
+[dsh, lite, tests].each { |target| target.package_product_dependencies << apple_tools_dependency }
+[dsh, lite].each do |target|
+  build_file = project.new(Xcodeproj::Project::Object::PBXBuildFile)
+  build_file.product_ref = apple_tools_dependency
+  target.frameworks_build_phase.files << build_file
+end
 project.save
 
 # --- scheme -------------------------------------------------------------------

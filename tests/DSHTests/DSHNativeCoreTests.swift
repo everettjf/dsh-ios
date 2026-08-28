@@ -4,6 +4,7 @@ import AgentRuntime
 import AgentProviders
 import AgentTools
 import AgentStorage
+import AgentAppleTools
 import AgentLinuxGuest
 import AgentMCP
 
@@ -616,13 +617,13 @@ final class DSHNativeCoreTests: XCTestCase {
 
     func testNativeReadToolsMapArgumentsToInProcessRoutes() async throws {
         let executor = RecordingRouteExecutor(result: .object(["rows": .array([])]))
-        _ = try await DSHNativeReadTool(.contacts, executor: executor).execute(arguments: .object([
+        _ = try await DSHAppleReadTool(.contacts, executor: executor).execute(arguments: .object([
             "query": .string("Ada Lovelace"), "limit": .number(3)
         ]))
-        _ = try await DSHNativeReadTool(.calendar, executor: executor).execute(arguments: .object([
+        _ = try await DSHAppleReadTool(.calendar, executor: executor).execute(arguments: .object([
             "days": .number(-7), "limit": .number(20)
         ]))
-        _ = try await DSHNativeReadTool(.health, executor: executor).execute(arguments: .object([
+        _ = try await DSHAppleReadTool(.health, executor: executor).execute(arguments: .object([
             "metric": .string("sleep"), "days": .number(14)
         ]))
 
@@ -653,11 +654,11 @@ final class DSHNativeCoreTests: XCTestCase {
     func testNativeReadToolsRejectUnboundedContactsAndUnknownHealthMetric() async {
         let executor = RecordingRouteExecutor(result: .object([:]))
         do {
-            _ = try await DSHNativeReadTool(.contacts, executor: executor).execute(arguments: .object([:]))
+            _ = try await DSHAppleReadTool(.contacts, executor: executor).execute(arguments: .object([:]))
             XCTFail("Missing contact query should fail")
         } catch { XCTAssertTrue(error.localizedDescription.contains("query is required")) }
         do {
-            _ = try await DSHNativeReadTool(.health, executor: executor).execute(arguments: .object(["metric": .string("diagnosis")]))
+            _ = try await DSHAppleReadTool(.health, executor: executor).execute(arguments: .object(["metric": .string("diagnosis")]))
             XCTFail("Unknown health metric should fail")
         } catch { XCTAssertTrue(error.localizedDescription.contains("metric must be")) }
         let calls = await executor.calls
@@ -666,21 +667,21 @@ final class DSHNativeCoreTests: XCTestCase {
 
     func testNativeReadToolDefinitionsExposeFiveDistinctTools() {
         let names = [
-            DSHNativeReadTool(.location).definition.name,
-            DSHNativeReadTool(.contacts).definition.name,
-            DSHNativeReadTool(.calendar).definition.name,
-            DSHNativeReadTool(.reminders).definition.name,
-            DSHNativeReadTool(.health).definition.name
+            DSHAppleReadTool(.location, executor: RecordingRouteExecutor(result: .null)).definition.name,
+            DSHAppleReadTool(.contacts, executor: RecordingRouteExecutor(result: .null)).definition.name,
+            DSHAppleReadTool(.calendar, executor: RecordingRouteExecutor(result: .null)).definition.name,
+            DSHAppleReadTool(.reminders, executor: RecordingRouteExecutor(result: .null)).definition.name,
+            DSHAppleReadTool(.health, executor: RecordingRouteExecutor(result: .null)).definition.name
         ]
         XCTAssertEqual(Set(names), Set(["location_query", "contacts_search", "calendar_query", "reminders_query", "health_query"]))
     }
 
     func testNativeWriteToolsUsePostRoutesAndPreserveBodies() async throws {
         let executor = RecordingRouteExecutor(result: .object(["accepted": .bool(true)]))
-        _ = try await DSHNativeWriteTool(.notify, executor: executor).execute(arguments: .object(["title": .string("Done")]))
-        _ = try await DSHNativeWriteTool(.calendarCreate, executor: executor).execute(arguments: .object(["title": .string("Review"), "start": .string("2026-09-01 09:00")]))
-        _ = try await DSHNativeWriteTool(.fileImport, executor: executor).execute(arguments: .object([:]))
-        _ = try await DSHNativeWriteTool(.shortcutRun, executor: executor).execute(arguments: .object(["name": .string("Focus")]))
+        _ = try await DSHAppleWriteTool(.notify, executor: executor).execute(arguments: .object(["title": .string("Done")]))
+        _ = try await DSHAppleWriteTool(.calendarCreate, executor: executor).execute(arguments: .object(["title": .string("Review"), "start": .string("2026-09-01 09:00")]))
+        _ = try await DSHAppleWriteTool(.fileImport, executor: executor).execute(arguments: .object([:]))
+        _ = try await DSHAppleWriteTool(.shortcutRun, executor: executor).execute(arguments: .object(["name": .string("Focus")]))
 
         let calls = await executor.calls
         XCTAssertEqual(calls.map(\.path), ["/v1/notify", "/v1/calendar/events", "/v1/files/import", "/v1/shortcut/run"])
@@ -690,15 +691,17 @@ final class DSHNativeCoreTests: XCTestCase {
     }
 
     func testNativeWriteToolsAreCompleteAndValidateBeforeUI() async {
-        let names = DSHNativeWriteToolKind.allCases.map { DSHNativeWriteTool($0).definition.name }
+        let names = DSHAppleWriteToolKind.allCases.map {
+            DSHAppleWriteTool($0, executor: RecordingRouteExecutor(result: .null)).definition.name
+        }
         XCTAssertEqual(Set(names), Set(["notify", "calendar_create_event", "reminders_create", "file_import", "file_export", "photo_import", "share", "shortcut_run"]))
         let executor = RecordingRouteExecutor(result: .object([:]))
         do {
-            _ = try await DSHNativeWriteTool(.share, executor: executor).execute(arguments: .object(["text": .string(String(repeating: "x", count: 4_001))]))
+            _ = try await DSHAppleWriteTool(.share, executor: executor).execute(arguments: .object(["text": .string(String(repeating: "x", count: 4_001))]))
             XCTFail("Oversized share should fail")
         } catch { XCTAssertTrue(error.localizedDescription.contains("4000")) }
         do {
-            _ = try await DSHNativeWriteTool(.fileExport, executor: executor).execute(arguments: .object(["name": .string("a.txt")]))
+            _ = try await DSHAppleWriteTool(.fileExport, executor: executor).execute(arguments: .object(["name": .string("a.txt")]))
             XCTFail("Missing contents should fail")
         } catch { XCTAssertTrue(error.localizedDescription.contains("base64")) }
         let calls = await executor.calls
@@ -802,7 +805,7 @@ private struct RouteCall: Sendable {
     let json: DSHJSONValue?
 }
 
-private actor RecordingRouteExecutor: DSHNativeRouteExecuting {
+private actor RecordingRouteExecutor: DSHAppleRouteExecuting {
     private(set) var calls: [RouteCall] = []
     let result: DSHJSONValue
     init(result: DSHJSONValue) { self.result = result }

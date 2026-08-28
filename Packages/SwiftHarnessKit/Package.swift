@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "AgentProviders", targets: ["AgentProviders"]),
         .library(name: "AgentTools", targets: ["AgentTools"]),
         .library(name: "AgentStorage", targets: ["AgentStorage"]),
+        .library(name: "AgentAppleTools", targets: ["AgentAppleTools"]),
         .library(name: "AgentMCP", targets: ["AgentMCP"]),
         .library(name: "AgentLinuxGuest", targets: ["AgentLinuxGuest"])
     ],
@@ -23,6 +24,7 @@ let package = Package(
         .target(name: "AgentProviders", dependencies: ["AgentRuntime"]),
         .target(name: "AgentTools", dependencies: ["AgentRuntime"]),
         .target(name: "AgentStorage", dependencies: ["AgentRuntime"]),
+        .target(name: "AgentAppleTools", dependencies: ["AgentRuntime", "AgentTools"]),
         .target(
             name: "AgentLinuxGuest",
             dependencies: ["AgentRuntime", "AgentTools", "AgentStorage"]
@@ -40,6 +42,10 @@ let package = Package(
         .testTarget(name: "AgentProvidersTests", dependencies: ["AgentRuntime", "AgentProviders"]),
         .testTarget(name: "AgentToolsTests", dependencies: ["AgentRuntime", "AgentTools"]),
         .testTarget(name: "AgentStorageTests", dependencies: ["AgentRuntime", "AgentStorage"]),
+        .testTarget(
+            name: "AgentAppleToolsTests",
+            dependencies: ["AgentRuntime", "AgentTools", "AgentAppleTools"]
+        ),
         .testTarget(
             name: "AgentLinuxGuestTests",
             dependencies: ["AgentRuntime", "AgentTools", "AgentStorage", "AgentLinuxGuest"]

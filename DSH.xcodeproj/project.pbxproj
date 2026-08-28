@@ -16,6 +16,7 @@
 		0E32E156FAC5B189EE9E295D /* DSHToolRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388FFB8949CFC8B1A31A2D2C /* DSHToolRegistry.swift */; };
 		0F03039A9879229702A7CE41 /* hook.c in Sources */ = {isa = PBXBuildFile; fileRef = EBA7AD2959FB21E624B65131 /* hook.c */; };
 		104B72ABA46CA570D89387C8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B907447A04C930FE13EAC1FC /* CoreLocation.framework */; };
+		1057949BD1FB130BC2B560ED /* AgentAppleTools in Frameworks */ = {isa = PBXBuildFile; productRef = AD6A35E4A9FACD57859D26F3 /* AgentAppleTools */; };
 		12639453ED83E22D09705D8E /* DSHNotificationCapability.m in Sources */ = {isa = PBXBuildFile; fileRef = D8C13872EBED4D51314012C1 /* DSHNotificationCapability.m */; };
 		162D4824E92A89149161BF27 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = EBEF6BFC74A06E910A6D4C36 /* libresolv.tbd */; };
 		16902D8D64F075FEFA9BBB78 /* freeiosterminal.png in Resources */ = {isa = PBXBuildFile; fileRef = 4DE863BFD0120F18A5B58CD7 /* freeiosterminal.png */; };
@@ -97,6 +98,7 @@
 		93DB6C8E82821ECB3238B92B /* pydann1.png in Resources */ = {isa = PBXBuildFile; fileRef = E81301BED4AB526A08580026 /* pydann1.png */; };
 		9669E400CAE7147681890098 /* AboutViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 052C6B1A366878C7D48AAC18 /* AboutViewController.m */; };
 		973BDF3B5B4C0029A36453C8 /* PasteboardDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 8789053BCFEDD39DAB11E6CD /* PasteboardDevice.m */; };
+		97AC382BDD3BFE943B52CB2B /* AgentAppleTools in Frameworks */ = {isa = PBXBuildFile; productRef = AD6A35E4A9FACD57859D26F3 /* AgentAppleTools */; };
 		9A18D0CDE940D9FAC3D6DB6A /* AboutExternalKeyboardViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A97A8C5C8D12FFCCF691D51E /* AboutExternalKeyboardViewController.m */; };
 		9A3D8971530226D9B50CF899 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 13AC7EC19EFFDF48699E8FF0 /* SceneDelegate.m */; };
 		9C3ECCEEF0D5CE5B6844981E /* DSHDeviceCapability.m in Sources */ = {isa = PBXBuildFile; fileRef = C01FAC96FBD4E85B997B95D4 /* DSHDeviceCapability.m */; };
@@ -440,6 +442,7 @@
 				405BCC754C95C64640750972 /* AgentTools in Frameworks */,
 				6CCFCA1C6FE4444104F38FB6 /* AgentStorage in Frameworks */,
 				46CD663C44A315676FA066F3 /* AgentMCP in Frameworks */,
+				1057949BD1FB130BC2B560ED /* AgentAppleTools in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -460,6 +463,7 @@
 				409CA7450BFBDDDE3B3E7F62 /* AgentStorage in Frameworks */,
 				3B8131D485B32FAF281E1995 /* AgentMCP in Frameworks */,
 				0AE00B232D06A496669E7B4A /* AgentLinuxGuest in Frameworks */,
+				97AC382BDD3BFE943B52CB2B /* AgentAppleTools in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1038,6 +1042,7 @@
 				70A82756C76FD7DC83282689 /* AgentStorage */,
 				0A23660A2ECC9A8A0EFDCB9D /* AgentMCP */,
 				44E1B2E9060D1B7EFBCAB914 /* AgentLinuxGuest */,
+				AD6A35E4A9FACD57859D26F3 /* AgentAppleTools */,
 			);
 			productName = DSHTests;
 			productReference = CDF2B1C40457BB5C65F960E5 /* DSHTests.xctest */;
@@ -1062,6 +1067,7 @@
 				B9C60636D9DFAD6E468D3902 /* AgentTools */,
 				32D9DBC6D48E8D61DB077939 /* AgentStorage */,
 				7EEBBB73DE44289AAC95A1E2 /* AgentMCP */,
+				AD6A35E4A9FACD57859D26F3 /* AgentAppleTools */,
 			);
 			productName = SHOSLite;
 			productReference = B3AC0F019A95810A3B888ACC /* SHOSLite.app */;
@@ -1093,6 +1099,7 @@
 				70A82756C76FD7DC83282689 /* AgentStorage */,
 				0A23660A2ECC9A8A0EFDCB9D /* AgentMCP */,
 				44E1B2E9060D1B7EFBCAB914 /* AgentLinuxGuest */,
+				AD6A35E4A9FACD57859D26F3 /* AgentAppleTools */,
 			);
 			productName = DSH;
 			productReference = 1E6F5126E661EE848ED1D7AE /* DSH.app */;
@@ -1750,6 +1757,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
 			productName = AgentMCP;
+		};
+		AD6A35E4A9FACD57859D26F3 /* AgentAppleTools */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C38DE35B12427533ABB9AC2 /* XCLocalSwiftPackageReference "SwiftHarnessKit" */;
+			productName = AgentAppleTools;
 		};
 		B9C60636D9DFAD6E468D3902 /* AgentTools */ = {
 			isa = XCSwiftPackageProductDependency;
