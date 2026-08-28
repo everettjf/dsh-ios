@@ -1,9 +1,10 @@
 # Swift-native agent delivery plan
 
 The current rewrite is also the incubation branch for the reusable **Swift
-Agent Kit** working program. See [the product and extraction
-plan](swift-agent-kit-plan.md) for package boundaries, licensing strategy,
-public API goals, naming constraints, and phased delivery.
+Harness Kit** internal program and the user-facing **Dashros** app. See the
+[Chinese overall product plan](dashros-product-plan.zh.md) and [framework
+extraction plan](swift-harness-kit-plan.md) for package boundaries, licensing
+strategy, public API goals, naming constraints, and phased delivery.
 
 The Swift-native transition is implemented as a forward-only product change.
 The primary app no longer depends on booting `dsh web`; Linux is an optional,
@@ -30,8 +31,8 @@ lazy workspace capability.
   the supported extension mechanisms.
 - There is no rollback migration. Native storage schemas migrate forward.
 
-Future work now follows the Swift Agent Kit extraction plan while keeping
-DSHIOS as the buildable reference application. Real-device beta feedback,
+Future work now follows the Swift Harness Kit extraction plan while evolving
+the buildable reference application into Dashros. Real-device beta feedback,
 additional native tools, MCP interoperability fixtures, Instruments energy
 traces, localization, deterministic Xcode project generation, and App Store
 presentation remain product work. None reintroduces the old WebView runtime as

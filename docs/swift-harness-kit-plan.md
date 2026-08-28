@@ -1,17 +1,19 @@
-# Swift Agent Kit product and extraction plan
+# Swift Harness Kit product and extraction plan
 
 ## Decision
 
 This Swift rewrite branch is the incubation line for a reusable, Swift-native
 agent runtime. The work is no longer scoped as a source-compatible port of the
-Node.js DeepSeek Harness. DSHIOS remains the reference application and the
-first production consumer of the library.
+Node.js DeepSeek Harness. Dashros (the current DSHIOS application target)
+remains the reference application and the first production consumer of the
+library.
 
-**Swift Agent Kit** is the current working name. It communicates the product
-clearly, but it is not yet the final package or repository name: `AgentKit` and
-`SwiftAgentKit` are already used by other Swift projects. A distinct final name
-must be selected before publishing packages or moving the code to a new
-repository.
+**Swift Harness Kit** is the current internal working name. The user-facing app
+and product brand is **Dashros**. The framework name communicates its role
+clearly, but it is not yet the final package or repository name: `HarnessKit`
+and `Swift Harness` are already used by other projects. A distinct final
+package identity must be selected before publishing packages or moving the code
+to a new repository.
 
 The product promise is:
 
@@ -34,7 +36,7 @@ or compatibility boundary of the library.
 - Linux starts only after a governed tool explicitly requests it.
 - MCP and native tools are the supported extension surfaces. Compatibility with
   arbitrary legacy dsh plugins is not a goal.
-- DSHIOS must consume the same public API that third-party applications use.
+- Dashros must consume the same public API that third-party applications use.
 - Public APIs follow semantic versioning; persisted schemas migrate forward.
 
 ## Package products
@@ -63,7 +65,7 @@ The iSH-derived emulator is GPL software and substantially increases the
 download and build size. It must not be an unconditional dependency of the
 core package. Distribute it as a separately selected `AgentLinuxGuest` product
 or repository, with its source, license text, notices, and App Store obligations
-preserved. DSHIOS may remain GPL while it bundles that guest.
+preserved. Dashros may remain GPL while it bundles that guest.
 
 Applications should be able to choose one of three execution configurations:
 
@@ -122,9 +124,9 @@ Exit: an approved module map and dependency graph with no ambiguous ownership.
 - Extract models, SSE, model-provider protocol, agent loop, tool contracts, and
   in-memory test doubles.
 - Make core tests run with `swift test`, independently of Xcode and the guest.
-- Preserve current DSHIOS behavior by adapting the app at each extraction step.
+- Preserve current Dashros behavior by adapting the app at each extraction step.
 
-Exit: DSHIOS builds using package products and the core suite passes on macOS
+Exit: Dashros builds using package products and the core suite passes on macOS
 and the iOS simulator.
 
 ### Phase 2 — Stabilize runtime and providers
@@ -166,7 +168,7 @@ Exit: at least two independent MCP servers pass the integration suite.
 - Define `ExecutionBackend` without iSH-specific types.
 - Move lazy boot, process execution, staging, quotas and lifecycle events behind
   the backend.
-- Make DSHIOS compile and function in a `NO_LINUX_GUEST` configuration.
+- Make Dashros compile and function in a `NO_LINUX_GUEST` configuration.
 - Produce and document the separately licensed guest distribution.
 
 Exit: the lightweight demo has no guest payload; the full demo downloads or
@@ -174,7 +176,7 @@ bundles the guest only when explicitly selected.
 
 ### Phase 6 — Reference app and developer experience
 
-- Refactor DSHIOS into a thin composition root and polished reference client.
+- Refactor Dashros into a thin composition root and polished reference client.
 - Provide DocC documentation, a minimal chat example, an Apple-tools example,
   an MCP example and a full Linux-workspace example.
 - Add semantic versioning, changelog, API compatibility checks and CI across
@@ -183,18 +185,18 @@ bundles the guest only when explicitly selected.
   startup as release gates.
 
 Exit: a third-party developer can add the package and run a tool-using agent
-without copying code from DSHIOS.
+without copying code from Dashros.
 
 ### Phase 7 — Independent release
 
 - Complete the naming and trademark/package-index collision check.
 - Select the permissive core license after confirming code provenance.
 - Move the stabilized packages to their independent repository or repositories.
-- Point DSHIOS at tagged package releases instead of local source targets.
+- Point Dashros at tagged package releases instead of local source targets.
 - Publish `1.0.0` only after the public API, documentation and compatibility
   suite have been exercised by at least one second application.
 
-Exit: the library and DSHIOS have independent release cadences.
+Exit: the library and Dashros have independent release cadences.
 
 ## Immediate implementation backlog
 
@@ -203,21 +205,22 @@ Exit: the library and DSHIOS have independent release cadences.
 3. Extract `DSHJSONValue`, message/tool models, `DSHModelClient`, SSE decoding,
    and the runtime into `AgentRuntime` and `AgentProviders`.
 4. Move their XCTest coverage to package tests and run it with `swift test`.
-5. Adapt DSHIOS to those package products without changing user-visible
+5. Adapt Dashros to those package products without changing user-visible
    behavior.
 6. Extract registry, policy and storage after the runtime seam is proven.
 7. Integrate the official MCP Swift SDK only after the core dependency boundary
    is stable.
 
-Every step on this branch must leave DSHIOS buildable, tested, committed, and
+Every step on this branch must leave Dashros buildable, tested, committed, and
 pushed. Extraction commits should be small enough that API and ownership
 changes remain reviewable even though the product migration is forward-only.
 
 ## Naming gate
 
-`Swift Agent Kit` is a good descriptive phrase, but a weak final unique brand.
-Current ecosystem conflicts include existing projects named `AgentKit` and
-`SwiftAgentKit`. Before Phase 7, choose a distinctive repository and package
-identity while retaining a descriptive subtitle such as “a Swift-native agent
-runtime for Apple platforms.” Until then, use **Swift Agent Kit** only as the
-working program name in planning documents and internal milestones.
+`Swift Harness Kit` is a good descriptive internal program name, but a weak
+final unique package brand. Current ecosystem conflicts include existing
+projects named `HarnessKit` and `Swift Harness`. Before Phase 7, choose a
+distinctive repository and package identity while retaining a descriptive
+subtitle such as “a Swift-native agent harness for Apple platforms.” Until
+then, use **Swift Harness Kit** in planning documents and internal milestones;
+use **Dashros** for the app and user-facing product.

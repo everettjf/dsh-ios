@@ -32,8 +32,8 @@ SwiftUI App
 - 写操作逐次显示具体确认；读取仍受能力开关和 iOS 系统权限控制。
 - 远程 MCP 必须使用 HTTPS；本地开发允许 loopback HTTP。
 
-完整约定见 [Swift 原生架构](docs/swift-native-agent.md)、[Swift Agent Kit
-抽取计划](docs/swift-agent-kit-plan.md) 和
+完整约定见 [Swift 原生架构](docs/swift-native-agent.md)、[Dashros 与 Swift
+Harness Kit 总体规划](docs/dashros-product-plan.zh.md)、[框架抽取计划](docs/swift-harness-kit-plan.md) 和
 [发布验收清单](docs/release-acceptance.md)。
 
 ## 升级与兼容性
