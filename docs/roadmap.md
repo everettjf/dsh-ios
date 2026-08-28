@@ -1,284 +1,32 @@
-# Roadmap
+# Swift-native agent delivery plan
 
-What is built, what is next, and what each remaining piece actually costs.
-The host bridge has its own design document — [host-bridge.md](host-bridge.md) —
-which this plan references rather than repeats.
+The Swift-native transition is implemented as a forward-only product change.
+The primary app no longer depends on booting `dsh web`; Linux is an optional,
+lazy workspace capability.
 
-## Where things stand
-
-| Area | State |
+| Phase | Delivered |
 |---|---|
-| Guest: Alpine 3.21 + Node 22 + dsh 0.1, reproducible image | done |
-| App: WKWebView front end, supervised `dsh web`, terminal, server log | done |
-| Background boot with progress + ETA (launch watchdog safe) | done |
-| Guest image auto-upgrade with user-data migration | done |
-| Host bridge: listener, token, capability registry, `device_info` | done |
-| Calendar and Reminders (read) over EventKit | done |
-| Apple Health (read): activity, heart rate, sleep, workouts | done |
-| Capabilities screen (⋯ ▸ Capabilities) with per-capability switches | done |
-| Per-call confirmation for everything that writes | done |
-| Power, location, contacts, notifications, files, Shortcuts | done |
-| iSH's own `/dev/clipboard` and `/dev/location` removed (they bypassed everything) | done |
-| Activity record: every capability call and every guest tool call, with a viewer | done |
-| Calendar and Reminders: creating, not just reading | done |
-| Emulator fixes: NEON conversions, FMOV immediates, `waitpid`, streaming `fetch()` | done |
-| Photos (import) and the share sheet | done |
-| Prompt-injection threat model, and every alert value sanitised | done |
-| A turn interrupted by the background is explained on the way back | done |
-| Tests: emulator 3, rootfs 37, app 111 (device + simulator), UI 6 | done |
-| Capabilities ship on; the switch turns them off | done |
-| One-command release: bump, test, archive, upload (`scripts/release.sh`) | done |
-| Distribution: external TestFlight and build-it-yourself | done |
-| P4 reliability: feedback triage, location/threading, release diagnostics | done |
+| 0–5 | Native shell, DeepSeek SSE, turn runtime, conversations, SwiftUI, lazy guest boundary |
+| 6 | Governed native iOS read/write tools and per-call confirmations |
+| 7 | Configurable dynamic MCP servers with Keychain credentials |
+| 8 | Durable sessions, schema migration, retry, continuation, cancellation and recovery |
+| 9 | Native attachments, isolation, quotas and lazy guest staging |
+| 10 | Private activity telemetry, categorized errors and redacted export |
+| 11 | 30 Hz streaming publication, 10,000-delta stress and 100-turn context test |
+| 12 | Forward-only compatibility contract, in-product notice and release acceptance |
 
-Everything runs locally; there is no hosted CI (see [README](../README.md#tests)).
+## Product decisions
 
-## What to do next, and why in this order
+- Swift owns latency-sensitive and user-facing agent behavior.
+- Linux starts only for shell, staging, or Linux-only tools.
+- Existing guest data is retained, but legacy web conversations are not
+  imported into the native conversation store.
+- Arbitrary dsh plugin compatibility is not promised. Native tools and MCP are
+  the supported extension mechanisms.
+- There is no rollback migration. Native storage schemas migrate forward.
 
-The bridge went from one read-only capability to nineteen routes, including
-ones that write to the user's calendar and run arbitrary Shortcuts, and those
-capabilities now ship on. That changes which problems matter, and it sharpens
-the first and third items in particular: a gate nobody has audited matters more
-when it is the only thing left in the way, and attacker-influenceable content
-reaches a live capability set rather than one the user had to go and enable.
-The ordering below is an argument, not a backlog: each item says why it comes
-before the one after it.
-
-### 1. Audit the rest of the emulator's surface — *done*
-
-Two findings, both fixed and both with end-to-end tests: the guest could mount
-a real iOS directory with a grant that survived silently across launches, and a
-terminal hyperlink could open any URL scheme, `shortcut://run-shortcut`
-included. Five other surfaces were checked and found already shut. The original
-argument is kept below because it is why this came first.
-
-**Why first:** the whole value proposition of the capability system is the
-sentence "the app decides, per capability, and nothing reaches iOS without
-passing it." That sentence was false for the entire time it was being written
-— iSH's `/dev/clipboard` and `/dev/location` sat there, world-readable, doing
-exactly what the gates existed to prevent. It was not found by review; it
-surfaced because a paste prompt appeared at launch and the explanation did not
-add up.
-
-Two devices were found by accident. Nobody has looked for the rest. Until
-somebody does, every security claim in the README is an assumption, and every
-capability added on top inherits it.
-
-**What it is:** a read of `ish-arm64/app/` and `ish-arm64/fs/` asking one
-question — what does this hand the guest that the capability registry does not
-know about? Known places to start: `iosfs` (it mounts filesystems named in
-`NSUserDefaults`, which is a lot of authority in a settings key),
-`IOSCalls.m`/`LinuxInterop.h` (a direct guest → Objective-C call surface),
-`Pasteboard`/`Location` device code now that the nodes are gone, and whatever
-`dyn_dev_register` is used for elsewhere.
-
-**Cost:** a day of reading, plus tests for anything found. Cheap relative to
-being wrong.
-
-### 2. A record of what the agent actually did — *done*
-
-Shipped as `DSHActivityLog`, the Activity screen, and `POST /v1/activity` for
-the guest's own tool calls; the design and the recording policy are in
-[host-bridge.md §4](host-bridge.md#the-record). The question that was open —
-whether arguments get recorded — settled as: effects for writes (the user
-already saw them in the confirmation), one-line summaries of arguments for
-everything else, and never the contents a read returned.
-
-Three consumers landed with it: "last used" under each switch, an indicator in
-the DSH bar copying iOS's privacy light, and repeat context in confirmations
-("this is the fifth time in ten minutes") — the last being the only moment a
-user gets to notice an agent in a loop.
-
-Two things it does *not* do yet, both deliberately deferred: grouping a
-timeline by turn, and using it for injection forensics (what did the agent read
-just before it did that). Both want the threat model below to exist first.
-
-### 3. Write down the prompt-injection threat model — *done*
-
-**Why third:** the capability set crossed a line and the docs have not caught
-up. The agent now *reads* attacker-influenceable content (calendar invites from
-strangers, contact notes, imported files) and *writes* to the device (events,
-reminders, clipboard, Shortcuts). Those two halves in one loop is the classic
-injection setup: text inside a calendar event can try to steer the model into
-`shortcut_run`.
-
-The confirmation gate is the mitigation and it is a good one — every write is
-shown to a human in concrete terms before it happens. But that only holds if
-the alert text is *not* attacker-controlled enough to mislead. A shortcut named
-"Allow — routine sync" would render as `Run a shortcut? DSH wants to run your
-shortcut "Allow — routine sync"`. That is worth looking at hard.
-
-**What it is:** a threat-model section in
-[host-bridge.md](host-bridge.md), and a pass over every confirmation string
-asking "if this value were chosen by an attacker, does the alert still tell the
-truth?" Likely outcomes: quote and length-clamp interpolated values, keep
-attacker-controlled text visually distinct from DSH's own words, and never let
-it occupy the title.
-
-**What landed:** the threat model is in [host-bridge.md](host-bridge.md), and
-`DSHDisplayValue` now stands between every agent-chosen value and the alert it
-appears in — whitespace collapsed, length clamped, bidi overrides and control
-characters removed. Titles were already static. What is still open is named
-there too: `notify` writes a system notification that looks like DSH's own, and
-the record cannot yet say what the agent read just before it acted.
-
-### 4. Backgrounding, or: make a turn survivable — *two of three tiers*
-
-**Why fourth:** it is the largest usability ceiling, but it is genuinely hard,
-and the three items above are cheap and make it easier. iOS suspends the app,
-so a long agent turn dies when the user switches away — and the bridge made
-this worse in one specific way: `shortcut_run` *necessarily* backgrounds DSH,
-so that capability can never complete a turn today.
-
-**The honest options, in ascending order of ambition:**
-
-- *Explain it.* A line in the UI when a turn is running: leaving DSH stops it.
-  Cheap, and better than a mysterious hang. Should happen regardless.
-- *Buy 30 seconds.* `beginBackgroundTaskWithExpirationHandler:` covers a
-  step that is already in flight. Helps a tool call that started before the
-  user left; does not help a long turn.
-- *Make turns resumable.* The real answer, and the expensive one: the harness
-  keeps enough state that an interrupted turn can be picked up when the app
-  returns, rather than being lost. This is mostly a dsh-side question, not an
-  iOS one, and worth raising upstream before building anything bespoke.
-
-Anything that pretends the app keeps running in the background (silent audio
-and friends) is off the table: it drains the battery, and it is the kind of
-trick that gets an app removed rather than shipped.
-
-**What landed:** the first two. `DSHTurnPresence` holds a background task
-assertion on the way out, so a step already in flight finishes instead of being
-cut mid-write, and it notices that a turn was in progress when the app left and
-says so in the bar on the way back — at the moment the user is looking at a
-stalled conversation, rather than as a warning in front of the app they were
-switching to.
-
-**What did not:** resumable turns. It stays open on purpose. Keeping enough
-state to pick a turn up again is a change to the harness rather than to this
-app, and the right first move is still to raise it upstream rather than build
-something bespoke here.
-
-### 5. Photos and the share sheet — *done*
-
-**Why fifth:** they were the last two entries in the capability matrix needing
-no new mechanism — `PHPickerViewController` where the picker is the consent
-(like file import), and a per-call write for the share sheet. Mechanical, and
-therefore the right thing to do *after* the structural work above.
-
-Two decisions inside them. There is no route that lists, searches or counts the
-photo library: the agent cannot ask what pictures exist, a person hands it one.
-And the share sheet asks first even though it is itself a chooser — the sheet
-asks *where* the text goes, never whether text the agent wrote should leave at
-all, and a sheet appearing mid-turn with a plausible message already in it is
-the shape of a mistake.
-
-### 6. Distribution — *external TestFlight shipped*
-
-**Where it stands now:** external TestFlight is live; 1.0.6 (7) is the latest
-validated upload. `scripts/release.sh` bumps the version, runs every suite,
-archives, verifies privacy purpose strings, validates and uploads. P4 also
-removed Xcode's ten-minute post-failure diagnostics stall, made simulator
-selection handle current parenthesized model names, and added regression
-coverage for the release helper itself.
-
-Tester reports now have a fixed intake and verification path in
-[testflight-feedback.md](testflight-feedback.md): every report is tied to a
-build/device/OS, triaged by impact, linked to its fix, and closed only after a
-new build or regression test verifies it.
-
-*The App Store itself* is unresolved for a reason that is not technical: the
-app is GPL-3.0 because iSH is, and the GPL sits badly with the App Store's
-terms, which is why iSH ships the way it does. The realistic options remain
-building from source, AltStore-style sideloading, or taking the licence
-question seriously. Worth deciding deliberately rather than drifting.
-
-### Apple PCC model adapter — *prototype removed*
-
-The iOS 27 `PrivateCloudComputeLanguageModel` prototype was removed after
-real-device testing. Its Foundation Models behavior was not equivalent enough
-to the DeepSeek API expected by DeepSeek Harness, and a TestFlight build also
-hit an `EXC_BAD_ACCESS` inside `LanguageModelSession.respond`. DSH now has one
-model path: the standard DeepSeek API configured by the harness.
-
-### Not on this list, deliberately
-
-- **More capabilities.** The matrix has plenty left, and each is now a
-  well-worn path: a route, a tool, a capability entry, tests, a README line.
-  That is exactly why they should wait — the value of the next capability is
-  small next to the value of knowing the ones already shipped are contained.
-- **CI.** Dropped earlier on purpose; everything runs locally.
-
-## Smaller things, worth doing when they get in the way
-
-- **Startup time**, roughly 20–25 s to a usable harness, dominated by Node's
-  jitless start inside the emulator. The app records image/guest boot and HTTP
-  readiness separately; P4 shortened readiness polling from 500 ms to 250 ms.
-  Plugin/module profiling is the next lever, and should precede changing the
-  default plugin set.
-- **Guest image size**, 81 MB compressed after the P3 pruning pass. Any further
-  pruning needs the rootfs native-module and end-to-end agent tests to stay green.
-- **Upstream the emulator fixes.** The NEON conversion gadgets, the
-  FMOV-immediate decoding fix, the `waitpid` EINTR fix and the `lld` probe are
-  self-contained and useful to iSH-ARM64 generally — see
-  [`ish-arm64/UPSTREAM.md`](../ish-arm64/UPSTREAM.md).
-
-## Decisions already made, and why
-
-Kept here so they are not relitigated by accident.
-
-**Per-call confirmation for writes; no session grants.** Session grants were
-proposed and dropped: they could not be explained to a user in one line, which
-is a bad sign for a consent mechanism. Reads are gated by the switch plus the
-framework's own permission; writes ask every time, and the alert names the
-effect rather than the capability.
-
-**Three rules make blocking a bridge handler on a dialog safe.** Never wait on
-a dialog nobody can see (background → refuse). Never stack them (a second
-prompt while one is up → refuse). Always answer (timeout → refuse,
-recoverably). Each is a test.
-
-**No clipboard at all.** Reading was built, tried on a device and removed: iOS
-confirms every programmatic read of a pasteboard that came from another app and
-no API avoids it, so the capability's real behaviour was to interrupt the user
-on every use. Writing raises no system prompt and was kept for a while, then
-dropped too — the question changed from "which direction" to "is this domain
-worth it", and "the agent can silently replace what you are about to paste" is
-not worth the convenience.
-
-**Capabilities ship on; the switch turns them off.** They shipped off at first,
-which mostly meant a hunt through settings before anything worked. The switch
-was never what stood between the agent and the data: a read still waits on
-iOS's own permission dialog, a write still asks every single time. What the
-switch is for is taking a capability away entirely, and that is one tap. The
-consequence is that anything shipping on must have a real gate underneath it —
-a test asserts exactly that, and it caught `files.import` sitting behind nothing
-else until its own document picker was recognised as the gate.
-
-**Contacts is search-only.** There is deliberately no route that returns the
-address book. The agent has to name who it wants.
-
-**Health answers explain their own emptiness.** iOS will not say whether a
-*read* was denied, so "no data" and "declined" are indistinguishable. Every
-empty answer carries a note saying so, and the tool is told to relay it.
-
-**Files never touch the fakefs.** Contents cross the bridge base64-encoded and
-the guest writes them itself. Costs a real 8 MB ceiling; keeps the emulator's
-filesystem out of the app.
-
-**Anything a capability does on the main thread has to survive being called
-from it.** Capability code is reached two ways — a bridge handler on a
-background queue, and a settings switch on the main thread — and a bare
-`dispatch_sync` to the main queue deadlocks the second caller. Turning on
-Location did exactly that: the main thread waited on itself and the watchdog
-killed the app a few seconds later, which reads as a crash and leaves no crash
-report. `DSHRunOnMainSync` runs inline when it is already on the main thread and
-is now the only way capability code hops to it. The clipboard read that was
-removed earlier had the same shape, which is the argument for fixing the class
-rather than the instance.
-
-**Contract tests are not enough.** They prove a capability refuses correctly,
-which is most of the safety surface and none of the does-it-work surface. Two
-bugs — Contacts raising on the first real match, the clipboard read hanging the
-handler — survived every one of them and fell out of a single run against real
-data on a real device. `DSHCapabilityReportTests` exists to close that gap and
-prints what each route actually returned, in shapes rather than values.
+Future work is incremental: real-device beta feedback, additional native tools,
+MCP interoperability fixtures, Instruments energy traces on shipping hardware,
+localization, deterministic Xcode project generation (the current generator
+rewrites object IDs), and App Store presentation. None reintroduces the old
+WebView runtime as the primary product.

@@ -5,6 +5,7 @@
 
 #import "DSHActivityViewController.h"
 #import "DSHActivityLog.h"
+#import "DSHNativeToolAudit.h"
 
 /// The filters worth having: everything, only what touched the device, and
 /// only what went wrong — which is the one people actually come looking for.
@@ -92,7 +93,7 @@ typedef NS_ENUM(NSInteger, DSHActivityFilter) {
     if (self.filter == DSHActivityFilterCapabilities) {
         NSMutableArray *kept = [NSMutableArray array];
         for (DSHActivityEntry *entry in all)
-            if (entry.source != DSHActivitySourceGuestTool)
+            if (entry.source == DSHActivitySourceCapability || entry.source == DSHActivitySourceConfirmation)
                 [kept addObject:entry];
         all = kept;
     } else if (self.filter == DSHActivityFilterProblems) {
@@ -111,7 +112,7 @@ typedef NS_ENUM(NSInteger, DSHActivityFilter) {
 }
 
 - (void)share:(UIBarButtonItem *)sender {
-    NSString *text = DSHActivityLog.shared.plainText;
+    NSString *text = DSHNativeToolAudit.diagnosticReport;
     if (text.length == 0)
         return;
     UIActivityViewController *share = [[UIActivityViewController alloc] initWithActivityItems:@[text]

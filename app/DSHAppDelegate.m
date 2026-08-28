@@ -4,9 +4,6 @@
 //
 
 #import "DSHAppDelegate.h"
-#import "DSHBootCoordinator.h"
-#import "DSHHarness.h"
-#import "DSHRootViewController.h"
 
 // iSH's AppDelegate boots the kernel inside -willFinishLaunching. That takes
 // far longer than iOS's launch watchdog allows on a phone (importing the guest
@@ -26,17 +23,9 @@
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    if ([NSUserDefaults.standardUserDefaults boolForKey:@"recovery"])
-        return YES;
-    // Kicks off image import → kernel boot → data migration → harness start.
-    [DSHBootCoordinator.shared start];
+    // The native agent starts immediately. Linux is launched only when a tool
+    // explicitly needs it; see LazyGuestManager in the guest integration phase.
     return YES;
-}
-
-- (void)applicationWillEnterForeground:(UIApplication *)application {
-    // Suspension may have broken the guest's sockets. Confirm the server still
-    // answers; DSHHarness restarts it otherwise and the UI reloads.
-    [DSHHarness.shared verifyAliveWithCompletion:nil];
 }
 
 @end

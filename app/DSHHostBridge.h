@@ -75,6 +75,15 @@ typedef DSHHostBridgeResponse *_Nonnull (^DSHHostBridgeHandler)(DSHHostBridgeReq
            capability:(nullable NSString *)capability
               handler:(DSHHostBridgeHandler)handler;
 
+/// Executes an installed route in-process, without HTTP authentication or
+/// starting the listener. Intended for the Swift-native agent. Capability and
+/// system permission checks still apply; activity logging is owned by the
+/// native tool governance layer so the call is recorded exactly once.
+- (DSHHostBridgeResponse *)invokeNativeMethod:(NSString *)method
+                                         path:(NSString *)path
+                                        query:(NSDictionary<NSString *, NSString *> *)query
+                                         json:(nullable NSDictionary *)json;
+
 /// Number of requests served since start (for tests and the log).
 @property (nonatomic, readonly) NSUInteger requestCount;
 

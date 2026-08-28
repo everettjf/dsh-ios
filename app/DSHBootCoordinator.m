@@ -145,7 +145,8 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     } else {
         [DSHHarness.shared.log append:@"[dsh-ios] host bridge could not start; iOS capabilities are unavailable"];
     }
-    [DSHHarness.shared start];
+    // The native agent owns the model/UI path. Booting Linux only prepares the
+    // workspace; dsh-serve is no longer an app prerequisite.
 }
 
 @end

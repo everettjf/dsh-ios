@@ -30,6 +30,10 @@ typedef NS_ENUM(NSInteger, DSHActivitySource) {
     DSHActivitySourceCapability = 0,  // a bridge route, from the app's side
     DSHActivitySourceGuestTool,       // a dsh tool inside the guest
     DSHActivitySourceConfirmation,    // the user was asked, and answered
+    DSHActivitySourceNativeTurn,      // Swift-native turn lifecycle
+    DSHActivitySourceModel,           // model request metrics, never prompts
+    DSHActivitySourceMCP,             // MCP connection and tool lifecycle
+    DSHActivitySourceNativeGuest,     // optional Linux guest work from Swift
 };
 
 typedef NS_ENUM(NSInteger, DSHActivityOutcome) {
@@ -37,6 +41,7 @@ typedef NS_ENUM(NSInteger, DSHActivityOutcome) {
     DSHActivityOutcomeRefused,        // a gate said no (switch off, no permission)
     DSHActivityOutcomeDeclined,       // the user said no
     DSHActivityOutcomeTimedOut,
+    DSHActivityOutcomeCancelled,
     DSHActivityOutcomeError,
     DSHActivityOutcomeStarted,        // in flight; updated when it finishes
 };

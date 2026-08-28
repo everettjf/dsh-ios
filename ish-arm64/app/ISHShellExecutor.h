@@ -81,6 +81,12 @@ typedef void (^ISHShellCompletionCallback)(ISHShellExecutionResult *result);
                                         timeout:(NSTimeInterval)timeout
                                    lineCallback:(nullable ISHShellLineCallback)lineCallback;
 
+/// Execute a shell command synchronously with binary data connected to stdin.
++ (ISHShellExecutionResult *)executeCommandSync:(NSString *)command
+                                      inputData:(NSData *)inputData
+                                        timeout:(NSTimeInterval)timeout
+                                   lineCallback:(nullable ISHShellLineCallback)lineCallback;
+
 /// Kill a running process
 /// @param pid Guest process PID (returned from execute methods)
 /// @param signal Signal to send (default: SIGKILL)
