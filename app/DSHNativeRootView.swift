@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -7,28 +8,19 @@ import AgentStorage
 struct DSHNativeRootView: View {
     @StateObject private var model = DSHAgentViewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @FocusState private var isComposerFocused: Bool
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                if model.snapshot.messages.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
-                        Text("SHOS")
-                            .font(.title2.bold())
-                        Text(model.isConfigured ? "Ask anything to begin." : "Add a model API key to begin.")
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
-                    .accessibilityIdentifier("dsh.native.empty")
-                } else {
-                    messageList
+            HStack(spacing: 0) {
+                if horizontalSizeClass == .regular {
+                    SessionSidebarView(model: model)
+                        .frame(minWidth: 260, idealWidth: 300, maxWidth: 340)
+                    Divider()
                 }
+                conversation
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
@@ -41,6 +33,7 @@ struct DSHNativeRootView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button("Conversations", systemImage: "sidebar.left") { model.isShowingSessions = true }
+                        .accessibilityHint(horizontalSizeClass == .regular ? "Opens conversation management" : "Shows your conversations")
                         .accessibilityIdentifier("dsh.native.sessions")
                     Button("New Conversation", systemImage: "square.and.pencil") { model.newSession() }
                         .accessibilityIdentifier("dsh.native.new-session")
@@ -86,6 +79,28 @@ struct DSHNativeRootView: View {
         }
     }
 
+    @ViewBuilder
+    private var conversation: some View {
+        if model.snapshot.messages.isEmpty {
+            VStack(spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.largeTitle)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text("SHOS")
+                    .font(.title2.bold())
+                Text(model.isConfigured ? "Ask anything to begin." : "Add a model API key to begin.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityIdentifier("dsh.native.empty")
+        } else {
+            messageList
+        }
+    }
+
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -98,7 +113,10 @@ struct DSHNativeRootView: View {
                         .frame(height: 1)
                         .id(Self.messageListBottomID)
                 }
-                .padding()
+                .frame(maxWidth: 860)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
             .contentShape(Rectangle())
@@ -125,11 +143,43 @@ struct DSHNativeRootView: View {
                 .scrollIndicators(.hidden)
                 .accessibilityIdentifier("dsh.native.pending-attachments")
             }
+            composerControls
+        }
+        .frame(maxWidth: 860)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private var composerControls: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                composerField
+                HStack(spacing: 16) {
+                    attachmentButton
+                    Spacer()
+                    responseActions
+                }
+            }
+        } else {
             HStack(alignment: .bottom, spacing: 10) {
+                attachmentButton
+                composerField
+                responseActions
+            }
+        }
+    }
+
+    private var attachmentButton: some View {
                 Button("Attach File", systemImage: "paperclip") { model.isImportingAttachments = true }
                     .labelStyle(.iconOnly)
                     .disabled(model.isStreaming || !model.hasRestoredSessions)
+                    .accessibilityHint("Choose one or more files to include in your next message")
                     .accessibilityIdentifier("dsh.native.attach")
+    }
+
+    private var composerField: some View {
                 TextField("Message SHOS", text: $model.draft, axis: .vertical)
                     .lineLimit(1...6)
                     .focused($isComposerFocused)
@@ -142,10 +192,15 @@ struct DSHNativeRootView: View {
                         sendAndDismissKeyboard()
                     }
                     .accessibilityIdentifier("dsh.native.composer")
+    }
+
+    @ViewBuilder
+    private var responseActions: some View {
                 if model.isStreaming {
                     Button("Stop", systemImage: "stop.circle.fill", role: .destructive) { model.stop() }
                         .labelStyle(.iconOnly)
                         .font(.title2)
+                        .accessibilityHint("Cancels the current response")
                         .accessibilityIdentifier("dsh.native.stop")
                 } else {
                     Menu("Response Actions", systemImage: "ellipsis.circle") {
@@ -159,12 +214,9 @@ struct DSHNativeRootView: View {
                         .labelStyle(.iconOnly)
                         .font(.title2)
                         .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.pendingAttachments.isEmpty)
+                        .accessibilityHint("Sends the message and attached files")
                         .accessibilityIdentifier("dsh.native.send")
                 }
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
     }
 
     private static let messageListBottomID = "dsh.native.messages.bottom"
@@ -364,6 +416,60 @@ private struct SessionBrowserView: View {
     }
 }
 
+private struct SessionSidebarView: View {
+    @ObservedObject var model: DSHAgentViewModel
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Conversations")
+                    .font(.headline)
+                Spacer()
+                Button("New Conversation", systemImage: "square.and.pencil") { model.newSession() }
+                    .labelStyle(.iconOnly)
+                    .accessibilityIdentifier("dsh.native.sidebar.new-session")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            if model.sessions.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text("No Conversations")
+                        .font(.headline)
+                    Text("Start a conversation to see it here.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(model.sessions) { session in
+                    Button {
+                        model.selectSession(session.id)
+                    } label: {
+                        SessionRow(session: session, selected: session.id == model.currentSessionID)
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(session.id == model.currentSessionID ? Color.accentColor.opacity(0.12) : Color.clear)
+                    .contextMenu {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            model.deleteSession(session.id)
+                        }
+                    }
+                }
+                .listStyle(.sidebar)
+            }
+        }
+        .background(Color(uiColor: .secondarySystemBackground))
+        .accessibilityIdentifier("dsh.native.session-sidebar")
+    }
+}
+
 private struct SessionRow: View {
     let session: DSHSessionRecord
     let selected: Bool
@@ -403,36 +509,45 @@ private struct MessageBubble: View {
     }
 
     private var conversationBubble: some View {
-        VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 6) {
-            if let reasoning = message.reasoningContent, !reasoning.isEmpty {
-                DisclosureGroup("Reasoning") {
-                    Text(reasoning).frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-            Text(message.content ?? (message.role == .assistant ? "…" : ""))
-                .textSelection(.enabled)
-            if !message.attachments.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(message.attachments) { attachment in
-                        Label(attachment.name, systemImage: "doc")
-                            .font(.caption)
-                            .lineLimit(1)
+        HStack {
+            if message.role == .user { Spacer(minLength: 44) }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(message.role == .user ? "You" : "SHOS")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                if let reasoning = message.reasoningContent, !reasoning.isEmpty {
+                    DisclosureGroup("Reasoning") {
+                        Text(reasoning).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }
-                .accessibilityElement(children: .combine)
-            }
-            if !message.toolCalls.isEmpty {
-                Text("Requested \(message.toolCalls.count) tool call(s)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                }
+                Text(message.content ?? (message.role == .assistant ? "…" : ""))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !message.attachments.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(message.attachments) { attachment in
+                            Label(attachment.name, systemImage: "doc")
+                                .font(.caption)
+                                .lineLimit(1)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+                if !message.toolCalls.isEmpty {
+                    Label("Using \(message.toolCalls.count) tool\(message.toolCalls.count == 1 ? "" : "s")", systemImage: "wrench.and.screwdriver")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .padding(12)
+            .frame(maxWidth: 680, alignment: .leading)
+            .background(message.role == .user ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.12))
+            .compositingGroup()
+            .clipShape(.rect(cornerRadius: 14))
+            if message.role != .user { Spacer(minLength: 44) }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
-        .background(message.role == .user ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
         .accessibilityIdentifier("dsh.native.message.\(message.role.rawValue)")
     }
 }
@@ -446,9 +561,21 @@ private struct ToolResultCard: View {
         return content.contains("\"ok\":false") || content.localizedCaseInsensitiveContains("error")
     }
 
+    private var formattedContent: String {
+        guard let content = message.content,
+              let data = content.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data),
+              JSONSerialization.isValidJSONObject(object),
+              let pretty = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]),
+              let string = String(data: pretty, encoding: .utf8) else {
+            return message.content ?? "No details returned."
+        }
+        return string
+    }
+
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
-            Text(message.content ?? "No details returned.")
+            Text(formattedContent)
                 .font(.caption.monospaced())
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
@@ -463,7 +590,10 @@ private struct ToolResultCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .compositingGroup()
+        .clipShape(.rect(cornerRadius: 12))
+        .accessibilityLabel(failed ? "Tool failed" : "Tool completed")
+        .accessibilityHint("Double tap to show or hide tool details")
         .accessibilityIdentifier("dsh.native.message.tool")
     }
 }

@@ -72,6 +72,17 @@
 }
 
 - (void)testConversationBrowserIsNativeAndCanCreateSession {
+    XCUIElement *sidebar = self.app.otherElements[@"dsh.native.session-sidebar"];
+    if ([sidebar waitForExistenceWithTimeout:2]) {
+        XCUIElement *newConversation = self.app.buttons[@"dsh.native.sidebar.new-session"];
+        XCTAssertTrue([newConversation waitForExistenceWithTimeout:2]);
+        XCTAssertTrue(self.app.staticTexts[@"Conversations"].exists);
+        XCTAssertEqual(self.app.webViews.count, 0u);
+        [newConversation tap];
+        XCTAssertTrue([self.app.navigationBars[@"SHOS"] waitForExistenceWithTimeout:3]);
+        return;
+    }
+
     XCUIElement *conversations = self.app.buttons[@"dsh.native.sessions"];
     XCTAssertTrue([conversations waitForExistenceWithTimeout:3]);
     [conversations tap];
