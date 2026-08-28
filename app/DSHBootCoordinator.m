@@ -47,6 +47,24 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     return shared;
 }
 
++ (void)prepareNativeCapabilities {
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        DSHHostBridge *bridge = DSHHostBridge.shared;
+        [DSHDeviceCapability installOn:bridge];
+        [DSHEventKitCapability installOn:bridge];
+        [DSHHealthCapability installOn:bridge];
+        [DSHLocationCapability installOn:bridge];
+        [DSHContactsCapability installOn:bridge];
+        [DSHNotificationCapability installOn:bridge];
+        [DSHFilesCapability installOn:bridge];
+        [DSHPhotosCapability installOn:bridge];
+        [DSHShareCapability installOn:bridge];
+        [DSHShortcutsCapability installOn:bridge];
+        [DSHActivityCapability installOn:bridge];
+    });
+}
+
 - (instancetype)init {
     if (self = [super init]) {
         // Serial and high priority: the whole guest lives on this thread until
@@ -126,18 +144,8 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     [self setPhase:DSHBootPhaseReady message:@"Starting DeepSeek Harness…" progress:-1];
     // The host bridge must be listening before dsh-serve starts: its URL and
     // token reach the guest through the server's environment.
+    [DSHBootCoordinator prepareNativeCapabilities];
     DSHHostBridge *bridge = DSHHostBridge.shared;
-    [DSHDeviceCapability installOn:bridge];
-    [DSHEventKitCapability installOn:bridge];
-    [DSHHealthCapability installOn:bridge];
-    [DSHLocationCapability installOn:bridge];
-    [DSHContactsCapability installOn:bridge];
-    [DSHNotificationCapability installOn:bridge];
-    [DSHFilesCapability installOn:bridge];
-    [DSHPhotosCapability installOn:bridge];
-    [DSHShareCapability installOn:bridge];
-    [DSHShortcutsCapability installOn:bridge];
-    [DSHActivityCapability installOn:bridge];
     if ([bridge start]) {
         NSMutableDictionary *env = [DSHHarness.shared.extraEnvironment mutableCopy];
         [env addEntriesFromDictionary:bridge.guestEnvironment];

@@ -10,6 +10,12 @@ conversation, editing settings, using native tools, and calling MCP do not boot
 Linux. This is a forward-only transition from the earlier `dsh web` app; DSH
 does not promise compatibility with every dsh plugin.
 
+> **Current development line:** `main` is the active Swift rewrite. The last
+> official Node.js DeepSeek Harness implementation before this rewrite is
+> preserved at [`nodejs-harness-v1.0.10`](https://github.com/everettjf/dsh-ios/tree/nodejs-harness-v1.0.10).
+> Use that tag when you need the original `dsh web` / Node.js architecture;
+> new product work happens on the Swift-native `main` branch.
+
 ## Product architecture
 
 ```text

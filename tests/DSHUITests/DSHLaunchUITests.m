@@ -50,6 +50,18 @@
     XCTAssertTrue(send.isEnabled);
 }
 
+- (void)testComposerKeyboardCanBeDismissed {
+    XCUIElement *composer = self.app.textFields[@"dsh.native.composer"];
+    XCTAssertTrue([composer waitForExistenceWithTimeout:3]);
+    [composer tap];
+    XCTAssertTrue([self.app.keyboards.firstMatch waitForExistenceWithTimeout:2]);
+
+    XCUIElement *done = self.app.buttons[@"dsh.native.keyboard.dismiss"];
+    XCTAssertTrue([done waitForExistenceWithTimeout:2]);
+    [done tap];
+    XCTAssertTrue([self.app.keyboards.firstMatch waitForNonExistenceWithTimeout:2]);
+}
+
 - (void)testNewConversationControlIsReachable {
     XCUIElement *newSession = self.app.buttons[@"dsh.native.new-session"];
     XCTAssertTrue([newSession waitForExistenceWithTimeout:3]);

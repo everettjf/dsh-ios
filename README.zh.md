@@ -8,6 +8,12 @@ DSH 是一个快速、原生的 iOS DeepSeek agent。主界面、模型流式请
 MCP 都不会启动 Linux。这是从旧版 `dsh web` 向前迁移，不考虑回滚，也不承诺
 兼容所有 dsh 插件。
 
+> **当前开发主线：** `main` 是正在使用和持续开发的 Swift 重写版本。大改造前最后
+> 一版官方 Node.js DeepSeek Harness 已保留在
+> [`nodejs-harness-v1.0.10`](https://github.com/everettjf/dsh-ios/tree/nodejs-harness-v1.0.10)
+> Tag。需要原来的 `dsh web` / Node.js 架构时请使用该 Tag；后续产品开发在 Swift
+> 原生的 `main` 分支继续。
+
 ## 产品架构
 
 ```text

@@ -1,6 +1,10 @@
 import XCTest
 @testable import DSH
 
+private struct DSHNativeRouteEnvelopeForTests: Decodable {
+    let status: Int
+}
+
 final class DSHNativeCoreTests: XCTestCase {
     func testSSEDecoderHandlesFragmentedCRLFAndMultipleEvents() throws {
         var decoder = DSHSSEDecoder()
@@ -622,6 +626,22 @@ final class DSHNativeCoreTests: XCTestCase {
         XCTAssertEqual(calls[1].query, ["days": "-7", "limit": "20"])
         XCTAssertEqual(calls[2].query, ["days": "14"])
         XCTAssertTrue(calls.allSatisfy { $0.method == "GET" && $0.json == nil })
+    }
+
+    func testPreparingNativeHealthRouteDoesNotStartLinuxGuest() throws {
+        let phaseBeforePreparation = DSHBootCoordinator.shared().phase
+        DSHBootCoordinator.prepareNativeCapabilities()
+
+        let data = DSHNativeCapabilityBridge.invokeMethod(
+            "GET",
+            path: "/v1/health/activity",
+            query: ["days": "1"],
+            json: nil
+        )
+        let envelope = try JSONDecoder().decode(DSHNativeRouteEnvelopeForTests.self, from: data)
+
+        XCTAssertNotEqual(envelope.status, 404, "Native Health must be registered without booting Linux")
+        XCTAssertEqual(DSHBootCoordinator.shared().phase, phaseBeforePreparation)
     }
 
     func testNativeReadToolsRejectUnboundedContactsAndUnknownHealthMetric() async {

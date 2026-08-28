@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct DSHNativeRootView: View {
     @State private var model = DSHAgentViewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @FocusState private var isComposerFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -19,8 +20,13 @@ struct DSHNativeRootView: View {
                 } else {
                     messageList
                 }
-                responseStatus
-                composer
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 0) {
+                    responseStatus
+                    composer
+                }
+                .background(.bar)
             }
             .navigationTitle("DeepSeek")
             .toolbar {
@@ -61,6 +67,13 @@ struct DSHNativeRootView: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active { model.persistForLifecycle() }
             }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { isComposerFocused = false }
+                        .accessibilityIdentifier("dsh.native.keyboard.dismiss")
+                }
+            }
         }
     }
 
@@ -75,6 +88,7 @@ struct DSHNativeRootView: View {
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: model.snapshot.messages) { _, messages in
                 if let id = messages.last?.id { proxy.scrollTo(id, anchor: .bottom) }
             }
@@ -104,7 +118,15 @@ struct DSHNativeRootView: View {
                     .accessibilityIdentifier("dsh.native.attach")
                 TextField("Message DeepSeek", text: $model.draft, axis: .vertical)
                     .lineLimit(1...6)
-                    .textFieldStyle(.roundedBorder)
+                    .focused($isComposerFocused)
+                    .textFieldStyle(.plain)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(.secondary.opacity(0.12), in: .rect(cornerRadius: 18))
+                    .onSubmit {
+                        guard !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+                        model.send()
+                    }
                     .accessibilityIdentifier("dsh.native.composer")
                 if model.isStreaming {
                     Button("Stop", systemImage: "stop.circle.fill", role: .destructive) { model.stop() }
@@ -127,8 +149,8 @@ struct DSHNativeRootView: View {
                 }
             }
         }
-        .padding()
-        .background(.bar)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder private var responseStatus: some View {

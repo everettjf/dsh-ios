@@ -3,3 +3,4 @@
 #import "DSHNativeToolAudit.h"
 #import "DSHNativeCapabilityBridge.h"
 #import "DSHActivityViewController.h"
+#import "DSHBootCoordinator.h"

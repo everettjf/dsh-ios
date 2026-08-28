@@ -30,6 +30,10 @@ extern NSNotificationName const DSHBootStateDidChangeNotification;
 
 + (instancetype)shared;
 
+/// Registers the lightweight native iOS capabilities without booting Linux or
+/// opening the guest bridge listener. Safe to call repeatedly during launch.
++ (void)prepareNativeCapabilities;
+
 @property (nonatomic, readonly) DSHBootPhase phase;
 /// 0…1 while importing an image, -1 when the step has no measurable progress.
 @property (nonatomic, readonly) double progress;
