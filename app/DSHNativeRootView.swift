@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
+import AgentRuntime
+import AgentStorage
 
 struct DSHNativeRootView: View {
     @State private var model = DSHAgentViewModel()

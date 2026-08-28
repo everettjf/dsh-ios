@@ -1,5 +1,8 @@
 import Foundation
 import Security
+import AgentRuntime
+import AgentMCP
+import AgentTools
 
 struct DSHMCPServerConfiguration: Identifiable, Equatable, Sendable {
     var id: UUID

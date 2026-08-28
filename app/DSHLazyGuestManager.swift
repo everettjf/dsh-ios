@@ -1,4 +1,7 @@
 import Foundation
+import AgentRuntime
+import AgentTools
+import AgentStorage
 
 enum DSHGuestState: Equatable, Sendable {
     case dormant

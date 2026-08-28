@@ -108,10 +108,7 @@ libarchive_target = libarchive_project.targets.find { |t| t.name == 'libarchive'
 # our files
 app_dir = ROOT + 'app'
 app_source_refs = Dir[(app_dir + '*.{m,swift}').to_s].sort.map { |f| app_group.new_file(File.basename(f)) }
-package_source_refs = Dir[(ROOT + 'Packages/SwiftHarnessKit/Sources/**/*.swift').to_s].sort.map do |f|
-  relpath = Pathname.new(f).relative_path_from(ROOT + 'Packages/SwiftHarnessKit').to_s
-  ref_for(package_group, relpath, cache)
-end
+package_group.new_file('Package.swift')
 Dir[(app_dir + '*.h').to_s].sort.each { |f| app_group.new_file(File.basename(f)) }
 xcconfig_ref = app_group.new_file('AppDSH.xcconfig')
 app_group.new_file('Info.plist')
@@ -140,7 +137,7 @@ rule.output_files = mig_rule.output_files.dup
 rule.script = mig_rule.script
 dsh.build_rules << rule
 
-(ish_source_refs + app_source_refs + package_source_refs).each { |r| dsh.source_build_phase.add_file_reference(r, true) }
+(ish_source_refs + app_source_refs).each { |r| dsh.source_build_phase.add_file_reference(r, true) }
 mig_bf = dsh.source_build_phase.add_file_reference(mig_ref, true)
 mig_bf.settings = { 'ATTRIBUTES' => ['Server'] }
 
@@ -153,6 +150,23 @@ dsh.add_dependency(libarchive_target)
 product_group = project.root_object.project_references.find { |r| r[:project_ref] == libarchive_ref }[:product_group]
 libarchive_product = product_group.children.find { |c| c.path.to_s == 'libarchive.a' } or abort 'libarchive.a proxy missing'
 dsh.frameworks_build_phase.add_file_reference(libarchive_product, true)
+
+# Dashros consumes the same public package products exposed to third-party apps.
+# Do not add Package Sources directly to the application compile phase: doing so
+# hides missing public API and dependency-boundary problems.
+swift_harness_package = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
+swift_harness_package.relative_path = 'Packages/SwiftHarnessKit'
+project.root_object.package_references << swift_harness_package
+swift_harness_products = %w[AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP].to_h do |product_name|
+  dependency = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
+  dependency.package = swift_harness_package
+  dependency.product_name = product_name
+  dsh.package_product_dependencies << dependency
+  build_file = project.new(Xcodeproj::Project::Object::PBXBuildFile)
+  build_file.product_ref = dependency
+  dsh.frameworks_build_phase.files << build_file
+  [product_name, dependency]
+end
 
 (ish_resource_refs + app_resource_refs).each { |r| dsh.resources_build_phase.add_file_reference(r, true) }
 
@@ -231,6 +245,7 @@ tests.build_configuration_list.build_configurations.each do |bc|
   })
 end
 tests.add_dependency(dsh)
+swift_harness_products.each_value { |dependency| tests.package_product_dependencies << dependency }
 
 uitests = project.new_target(:ui_test_bundle, 'DSHUITests', :ios, '26.0')
 ug = tests_group.new_group('DSHUITests', 'DSHUITests')

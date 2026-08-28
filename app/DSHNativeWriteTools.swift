@@ -1,4 +1,6 @@
 import Foundation
+import AgentRuntime
+import AgentTools
 
 enum DSHNativeWriteToolKind: Sendable, CaseIterable {
     case notify, calendarCreate, reminderCreate, fileImport, fileExport, photoImport, share, shortcutRun

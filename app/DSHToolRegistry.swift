@@ -1,5 +1,9 @@
 import Foundation
 import UIKit
+import AgentRuntime
+import AgentTools
+import AgentStorage
+import AgentMCP
 
 struct DSHDeviceInfoTool: DSHNativeTool {
     let definition = DSHToolDefinition(

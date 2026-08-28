@@ -45,3 +45,22 @@ if rg -n '^import (UIKit|SwiftUI|HealthKit|EventKit|Photos)$' Packages/SwiftHarn
 fi
 
 printf 'ok  scripts: AgentRuntime dependency boundary\n'
+
+if ! rg -q 'XCLocalSwiftPackageReference "SwiftHarnessKit"' DSH.xcodeproj/project.pbxproj; then
+  echo 'not ok: Dashros does not reference the local SwiftHarnessKit package' >&2
+  exit 1
+fi
+
+for product in AgentRuntime AgentProviders AgentTools AgentStorage AgentMCP; do
+  if ! rg -q "${product} in Frameworks" DSH.xcodeproj/project.pbxproj; then
+    echo "not ok: Dashros does not link Swift package product $product" >&2
+    exit 1
+  fi
+done
+
+if rg -q 'Packages/SwiftHarnessKit/Sources|DSHAgentRuntime.swift in Sources|DSHMCPClient.swift in Sources' DSH.xcodeproj/project.pbxproj; then
+  echo 'not ok: SwiftHarnessKit sources are compiled directly into the Dashros app target' >&2
+  exit 1
+fi
+
+printf 'ok  scripts: Dashros consumes SwiftHarnessKit package products\n'

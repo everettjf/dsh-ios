@@ -1,4 +1,6 @@
 import Foundation
+import AgentRuntime
+import AgentTools
 
 protocol DSHNativeRouteExecuting: Sendable {
     func invoke(method: String, path: String, query: [String: String], json: DSHJSONValue?) async throws -> DSHJSONValue

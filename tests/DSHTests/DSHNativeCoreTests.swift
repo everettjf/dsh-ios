@@ -1,5 +1,10 @@
 import XCTest
 @testable import DSH
+import AgentRuntime
+import AgentProviders
+import AgentTools
+import AgentStorage
+import AgentMCP
 
 private struct DSHNativeRouteEnvelopeForTests: Decodable {
     let status: Int

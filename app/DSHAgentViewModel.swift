@@ -1,5 +1,10 @@
 import Foundation
 import Observation
+import AgentRuntime
+import AgentProviders
+import AgentTools
+import AgentStorage
+import AgentMCP
 
 @MainActor
 @Observable

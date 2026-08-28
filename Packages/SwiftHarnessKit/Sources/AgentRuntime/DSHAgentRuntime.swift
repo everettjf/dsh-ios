@@ -23,6 +23,12 @@ public struct DSHAgentSnapshot: Equatable, Sendable {
     public let messages: [DSHChatMessage]
     public let phase: DSHAgentPhase
     public let usage: DSHTokenUsage?
+
+    public init(messages: [DSHChatMessage], phase: DSHAgentPhase, usage: DSHTokenUsage?) {
+        self.messages = messages
+        self.phase = phase
+        self.usage = usage
+    }
 }
 
 public enum DSHAgentRuntimeError: Error, LocalizedError, Equatable {

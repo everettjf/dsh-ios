@@ -1,4 +1,5 @@
 import Foundation
+import AgentRuntime
 
 /// Dashros adapter from the reusable runtime telemetry protocol to the
 /// Objective-C activity log. This deliberately remains outside AgentRuntime.
