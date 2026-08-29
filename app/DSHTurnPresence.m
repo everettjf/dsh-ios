@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 
 NSNotificationName const DSHTurnWasInterruptedNotification = @"DSHTurnWasInterrupted";
+NSString *const DSHTurnRecoveryStatusKey = @"status";
+static NSString *const kInterruptedAtKey = @"DSHTurnInterruptedAt";
 
 /// Long enough that the gap between two tool calls in one turn does not read as
 /// idle, short enough that a turn finished a minute ago does not.
@@ -38,6 +40,11 @@ static const NSTimeInterval kWorkingWindow = 20;
 - (void)start {
     if (_started) return;
     _started = YES;
+    NSDate *persisted = [NSUserDefaults.standardUserDefaults objectForKey:kInterruptedAtKey];
+    if ([persisted isKindOfClass:NSDate.class]) {
+        _leftMidTurn = YES;
+        _interruptedAt = persisted;
+    }
     NSNotificationCenter *centre = NSNotificationCenter.defaultCenter;
     [centre addObserver:self selector:@selector(activityChanged)
                    name:DSHActivityLogDidChangeNotification object:nil];
@@ -64,6 +71,8 @@ static const NSTimeInterval kWorkingWindow = 20;
 - (void)willResignActive {
     if (!self.isWorking) return;
     _leftMidTurn = YES;
+    _interruptedAt = NSDate.date;
+    [NSUserDefaults.standardUserDefaults setObject:_interruptedAt forKey:kInterruptedAtKey];
 
     // Whatever iOS is willing to give — usually around half a minute. It buys a
     // step that is already in flight, not a turn: an assertion cannot keep an
@@ -80,16 +89,22 @@ static const NSTimeInterval kWorkingWindow = 20;
     [self endBackgroundTask];
     if (!_leftMidTurn) return;
     _leftMidTurn = NO;
+    [NSUserDefaults.standardUserDefaults removeObjectForKey:kInterruptedAtKey];
     // Said on the way back rather than on the way out: leaving is a deliberate
     // act and a warning then would be one more thing between the user and the
     // app they are switching to. Coming back to a conversation that stopped is
     // where the explanation is missing.
-    [NSNotificationCenter.defaultCenter postNotificationName:DSHTurnWasInterruptedNotification object:self];
+    NSString *status = DSHHarness.shared.state == DSHHarnessStateReady ? @"server-ready" : @"server-unavailable";
+    [NSNotificationCenter.defaultCenter postNotificationName:DSHTurnWasInterruptedNotification
+                                                       object:self userInfo:@{DSHTurnRecoveryStatusKey: status}];
+    _interruptedAt = nil;
 }
 
 - (void)resetForTesting {
     @synchronized (self) { _lastActivity = nil; }
     _leftMidTurn = NO;
+    _interruptedAt = nil;
+    [NSUserDefaults.standardUserDefaults removeObjectForKey:kInterruptedAtKey];
     [self endBackgroundTask];
 }
 

@@ -26,6 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Posted on the main thread when the app returns to the foreground having left
 /// it mid-turn. The object is the presence instance; there is no user info.
 extern NSNotificationName const DSHTurnWasInterruptedNotification;
+extern NSString *const DSHTurnRecoveryStatusKey;
 
 @interface DSHTurnPresence : NSObject
 
@@ -43,6 +44,9 @@ extern NSNotificationName const DSHTurnWasInterruptedNotification;
 /// Set while the app is in the background having left mid-turn, and cleared
 /// once the notice has been shown. Exposed for tests.
 @property (nonatomic, readonly) BOOL leftMidTurn;
+/// Last persisted interruption time, including an interruption carried across
+/// a process termination. Nil after the recovery notice has been consumed.
+@property (nonatomic, readonly, nullable) NSDate *interruptedAt;
 
 /// How recent activity has to be to count as working.
 @property (class, nonatomic, readonly) NSTimeInterval workingWindow;

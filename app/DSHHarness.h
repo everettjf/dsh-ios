@@ -71,6 +71,9 @@ extern NSNotificationName const DSHHarnessStateDidChangeNotification;
 @property (nonatomic) NSTimeInterval startupTimeout;
 /// Consecutive crashes tolerated before giving up. Default 4.
 @property (nonatomic) NSUInteger maxConsecutiveCrashes;
+/// Failures retained across app launches inside the ten-minute crash-loop
+/// window. Test harness instances do not write this production state.
+@property (nonatomic, readonly) NSUInteger recentPersistentFailureCount;
 
 - (void)start;
 - (void)stop;

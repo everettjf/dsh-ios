@@ -5,6 +5,7 @@
 
 #import "DSHLogBuffer.h"
 #import <UIKit/UIKit.h>
+#import "DSHStartupMetrics.h"
 
 NSNotificationName const DSHLogBufferDidChangeNotification = @"DSHLogBufferDidChangeNotification";
 
@@ -186,6 +187,7 @@ NSNotificationName const DSHLogBufferDidChangeNotification = @"DSHLogBufferDidCh
     }];
     NSMutableString *report = [NSMutableString stringWithString:
         @"DSH diagnostic report\nRecent launches, newest first. Review before sharing.\n"];
+    [report appendFormat:@"\n%@\n", DSHStartupMetrics.shared.summary];
     for (NSURL *url in files) {
         NSString *contents = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
         if (contents.length)

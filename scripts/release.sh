@@ -5,6 +5,7 @@
 #   scripts/release.sh                 patch bump, test, archive, upload
 #   scripts/release.sh --minor         bump the minor component instead
 #   scripts/release.sh --build-only    reuse the current version, bump only the build number
+#   scripts/release.sh --build-number N use an explicit build number (must increase)
 #   scripts/release.sh --dry-run       do everything except upload and commit
 #   scripts/release.sh --skip-tests    skip the test run (not recommended)
 #
@@ -30,11 +31,13 @@ part=patch
 dry_run=false
 skip_tests=false
 build_only=false
+requested_build=
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --patch|--minor|--major) part="${1#--}" ;;
         --build-only)            build_only=true ;;
+        --build-number)          shift; [ $# -gt 0 ] || { echo "--build-number needs a value" >&2; exit 2; }; requested_build="$1" ;;
         --dry-run)               dry_run=true ;;
         --skip-tests)            skip_tests=true ;;
         -h|--help)               awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
@@ -87,6 +90,16 @@ else
     version="${major}.${minor}.${patch}"
 fi
 next_build=$((build + 1))
+if [ -n "$requested_build" ]; then
+    [[ "$requested_build" =~ ^[0-9]+$ ]] || die "--build-number must be a positive integer"
+    [ "$requested_build" -gt "$build" ] || die "--build-number must be greater than current build ${build}"
+    next_build="$requested_build"
+fi
+release_tag="v${version}-build${next_build}"
+
+# Fail before an expensive archive or an irreversible upload. Version-only
+# tags from older releases remain valid; new releases identify the exact build.
+git rev-parse -q --verify "refs/tags/${release_tag}" >/dev/null && die "release tag ${release_tag} already exists"
 
 # App Store Connect rejects a build number it has already seen for this version,
 # so the build number only ever climbs, whether or not the version moved.
@@ -192,25 +205,45 @@ if $dry_run; then
 fi
 
 step "Uploading to App Store Connect"
-xcrun altool --upload-app -f "$ipa" -t ios \
-    -u "$APPLE_ID" -p "$APPLE_SPECIFIC_PASSWORD"
+upload_log=$(mktemp /tmp/dsh-upload.XXXXXX)
+if ! xcrun altool --upload-app -f "$ipa" -t ios \
+    -u "$APPLE_ID" -p "$APPLE_SPECIFIC_PASSWORD" 2>&1 | tee "$upload_log"; then
+    rm -f "$upload_log"
+    die "App Store Connect upload failed"
+fi
+delivery_uuid=$(sed -n 's/.*Delivery UUID: *//p' "$upload_log" | tail -1)
+rm -f "$upload_log"
+[ -n "$delivery_uuid" ] || delivery_uuid="unknown"
 
 trap - ERR INT TERM
 
 # --- record ---------------------------------------------------------------
 
 step "Recording the release"
+mkdir -p releases
+ipa_sha256=$(shasum -a 256 "$ipa" | cut -d' ' -f1)
+cat > "releases/${version}-build${next_build}.json" <<JSON
+{
+  "version": "${version}",
+  "build": ${next_build},
+  "commit": "$(git rev-parse HEAD)",
+  "ipa_sha256": "${ipa_sha256}",
+  "delivery_uuid": "${delivery_uuid}",
+  "uploaded_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+JSON
 # The whole generated project, not just the pbxproj: gen-xcode-project.rb rewrites
 # the scheme's blueprint identifiers on every run, and a leftover dirty file would
 # block the next release at the clean-tree check.
-git add "$XCCONFIG" DSH.xcodeproj
+git add "$XCCONFIG" DSH.xcodeproj "releases/${version}-build${next_build}.json"
 git commit -m "Release ${version} (${next_build})"
-git tag "v${version}"
-echo "  committed and tagged v${version} — 'git push && git push --tags' when ready"
+git tag "$release_tag"
+echo "  committed and tagged ${release_tag} — 'git push && git push origin ${release_tag}' when ready"
 
 cat <<NOTE
 
 Uploaded ${version} (${next_build}).
+Delivery UUID: ${delivery_uuid}
 
 Apple processes the build before it shows up anywhere, usually within fifteen
 minutes, and emails you either way. Once it lands, internal TestFlight testers

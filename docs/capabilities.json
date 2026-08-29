@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "capabilities": [
+    {"id":"device.info","gate":"enabled-only","tools":["device_info","device_power"]},
+    {"id":"calendar.read","gate":"system-permission","tools":["calendar_query"]},
+    {"id":"calendar.write","gate":"per-call","tools":["calendar_create_event"]},
+    {"id":"reminders.read","gate":"system-permission","tools":["reminders_query"]},
+    {"id":"reminders.write","gate":"per-call","tools":["reminders_create"]},
+    {"id":"health.read","gate":"system-permission","tools":["health_query"]},
+    {"id":"location.read","gate":"system-permission","tools":["location_query"]},
+    {"id":"contacts.read","gate":"system-permission","tools":["contacts_search"]},
+    {"id":"notifications.post","gate":"system-permission","tools":["notify"]},
+    {"id":"files.import","gate":"picker","tools":["file_import"]},
+    {"id":"files.export","gate":"per-call","tools":["file_export"]},
+    {"id":"photos.import","gate":"picker","tools":["photo_import"]},
+    {"id":"share.present","gate":"per-call","tools":["share"]},
+    {"id":"shortcuts.run","gate":"per-call","tools":["shortcut_run"]}
+  ]
+}

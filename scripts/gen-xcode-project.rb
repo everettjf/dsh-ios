@@ -12,6 +12,7 @@
 # Requires the `xcodeproj` gem (ships with CocoaPods).
 require 'xcodeproj'
 require 'pathname'
+require 'digest'
 
 HERE = Pathname.new(__FILE__).expand_path.dirname
 ROOT = HERE.parent                                   # repo root
@@ -45,6 +46,25 @@ mig_rule = ish_target.build_rules.first or abort 'mig build rule missing'
 # --- new project ------------------------------------------------------------
 FileUtils.rm_rf(PROJECT_PATH)
 project = Xcodeproj::Project.new(PROJECT_PATH.to_s)
+# Stabilise the handful of objects Project.new creates, then use a deterministic
+# sequence for everything added below. This is intentionally scoped to this
+# project instance; vendored projects retain xcodeproj's normal behaviour.
+project.predictabilize_uuids
+project.instance_variable_set(:@available_uuids, [])
+project.instance_variable_set(:@generated_uuids, project.uuids.dup)
+project.define_singleton_method(:generate_available_uuid_list) do |count = 100|
+  available = instance_variable_get(:@available_uuids)
+  generated = instance_variable_get(:@generated_uuids)
+  cursor = instance_variable_get(:@dsh_uuid_cursor) || 0
+  while available.length <= count
+    candidate = Digest::SHA256.hexdigest("dsh-ios-project-object-#{cursor}")[0, 24].upcase
+    cursor += 1
+    next if generated.include?(candidate) || uuids.include?(candidate)
+    generated << candidate
+    available << candidate
+  end
+  instance_variable_set(:@dsh_uuid_cursor, cursor)
+end
 project.root_object.attributes['LastUpgradeCheck'] = '2700'
 
 # Project-level configs come from iSH so warnings/flags match the emulator build.

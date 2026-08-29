@@ -1,9 +1,9 @@
 # Host Bridge — giving the agent access to iOS capabilities
 
-**Status:** implemented — the bridge, the capability registry, the Capabilities
-settings screen, the per-call confirmation gate, and fifteen tools across
-device/power, clipboard, calendar, reminders, health, location, contacts,
-notifications, files and Shortcuts · **Tracking PR:** this one · **Author:** @everettjf
+**Status:** implemented — the bridge, capability registry, Capabilities screen,
+per-call confirmation gate, and fifteen tools across device/power, calendar,
+reminders, health, location, contacts, notifications, files, photos, sharing and
+Shortcuts. The canonical inventory is [capabilities.json](capabilities.json).
 
 DSH runs DeepSeek Harness inside an emulated Linux guest. The guest is a good
 sandbox but a poor citizen of the device: it cannot read Apple Health, take a

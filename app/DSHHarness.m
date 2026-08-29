@@ -7,10 +7,13 @@
 #import "DSHPortAllocator.h"
 #import "DSHReadinessProbe.h"
 #import "DSHGuestLauncher.h"
+#import "DSHStartupMetrics.h"
 
 NSNotificationName const DSHHarnessStateDidChangeNotification = @"DSHHarnessStateDidChangeNotification";
 static NSString *const kExpectedStartupKey = @"DSHExpectedStartupDuration";
 static const NSTimeInterval kDefaultExpectedStartup = 25;
+static NSString *const kRecentFailuresKey = @"DSHHarnessRecentFailures.1";
+static const NSTimeInterval kPersistentFailureWindow = 10 * 60;
 
 NSString *DSHHarnessStateName(DSHHarnessState state) {
     switch (state) {
@@ -40,6 +43,7 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
 @property (nonatomic) NSDate *lastLaunchAt;
 @property (nonatomic) BOOL healthCheckInFlight;
 @property (nonatomic) NSMutableArray<void (^)(BOOL)> *healthCheckCompletions;
+@property (nonatomic) BOOL tracksPersistentFailures;
 @end
 
 @implementation DSHHarness
@@ -64,6 +68,7 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
         _maxConsecutiveCrashes = 4;
         _state = DSHHarnessStateIdle;
         _healthCheckCompletions = [NSMutableArray array];
+        _tracksPersistentFailures = [launcher isKindOfClass:DSHGuestLauncher.class];
     }
     return self;
 }
@@ -98,6 +103,12 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
     self.userStopped = NO;
     if (self.state == DSHHarnessStateStarting || self.state == DSHHarnessStateReady)
         return;
+    if (self.recentPersistentFailureCount >= self.maxConsecutiveCrashes) {
+        self.lastError = @"The harness failed repeatedly across recent launches. Use Restart Harness to try again, or Repair Linux Environment if it continues.";
+        [self.log append:@"[dsh-ios] persistent crash-loop fuse is open"];
+        self.state = DSHHarnessStateFailed;
+        return;
+    }
     self.consecutiveCrashes = 0;
     [self launch];
 }
@@ -121,6 +132,7 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
     [self stop];
     self.userStopped = NO;
     self.consecutiveCrashes = 0;
+    [self clearPersistentFailures];
     self.restartCount++;
     // Give the old process a moment to release the port.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t) (0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -188,7 +200,9 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
             double next = prev > 1 ? prev * 0.5 + elapsed * 0.5 : elapsed;
             [NSUserDefaults.standardUserDefaults setDouble:next forKey:kExpectedStartupKey];
             self.consecutiveCrashes = 0;
+            [self clearPersistentFailures];
             [self.log append:[NSString stringWithFormat:@"[dsh-ios] server answered after %.1fs", elapsed]];
+            [DSHStartupMetrics.shared mark:@"harness_ready"];
             self.state = DSHHarnessStateReady;
         } else if (self.state == DSHHarnessStateStarting) {
             self.lastError = [NSString stringWithFormat:@"The harness did not answer within %.0f seconds.", self.startupTimeout];
@@ -225,6 +239,7 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
 
 - (void)scheduleRelaunchAfterFailure {
     self.consecutiveCrashes++;
+    [self recordPersistentFailure];
     if (self.consecutiveCrashes > self.maxConsecutiveCrashes) {
         [self.log append:@"[dsh-ios] giving up after repeated failures"];
         self.state = DSHHarnessStateFailed;
@@ -241,6 +256,31 @@ NSString *DSHHarnessStateName(DSHHarnessState state) {
             return;
         [self launch];
     });
+}
+
+- (NSArray<NSDate *> *)recentPersistentFailures {
+    if (!self.tracksPersistentFailures) return @[];
+    NSArray *raw = [NSUserDefaults.standardUserDefaults arrayForKey:kRecentFailuresKey] ?: @[];
+    NSDate *cutoff = [NSDate dateWithTimeIntervalSinceNow:-kPersistentFailureWindow];
+    return [raw filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id value, NSDictionary *bindings) {
+        return [value isKindOfClass:NSDate.class] && [value compare:cutoff] != NSOrderedAscending;
+    }]];
+}
+
+- (NSUInteger)recentPersistentFailureCount {
+    return self.recentPersistentFailures.count;
+}
+
+- (void)recordPersistentFailure {
+    if (!self.tracksPersistentFailures) return;
+    NSMutableArray *failures = [self.recentPersistentFailures mutableCopy];
+    [failures addObject:NSDate.date];
+    [NSUserDefaults.standardUserDefaults setObject:failures forKey:kRecentFailuresKey];
+}
+
+- (void)clearPersistentFailures {
+    if (self.tracksPersistentFailures)
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:kRecentFailuresKey];
 }
 
 - (void)verifyAliveWithCompletion:(void (^)(BOOL))completion {

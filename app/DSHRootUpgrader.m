@@ -15,6 +15,7 @@
 
 static NSString *const kInstalledRootHashKey = @"DSHInstalledRootHash";
 static NSString *const kPendingMigrationRootKey = @"DSHPendingMigrationRoot";
+static NSString *const kRepairRootOnNextLaunchKey = @"DSHRepairRootOnNextLaunch";
 static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
 
 /// Bridges Roots' import progress to a block.
@@ -60,6 +61,14 @@ static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
     return [NSUserDefaults.standardUserDefaults stringForKey:kPendingMigrationRootKey];
 }
 
+- (BOOL)repairScheduled {
+    return [NSUserDefaults.standardUserDefaults boolForKey:kRepairRootOnNextLaunchKey];
+}
+
+- (void)scheduleRepairOnNextLaunch {
+    [NSUserDefaults.standardUserDefaults setBool:YES forKey:kRepairRootOnNextLaunchKey];
+}
+
 - (BOOL)prepareRootsBeforeBoot {
     return [self prepareRootsBeforeBootWithProgress:nil];
 }
@@ -86,12 +95,16 @@ static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
     }
     // installedRootHash == nil with existing roots means an install that
     // predates this bookkeeping: treat it as outdated and upgrade.
-    if ([self.installedRootHash isEqualToString:bundled])
+    BOOL repairing = self.repairScheduled;
+    if ([self.installedRootHash isEqualToString:bundled] && !repairing)
         return NO;
     if (self.pendingMigrationRoot != nil)
         return NO; // an earlier upgrade is still waiting to migrate; finish it first
 
-    NSString *newName = [NSString stringWithFormat:@"dsh-%@", [bundled substringToIndex:MIN(bundled.length, 8u)]];
+    NSString *suffix = [bundled substringToIndex:MIN(bundled.length, 8u)];
+    NSString *newName = repairing
+        ? [NSString stringWithFormat:@"dsh-repair-%@-%lld", suffix, (long long) NSDate.date.timeIntervalSince1970]
+        : [NSString stringWithFormat:@"dsh-%@", suffix];
     if ([roots.roots containsObject:newName]) {
         // Left over from an interrupted attempt; start over.
         NSError *err;
@@ -112,6 +125,7 @@ static NSString *const kPrevMountPoint = @"/mnt/dsh-previous-root";
     NSString *previous = roots.defaultRoot;
     roots.defaultRoot = newName;
     [defaults setObject:bundled forKey:kInstalledRootHashKey];
+    [defaults removeObjectForKey:kRepairRootOnNextLaunchKey];
     if (previous.length && ![previous isEqualToString:newName])
         [defaults setObject:previous forKey:kPendingMigrationRootKey];
     return YES;

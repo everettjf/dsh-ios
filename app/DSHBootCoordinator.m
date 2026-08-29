@@ -18,6 +18,7 @@
 #import "DSHShareCapability.h"
 #import "DSHShortcutsCapability.h"
 #import "DSHActivityCapability.h"
+#import "DSHStartupMetrics.h"
 #import "AppDelegate.h"
 #import <UIKit/UIKit.h>
 
@@ -72,6 +73,7 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     if (self.started)
         return;
     self.started = YES;
+    [DSHStartupMetrics.shared beginLaunch];
     [DSHHarness.shared.log append:@"[perf] app boot coordinator started"];
     [self setPhase:DSHBootPhaseImportingImage message:@"Preparing the Linux environment…" progress:-1];
     // UIApplication is main-thread-only; grab the delegate here, not on the queue.
@@ -89,12 +91,14 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
         }];
         NSTimeInterval imported = -t0.timeIntervalSinceNow;
         [DSHHarness.shared.log append:[NSString stringWithFormat:@"[perf] image preparation %.3fs", imported]];
+        [DSHStartupMetrics.shared mark:@"image_ready"];
 
         // 2. Boot the emulator kernel (mount the fakefs, start init).
         [self setPhase:DSHBootPhaseBootingKernel message:@"Booting the Linux guest…" progress:-1];
         int err = [app boot];
         NSTimeInterval kernelBoot = -t0.timeIntervalSinceNow - imported;
         [DSHHarness.shared.log append:[NSString stringWithFormat:@"[perf] guest kernel boot %.3fs", kernelBoot]];
+        [DSHStartupMetrics.shared mark:@"kernel_ready"];
         self.bootError = err;
         [DSHHarness.shared.log append:[NSString stringWithFormat:@"[dsh-ios] guest boot %@ (image %.1fs, total %.1fs)",
                                        err == 0 ? @"ok" : [NSString stringWithFormat:@"failed: %d", err],
@@ -145,6 +149,7 @@ NSNotificationName const DSHBootStateDidChangeNotification = @"DSHBootStateDidCh
     } else {
         [DSHHarness.shared.log append:@"[dsh-ios] host bridge could not start; iOS capabilities are unavailable"];
     }
+    [DSHStartupMetrics.shared mark:@"bridge_ready"];
     [DSHHarness.shared start];
 }
 

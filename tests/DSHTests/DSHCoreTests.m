@@ -11,6 +11,7 @@
 #import "DSHPortAllocator.h"
 #import "DSHLogBuffer.h"
 #import "DSHReadinessProbe.h"
+#import "DSHStartupMetrics.h"
 #import "DSHHarness.h"
 #import "DSHBootCoordinator.h"
 #import "DSHTestHTTPServer.h"
@@ -48,6 +49,17 @@
 @end
 
 @implementation DSHCoreTests
+
+- (void)testStartupMetricsRecordsNamedStagesWithoutUserContent {
+    DSHStartupMetrics *metrics = DSHStartupMetrics.shared;
+    [metrics beginLaunch];
+    [metrics mark:@"image_ready"];
+    [metrics mark:@"kernel_ready"];
+    NSDictionary *latest = metrics.recentLaunches.firstObject;
+    XCTAssertNotNil(latest[@"stages"][@"image_ready"]);
+    XCTAssertNotNil(latest[@"stages"][@"kernel_ready"]);
+    XCTAssertTrue([metrics.summary containsString:@"image="]);
+}
 
 - (void)testPortAllocatorSkipsBusyPort {
     DSHTestHTTPServer *server = [[DSHTestHTTPServer alloc] initWithPort:0];

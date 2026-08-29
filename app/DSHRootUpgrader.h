@@ -39,6 +39,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// is pending.
 - (void)migrateIfNeededWithCompletion:(void (^)(BOOL migrated, NSError *_Nullable error))completion;
 
+/// Schedules a fresh import of the bundled system image on the next launch.
+/// The current root is retained as the migration source, so sessions,
+/// credentials and the workspace are copied into the repaired root.
+- (void)scheduleRepairOnNextLaunch;
+@property (nonatomic, readonly) BOOL repairScheduled;
+
 @end
 
 NS_ASSUME_NONNULL_END

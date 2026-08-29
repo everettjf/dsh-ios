@@ -165,7 +165,7 @@ make test-device        # + UI tests on the iPad (enable Settings ▸ Developer 
 | `DSHTests` (XCTest, hosted in the app) | port allocator, log ring, readiness probe, harness state machine (fake launcher + local HTTP server); host bridge auth/gating/limits; the confirmation gate (background → refuse, no stacking, always answers); every capability route (refused when switched off, refused before the framework is touched, validated before the user is asked, empty Health answers always explain themselves); guest integration: real server answers, `dsh-selftest`, node/dsh versions, root-image bookkeeping, **whole agent turns calling `device_info` and `health_query` through the bridge against an in-app mock model** | simulator / device |
 | `DSHUITests` (XCUITest) | app boots to the DeepSeek Harness UI, port in the bar, server-log sheet, terminal sheet, landscape layout, the Capabilities screen's switches | simulator / device |
 
-Status: all suites green (`make test`: 3 + 31 + 89 + 6 checks; the same 89
+Status: all suites green (`make test`: 3 emulator + 37 rootfs + 114 app + 6 UI checks; the same
 unit + guest-integration tests also run on the iPad Air, where a report test
 prints what each capability actually returned — counts and shapes, never values). Everything runs locally — the build
 needs an Apple Silicon Mac with Xcode, an emulator toolchain and (for the
@@ -211,8 +211,8 @@ reach iOS capabilities. Shipping today:
 | `share` | offers text to the iOS share sheet | switch + confirmation each time |
 | `shortcut_run` | runs one of your shortcuts | **asks every time** |
 
-Photos and the share sheet are designed but not built — each is one route in the
-app plus one tool in the guest plugin. There is deliberately **no clipboard
+Photos and the share sheet are implemented using the system picker/sheet and
+the same native gates as the other capabilities. There is deliberately **no clipboard
 capability at all**: reading one that came from another app makes iOS interrupt
 the user every single time, and writing was dropped with it rather than leave a
 tool whose worst case is "the agent silently replaced what you were about to
@@ -257,6 +257,8 @@ in the guest and can read any secret we put there. Every call is logged to
 See [docs/host-bridge.md](docs/host-bridge.md) for the protocol, the security
 model and the capability/permission matrix, and [docs/roadmap.md](docs/roadmap.md)
 for what is built and what comes next.
+The machine-readable capability/tool inventory is [docs/capabilities.json](docs/capabilities.json);
+the script tests fail when either side drifts from it.
 
 ## FAQ
 

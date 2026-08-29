@@ -25,7 +25,7 @@ which this plan references rather than repeats.
 | Photos (import) and the share sheet | done |
 | Prompt-injection threat model, and every alert value sanitised | done |
 | A turn interrupted by the background is explained on the way back | done |
-| Tests: emulator 3, rootfs 37, app 111 (device + simulator), UI 6 | done |
+| Tests: emulator 3, rootfs 37, app 114 (device + simulator), UI 6 | done |
 | Capabilities ship on; the switch turns them off | done |
 | One-command release: bump, test, archive, upload (`scripts/release.sh`) | done |
 | Distribution: external TestFlight and build-it-yourself | done |
@@ -153,10 +153,14 @@ says so in the bar on the way back — at the moment the user is looking at a
 stalled conversation, rather than as a warning in front of the app they were
 switching to.
 
-**What did not:** resumable turns. It stays open on purpose. Keeping enough
-state to pick a turn up again is a change to the harness rather than to this
-app, and the right first move is still to raise it upstream rather than build
-something bespoke here.
+**What is local now:** the interruption marker survives process termination,
+and foreground reconciliation distinguishes an available server from one that
+needs recovery. DSH still does not claim the turn itself resumed.
+
+**What remains upstream:** durable turn checkpoints and idempotent resume. The
+required API, write-tool safety rule and acceptance tests are specified in
+[resumable-turns.md](resumable-turns.md); implementing them in the harness is
+the next step rather than inventing an incompatible iOS-only state machine.
 
 ### 5. Photos and the share sheet — *done*
 
@@ -174,7 +178,7 @@ the shape of a mistake.
 
 ### 6. Distribution — *external TestFlight shipped*
 
-**Where it stands now:** external TestFlight is live; 1.0.6 (7) is the latest
+**Where it stands now:** external TestFlight is live; 1.0.15 (17) is the latest
 validated upload. `scripts/release.sh` bumps the version, runs every suite,
 archives, verifies privacy purpose strings, validates and uploads. P4 also
 removed Xcode's ten-minute post-failure diagnostics stall, made simulator

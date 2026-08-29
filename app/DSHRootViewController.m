@@ -11,6 +11,8 @@
 #import "DSHActivityViewController.h"
 #import "DSHActivityLog.h"
 #import "DSHTurnPresence.h"
+#import "DSHRootUpgrader.h"
+#import "DSHStartupMetrics.h"
 #import "DSHStatusOverlayView.h"
 #import "TerminalViewController.h"
 #import "AppDelegate.h"
@@ -52,7 +54,7 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     [nc addObserver:self selector:@selector(bootStateChanged:) name:DSHBootStateDidChangeNotification object:nil];
     [self observeActivity];
     [DSHTurnPresence.shared start];
-    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(turnWasInterrupted)
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(turnWasInterrupted:)
                                                name:DSHTurnWasInterruptedNotification object:nil];
     [self applyHarnessState];
 }
@@ -186,13 +188,14 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     UIAction *log = [UIAction actionWithTitle:@"Server Log" image:[UIImage systemImageNamed:@"doc.text.magnifyingglass"] identifier:@"dsh.log" handler:^(UIAction *a) { [weakSelf presentLog]; }];
     UIAction *restart = [UIAction actionWithTitle:@"Restart Harness" image:[UIImage systemImageNamed:@"arrow.triangle.2.circlepath"] identifier:@"dsh.restart" handler:^(UIAction *a) { [weakSelf confirmRestart]; }];
     restart.attributes = UIMenuElementAttributesDestructive;
+    UIAction *repair = [UIAction actionWithTitle:@"Repair Linux Environment" image:[UIImage systemImageNamed:@"wrench.and.screwdriver"] identifier:@"dsh.repair" handler:^(UIAction *a) { [weakSelf confirmRepair]; }];
     UIAction *safari = [UIAction actionWithTitle:@"Open in Safari" image:[UIImage systemImageNamed:@"safari"] identifier:@"dsh.safari" handler:^(UIAction *a) {
         NSURL *url = DSHHarness.shared.baseURL;
         if (url) [UIApplication.sharedApplication openURL:url options:@{} completionHandler:nil];
     }];
     UIAction *about = [UIAction actionWithTitle:@"About DSH" image:[UIImage systemImageNamed:@"info.circle"] identifier:@"dsh.about" handler:^(UIAction *a) { [weakSelf presentAbout]; }];
     NSMutableArray<UIMenuElement *> *children = [NSMutableArray arrayWithObjects:reload, terminal, nil];
-    [children addObjectsFromArray:@[capabilities, activity, log, [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[safari, restart]], about]];
+    [children addObjectsFromArray:@[capabilities, activity, log, [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[safari, restart, repair]], about]];
     return [UIMenu menuWithChildren:children];
 }
 
@@ -326,6 +329,23 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
     [self presentViewController:alert animated:YES completion:nil];
 }
 
+- (void)confirmRepair {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Repair the Linux environment?"
+        message:@"On the next launch DSH will reinstall its bundled Linux system and migrate your sessions, credentials and workspace. The current system is kept until migration succeeds."
+        preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Repair on Next Launch" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *a) {
+        [DSHRootUpgrader.shared scheduleRepairOnNextLaunch];
+        [DSHHarness.shared.log append:@"[dsh-ios] Linux environment repair scheduled for next launch"];
+        UIAlertController *done = [UIAlertController alertControllerWithTitle:@"Repair scheduled"
+            message:@"Close DSH and open it again. Your user data will be migrated after the fresh system boots."
+            preferredStyle:UIAlertControllerStyleAlert];
+        [done addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:done animated:YES completion:nil];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
 - (void)presentTerminal {
     // iSH's terminal offers to "install the built-in APK" on first use; our
     // guest ships with apk already, so skip that startup message.
@@ -370,8 +390,9 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
                          [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
                          [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString *) kCFBundleVersionKey]];
     NSString *message = [NSString stringWithFormat:
-                         @"DSH %@\n\nDeepSeek Harness running in an Alpine Linux guest (iSH ARM64 emulator) inside this app.\n\nServer: %@\nState: %@\nStartup: %.1fs · restarts: %lu",
-                         version, h.baseURL.absoluteString ?: @"–", DSHHarnessStateName(h.state), h.lastStartupDuration, (unsigned long) h.restartCount];
+                         @"DSH %@\n\nDeepSeek Harness running in an Alpine Linux guest (iSH ARM64 emulator) inside this app.\n\nServer: %@\nState: %@\nStartup: %.1fs · restarts: %lu\n\n%@",
+                         version, h.baseURL.absoluteString ?: @"–", DSHHarnessStateName(h.state), h.lastStartupDuration,
+                         (unsigned long) h.restartCount, DSHStartupMetrics.shared.summary];
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"About DSH" message:message preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:alert animated:YES completion:nil];
@@ -382,13 +403,14 @@ static NSString *const kDSHUserAgentSuffix = @" DSH-iOS/1.0";
 /// Long enough to read once, and it goes away on the next status update anyway.
 static const NSTimeInterval kInterruptedNoticeVisible = 8;
 
-- (void)turnWasInterrupted {
+- (void)turnWasInterrupted:(NSNotification *)note {
     // The bar, not an alert: the user came back to carry on, and a dialog to
     // dismiss first would be in the way of the thing they returned for.
-    self.titleLabel.text = @"DSH · paused while away";
+    BOOL ready = [note.userInfo[DSHTurnRecoveryStatusKey] isEqualToString:@"server-ready"];
+    self.titleLabel.text = ready ? @"DSH · checking interrupted turn" : @"DSH · turn interrupted";
     self.titleLabel.accessibilityLabel =
-        @"A turn was running when DSH went to the background. iOS suspends the app there, "
-        @"so it made no progress while you were away.";
+        ready ? @"A turn was interrupted while DSH was away. The server is available; check the conversation before retrying."
+              : @"A turn was interrupted while DSH was away and the server is unavailable. DSH is recovering it.";
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(applyHarnessState) object:nil];
     [self performSelector:@selector(applyHarnessState) withObject:nil afterDelay:kInterruptedNoticeVisible];
 }
@@ -491,6 +513,7 @@ static const NSTimeInterval kActivityIndicatorVisible = 6;
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
     self.pageLoaded = YES;
     [DSHHarness.shared.log append:[NSString stringWithFormat:@"[perf] web interface loaded (harness %.3fs)", DSHHarness.shared.lastStartupDuration]];
+    [DSHStartupMetrics.shared mark:@"web_ready"];
     [self.overlay hide];
 }
 
