@@ -25,6 +25,10 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-green"></a>
 </p>
 
+> **项目状态：** DSHIOS 是一个实验性质的项目。虽然可以通过 iSH-ARM64 在
+> iPhone 和 iPad 上运行，但目前性能仍然比较有限。本项目后续不会提交至 App Store，
+> 也不会继续发布新版本。如需体验，请自行下载源码并构建运行。
+
 DSH 是一个原生 iOS app：它内嵌 [iSH-ARM64](ish-arm64) 用户态 Linux 模拟器，启动内置的
 Alpine Linux 镜像（含 Node.js 22 和 `@deepseek-ai/dsh`），托管 `dsh web` 进程，并在
 `WKWebView` 里显示 harness 自己的 Web 界面。Agent 循环、会话、工具、shell 全部在设备本地

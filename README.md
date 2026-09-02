@@ -25,6 +25,11 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-green"></a>
 </p>
 
+> **Project status:** DSHIOS is an experimental project. Although it can run on
+> iPhone and iPad through iSH-ARM64, performance is still quite limited. The
+> project will not be submitted to the App Store or receive further releases.
+> If you would like to try it, please download the source and build it yourself.
+
 DSHIOS is a native iOS app that embeds the [iSH-ARM64](ish-arm64) userspace Linux
 emulator, boots a bundled Alpine Linux image with Node.js 22 and
 `@deepseek-ai/dsh`, supervises `dsh web`, and shows the harness's own web UI in
